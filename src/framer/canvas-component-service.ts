@@ -99,6 +99,7 @@ interface ChatficProps {
     ariaLabel?: string
     greetingEnabled?: boolean
     greetingText?: string
+    greetingDelay?: number
     enableSound?: boolean
     showBadge?: boolean
     badgeText?: string
@@ -124,6 +125,7 @@ interface ChatficProps {
     linkedin?: string
     maps?: string
     custom?: string
+    customLabel?: string
     enableAnalytics?: boolean
     scrollTriggerEnabled?: boolean
     scrollTriggerPercent?: number
@@ -131,6 +133,7 @@ interface ChatficProps {
     exitIntentEnabled?: boolean
     exitIntentAction?: "modal" | "greeting"
     scheduleEnabled?: boolean
+    scheduleDays?: number[]
     scheduleStart?: string
     scheduleEnd?: string
     scheduleOfflineAction?: "badge" | "hide"
@@ -138,6 +141,91 @@ interface ChatficProps {
     targetingEnabled?: boolean
     targetingMode?: "show" | "hide"
     targetingRules?: string
+}
+
+// Web Audio Synthesizer singleton & gesture unlocker
+let sharedChatAudioCtx: AudioContext | null = null
+let pendingChimeQueued = false
+let globalLastChimeTime = 0
+
+function isFramerStudioCanvas(): boolean {
+    if (typeof window === "undefined") return false
+    try {
+        if (typeof RenderTarget !== "undefined" && typeof RenderTarget.current === "function") {
+            return RenderTarget.current() === RenderTarget.canvas
+        }
+    } catch {}
+    return false
+}
+
+function getSharedAudioContext(): AudioContext | null {
+    if (typeof window === "undefined") return null
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext
+    if (!AudioCtx) return null
+    if (!sharedChatAudioCtx || sharedChatAudioCtx.state === "closed") {
+        try {
+            sharedChatAudioCtx = new AudioCtx()
+        } catch {
+            return null
+        }
+    }
+    return sharedChatAudioCtx
+}
+
+function playSynthesizedTone(ctx: AudioContext) {
+    try {
+        const now = ctx.currentTime
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.type = "sine"
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        // Friendly, crisp 2-tone melodic chime: D5 (587.33 Hz) -> A5 (880 Hz)
+        osc.frequency.setValueAtTime(587.33, now)
+        osc.frequency.setValueAtTime(880, now + 0.08)
+        gain.gain.setValueAtTime(0.22, now)
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.38)
+        osc.start(now)
+        osc.stop(now + 0.38)
+    } catch {}
+}
+
+function playNotificationChimeDirect(force: boolean = false) {
+    try {
+        if (typeof window === "undefined") return
+        // Never play chime when in Framer design canvas mode
+        if (isFramerStudioCanvas()) return
+
+        const now = Date.now()
+        // Cross-instance throttle:
+        // Framer mounts Desktop, Tablet, and Mobile variants in the DOM simultaneously.
+        // We enforce an 8-second debounce so multiple breakpoint instances never double- or triple-fire!
+        if (!force && now - globalLastChimeTime < 8000) {
+            return
+        }
+
+        const ctx = getSharedAudioContext()
+        if (!ctx) return
+        if (ctx.state === "running") {
+            playSynthesizedTone(ctx)
+            globalLastChimeTime = now
+            pendingChimeQueued = false
+        } else {
+            ctx.resume().then(() => {
+                const currentNow = Date.now()
+                if (!force && currentNow - globalLastChimeTime < 8000) {
+                    return
+                }
+                playSynthesizedTone(ctx)
+                globalLastChimeTime = currentNow
+                pendingChimeQueued = false
+            }).catch(() => {
+                pendingChimeQueued = true
+            })
+        }
+    } catch {
+        pendingChimeQueued = true
+    }
 }
 
 export default function Chatfic(props: ChatficProps) {
@@ -171,6 +259,7 @@ export default function Chatfic(props: ChatficProps) {
         ariaLabel = ${JSON.stringify(config.ariaLabel || "Open chat options")},
         greetingEnabled = ${Boolean(config.greetingEnabled)},
         greetingText = ${JSON.stringify(config.greetingText || "Need help? Chat with us.")},
+        greetingDelay = ${Number(config.greetingDelay ?? 2000)},
         enableSound = ${Boolean(config.enableSound)},
         showBadge = ${Boolean(config.showBadge)},
         badgeText = ${JSON.stringify(config.badgeText || "1")},
@@ -181,6 +270,7 @@ export default function Chatfic(props: ChatficProps) {
         exitIntentEnabled = ${Boolean(config.exitIntentEnabled)},
         exitIntentAction = ${JSON.stringify(config.exitIntentAction || "modal")},
         scheduleEnabled = ${Boolean(config.scheduleEnabled)},
+        scheduleDays = ${JSON.stringify(config.scheduleDays || [1, 2, 3, 4, 5])},
         scheduleStart = ${JSON.stringify(config.scheduleStart || "09:00")},
         scheduleEnd = ${JSON.stringify(config.scheduleEnd || "18:00")},
         scheduleOfflineAction = ${JSON.stringify(config.scheduleOfflineAction || "badge")},
@@ -210,6 +300,7 @@ export default function Chatfic(props: ChatficProps) {
         linkedin = ${JSON.stringify(config.channels.find((c) => c.id === "linkedin")?.value || "")},
         maps = ${JSON.stringify(config.channels.find((c) => c.id === "maps")?.value || "")},
         custom = ${JSON.stringify(config.channels.find((c) => c.id === "custom")?.value || "")},
+        customLabel = ${JSON.stringify(config.channels.find((c) => c.id === "custom")?.label || "Custom")},
     } = props
 
     const isCanvas = typeof RenderTarget !== "undefined" && typeof RenderTarget.current === "function" && RenderTarget.current() === RenderTarget.canvas
@@ -219,47 +310,266 @@ export default function Chatfic(props: ChatficProps) {
     const [selectedAgent, setSelectedAgent] = React.useState<any | null>(null)
     const [customMessage, setCustomMessage] = React.useState("")
 
-    React.useEffect(() => {
-        if (!isCanvas && autoOpen) {
-            const timer = setTimeout(() => {
-                setIsOpen(true)
-            }, autoOpenDelay)
-            return () => clearTimeout(timer)
+    // Delays normalization (supports milliseconds or seconds)
+    const finalGreetingDelay = Number(greetingDelay ?? 2000) > 60 ? Number(greetingDelay ?? 2000) : Number(greetingDelay ?? 2) * 1000
+    const finalAutoOpenDelay = Number(autoOpenDelay ?? 1200) > 60 ? Number(autoOpenDelay ?? 1200) : Number(autoOpenDelay ?? 1.2) * 1000
+
+    // 1. Operating Hours & Days Schedule Calculation
+    const isOffline = React.useMemo(() => {
+        if (!scheduleEnabled) return false
+        try {
+            const now = new Date()
+            const curDay = now.getDay()
+            const days = Array.isArray(scheduleDays) ? scheduleDays : [1, 2, 3, 4, 5]
+            if (!days.includes(curDay)) return true
+            const curMins = now.getHours() * 60 + now.getMinutes()
+            const sParts = String(scheduleStart || "09:00").split(":")
+            const eParts = String(scheduleEnd || "18:00").split(":")
+            const sMins = (parseInt(sParts[0], 10) || 9) * 60 + (parseInt(sParts[1], 10) || 0)
+            const eMins = (parseInt(eParts[0], 10) || 18) * 60 + (parseInt(eParts[1], 10) || 0)
+            if (sMins <= eMins) {
+                return curMins < sMins || curMins >= eMins
+            } else {
+                return curMins < sMins && curMins >= eMins
+            }
+        } catch {
+            return false
         }
-    }, [isCanvas, autoOpen, autoOpenDelay])
+    }, [scheduleEnabled, scheduleDays, scheduleStart, scheduleEnd])
+
+    // 2. Page / URL Targeting Filter (supports path wildcards and clean rule parsing)
+    const isTargetingAllowed = React.useMemo(() => {
+        if (isCanvas || !targetingEnabled || !targetingRules) return true
+        try {
+            const curPath = (typeof window !== "undefined" && window.location && window.location.pathname ? window.location.pathname : "/").toLowerCase()
+            const rawRules = String(targetingRules).split("\\\\n").join(",").split(";").join(",").split(",")
+            const rules = rawRules.map((r: string) => r.trim().toLowerCase()).filter(Boolean)
+            if (rules.length === 0) return true
+            const isMatch = rules.some((rule: string) => {
+                const normRule = rule.startsWith("/") ? rule : "/" + rule
+                if (normRule.endsWith("*")) {
+                    const prefix = normRule.slice(0, -1)
+                    return curPath.startsWith(prefix)
+                }
+                return curPath === normRule || curPath === normRule + "/" || (normRule.endsWith("/") && curPath + "/" === normRule)
+            })
+            return targetingMode === "hide" ? !isMatch : isMatch
+        } catch {
+            return true
+        }
+    }, [isCanvas, targetingEnabled, targetingRules, targetingMode])
+
+    // Strict visibility guard: if hidden by targeting or operating schedule, widget returns null & suppresses sound
+    const isWidgetHidden = (!isCanvas && !isTargetingAllowed) || (!isCanvas && scheduleEnabled && isOffline && scheduleOfflineAction === "hide")
+
+    // Web Audio Synthesizer chime for notifications (never plays on Canvas design preview or when hidden)
+    const playNotificationChime = React.useCallback((force: boolean = false) => {
+        if (isCanvas || !enableSound || isWidgetHidden) return
+        playNotificationChimeDirect(force)
+    }, [isCanvas, enableSound, isWidgetHidden])
+
+    // Unlock audio on real user gesture (click/tap) and immediately flush pending chime
+    React.useEffect(() => {
+        if (isCanvas || isWidgetHidden || !enableSound) return
+
+        function handleUserGesture() {
+            if (isCanvas || isWidgetHidden || !enableSound) return
+            if (!pendingChimeQueued) return
+
+            const now = Date.now()
+            if (now - globalLastChimeTime < 8000) return
+
+            const ctx = getSharedAudioContext()
+            if (ctx && ctx.state === "suspended") {
+                ctx.resume().then(() => {
+                    if (pendingChimeQueued && enableSound && !isCanvas && !isWidgetHidden) {
+                        playSynthesizedTone(ctx)
+                        pendingChimeQueued = false
+                        globalLastChimeTime = Date.now()
+                    }
+                }).catch(() => {})
+            } else if (ctx && ctx.state === "running") {
+                if (pendingChimeQueued && enableSound && !isCanvas && !isWidgetHidden) {
+                    playSynthesizedTone(ctx)
+                    pendingChimeQueued = false
+                    globalLastChimeTime = Date.now()
+                }
+            }
+        }
+
+        const gestureEvents = ["pointerdown", "mousedown", "touchstart", "click"]
+        gestureEvents.forEach((evt) => {
+            window.addEventListener(evt, handleUserGesture, { passive: true, capture: true })
+        })
+
+        return () => {
+            gestureEvents.forEach((evt) => {
+                window.removeEventListener(evt, handleUserGesture, { capture: true })
+            })
+        }
+    }, [isCanvas, isWidgetHidden, enableSound])
+
+    // 3. Scroll Depth Trigger State (checks if configured Depth % is already within the visible screen viewpoint)
+    const [scrollPassed, setScrollPassed] = React.useState(() => {
+        if (isCanvas || !scrollTriggerEnabled) return true
+        if (typeof window === "undefined") return false
+        try {
+            const clientHeight = window.innerHeight || (document.documentElement ? document.documentElement.clientHeight : 0)
+            const scrollHeight = Math.max(
+                document.documentElement ? document.documentElement.scrollHeight : 0,
+                document.body ? document.body.scrollHeight : 0,
+                clientHeight
+            )
+            if (scrollHeight <= 0) return true
+            const scrollTop = window.scrollY || window.pageYOffset || (document.documentElement ? document.documentElement.scrollTop : 0) || 0
+            const visibleScreenDepth = ((scrollTop + clientHeight) / scrollHeight) * 100
+            return visibleScreenDepth >= scrollTriggerPercent
+        } catch {
+            return false
+        }
+    })
 
     React.useEffect(() => {
-        if (!isCanvas && greetingEnabled && enableSound && !greetingDismissed) {
+        if (isCanvas || !scrollTriggerEnabled || isWidgetHidden) {
+            setScrollPassed(true)
+            return
+        }
+        function checkScroll(e?: Event) {
+            try {
+                let targetEl: HTMLElement | null = null
+                if (e && e.target && e.target !== document && (e.target as HTMLElement).scrollHeight) {
+                    targetEl = e.target as HTMLElement
+                }
+                const scrollTop = targetEl
+                    ? targetEl.scrollTop
+                    : (window.scrollY || window.pageYOffset || (document.documentElement ? document.documentElement.scrollTop : 0) || (document.scrollingElement ? (document.scrollingElement as HTMLElement).scrollTop : 0) || (document.body ? document.body.scrollTop : 0))
+                const scrollHeight = targetEl
+                    ? targetEl.scrollHeight
+                    : Math.max(
+                        document.documentElement ? document.documentElement.scrollHeight : 0,
+                        document.body ? document.body.scrollHeight : 0,
+                        document.scrollingElement ? (document.scrollingElement as HTMLElement).scrollHeight : 0
+                    )
+                const clientHeight = targetEl
+                    ? targetEl.clientHeight
+                    : (window.innerHeight || (document.documentElement ? document.documentElement.clientHeight : 0))
+                const docHeight = scrollHeight - clientHeight
+                if (docHeight <= 50) {
+                    setScrollPassed(true)
+                    return
+                }
+                // Visible screen depth: percentage of total document that has entered the visible viewpoint
+                const visibleScreenDepth = scrollHeight > 0 ? ((scrollTop + clientHeight) / scrollHeight) * 100 : 100
+                // Scroll travel: percentage of the scrollable track that has been scrolled
+                const scrollTravel = docHeight > 0 ? (scrollTop / docHeight) * 100 : 100
+                const currentDepth = Math.max(visibleScreenDepth, scrollTravel)
+
+                if (currentDepth >= scrollTriggerPercent) {
+                    setScrollPassed(true)
+                }
+            } catch {}
+        }
+        window.addEventListener("scroll", checkScroll, { passive: true, capture: true })
+        window.addEventListener("resize", checkScroll, { passive: true })
+        checkScroll()
+
+        const frameId = requestAnimationFrame(() => checkScroll())
+
+        return () => {
+            cancelAnimationFrame(frameId)
+            window.removeEventListener("scroll", checkScroll, { capture: true })
+            window.removeEventListener("resize", checkScroll)
+        }
+    }, [isCanvas, scrollTriggerEnabled, scrollTriggerPercent, isWidgetHidden])
+
+    // 4. Greeting Bubble Visibility (syncs with greetingDelay, sound, and scrollTrigger)
+    const [greetingVisible, setGreetingVisible] = React.useState(isCanvas ? greetingEnabled : false)
+
+    React.useEffect(() => {
+        if (isCanvas) {
+            setGreetingVisible(greetingEnabled)
+            return
+        }
+        if (isWidgetHidden || !greetingEnabled || greetingDismissed) {
+            setGreetingVisible(false)
+            return
+        }
+
+        if (scrollTriggerEnabled && scrollTriggerTarget === "greeting") {
+            if (scrollPassed) {
+                setGreetingVisible(true)
+                if (enableSound && !isWidgetHidden) playNotificationChime()
+            }
+            return
+        }
+
+        const timer = setTimeout(() => {
+            if (!isWidgetHidden && !greetingDismissed) {
+                setGreetingVisible(true)
+                if (enableSound && !isWidgetHidden) playNotificationChime()
+            }
+        }, finalGreetingDelay)
+        return () => clearTimeout(timer)
+    }, [isCanvas, isWidgetHidden, greetingEnabled, greetingDismissed, scrollTriggerEnabled, scrollTriggerTarget, scrollPassed, finalGreetingDelay, enableSound, playNotificationChime])
+
+    // 5. Desktop Exit-Intent Trigger (fires when cursor moves towards browser tabs / address bar)
+    const exitIntentFiredRef = React.useRef(false)
+    React.useEffect(() => {
+        if (isCanvas || !exitIntentEnabled || isWidgetHidden) return
+
+        function triggerExitIntent() {
+            if (exitIntentFiredRef.current || isWidgetHidden) return
+            exitIntentFiredRef.current = true
+            if (exitIntentAction === "modal") {
+                setIsOpen(true)
+            } else if (exitIntentAction === "greeting") {
+                setGreetingVisible(true)
+                if (enableSound && !isWidgetHidden) playNotificationChime()
+            }
+        }
+
+        // 1. Mouse leaving html document root towards browser chrome (tabs / address bar)
+        function handleHtmlMouseLeave(e: MouseEvent) {
+            if (e.clientY <= 30 || !e.relatedTarget) {
+                triggerExitIntent()
+            }
+        }
+
+        // 2. Window mouseout when leaving viewport into browser chrome
+        function handleWindowMouseOut(e: MouseEvent) {
+            const from = e.relatedTarget || (e as any).toElement
+            if (!from && (e.clientY <= 40 || e.clientY <= 0)) {
+                triggerExitIntent()
+            }
+        }
+
+        // 3. Fast upward flick towards top boundary (tabs / close button)
+        function handleWindowMouseMove(e: MouseEvent) {
+            if (e.clientY <= 20) {
+                triggerExitIntent()
+            }
+        }
+
+        document.documentElement.addEventListener("mouseleave", handleHtmlMouseLeave)
+        window.addEventListener("mouseout", handleWindowMouseOut)
+        window.addEventListener("mousemove", handleWindowMouseMove, { passive: true })
+
+        return () => {
+            document.documentElement.removeEventListener("mouseleave", handleHtmlMouseLeave)
+            window.removeEventListener("mouseout", handleWindowMouseOut)
+            window.removeEventListener("mousemove", handleWindowMouseMove)
+        }
+    }, [isCanvas, exitIntentEnabled, exitIntentAction, enableSound, playNotificationChime, isWidgetHidden])
+
+    // 6. Behavioral Auto-Open
+    React.useEffect(() => {
+        if (!isCanvas && !isWidgetHidden && autoOpen) {
             const timer = setTimeout(() => {
-                try {
-                    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext
-                    if (AudioCtx) {
-                        const ctx = new AudioCtx()
-                        const play = () => {
-                            const now = ctx.currentTime
-                            const osc = ctx.createOscillator()
-                            const gain = ctx.createGain()
-                            osc.type = "sine"
-                            osc.connect(gain)
-                            gain.connect(ctx.destination)
-                            osc.frequency.setValueAtTime(587.33, now)
-                            osc.frequency.setValueAtTime(880, now + 0.08)
-                            gain.gain.setValueAtTime(0.22, now)
-                            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38)
-                            osc.start(now)
-                            osc.stop(now + 0.38)
-                        }
-                        if (ctx.state === "suspended") {
-                            ctx.resume().then(play).catch(() => {})
-                        } else {
-                            play()
-                        }
-                    }
-                } catch {}
-            }, 1000)
+                if (!isWidgetHidden) setIsOpen(true)
+            }, finalAutoOpenDelay)
             return () => clearTimeout(timer)
         }
-    }, [isCanvas, greetingEnabled, enableSound, greetingDismissed])
+    }, [isCanvas, isWidgetHidden, autoOpen, finalAutoOpenDelay])
 
     React.useEffect(() => {
         if (!isOpen) return
@@ -393,13 +703,13 @@ export default function Chatfic(props: ChatficProps) {
             list.push({ id: "maps", label: "Google Maps", url, color: "#EA4335", value: maps, message: "" })
         }
         if (custom && custom.trim()) {
-            list.push({ id: "custom", label: "Custom", url: custom, color: "#111827", value: custom, message: "" })
+            list.push({ id: "custom", label: (customLabel && customLabel.trim()) || "Custom", url: custom, color: "#111827", value: custom, message: "" })
         }
         if (list.length === 0) {
             list.push({ id: "whatsapp", label: "WhatsApp", url: "https://wa.me/", color: "#25D366", value: "", message: "Hello!" })
         }
         return list
-    }, [whatsapp, whatsappMessage, messenger, telegram, telegramMessage, instagram, tiktok, wechat, viber, line, signal, phone, sms, smsMessage, email, discord, slack, teams, x, linkedin, maps, custom])
+    }, [whatsapp, whatsappMessage, messenger, telegram, telegramMessage, instagram, tiktok, wechat, viber, line, signal, phone, sms, smsMessage, email, discord, slack, teams, x, linkedin, maps, custom, customLabel])
 
     const agents = React.useMemo(() => {
         return rawAgents.map((ag: any) => {
@@ -459,7 +769,7 @@ export default function Chatfic(props: ChatficProps) {
             } else if (ag.channelId === "maps") {
                 directUrl = (rawVal.startsWith("http://") || rawVal.startsWith("https://")) ? rawVal : "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(rawVal)
             } else if (ag.channelId === "custom") {
-                directUrl = (rawVal && !/^\s*(javascript|data|vbscript):/i.test(rawVal)) ? rawVal : "#"
+                directUrl = (rawVal && !rawVal.trim().toLowerCase().startsWith("javascript:") && !rawVal.trim().toLowerCase().startsWith("data:")) ? rawVal : "#"
             }
             return {
                 ...ag,
@@ -496,6 +806,8 @@ export default function Chatfic(props: ChatficProps) {
         ? "cfSlideUp 0.35s ease both"
         : "none"
 
+    const isLauncherHiddenByScroll = !isCanvas && scrollTriggerEnabled && scrollTriggerTarget === "launcher" && !scrollPassed
+
     const containerStyle: React.CSSProperties = {
         ...style,
         width: btnWidth,
@@ -507,6 +819,10 @@ export default function Chatfic(props: ChatficProps) {
         justifyContent: isRight ? "flex-end" : "flex-start",
         fontFamily: "Inter, -apple-system, BlinkMacSystemFont, sans-serif",
         boxSizing: "border-box",
+        opacity: isLauncherHiddenByScroll ? 0 : 1,
+        pointerEvents: isLauncherHiddenByScroll ? "none" : "auto",
+        transform: isLauncherHiddenByScroll ? "scale(0.8) translateY(12px)" : "scale(1) translateY(0)",
+        transition: "opacity 0.35s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
     }
 
     const mainBtnStyle: React.CSSProperties = {
@@ -585,6 +901,8 @@ export default function Chatfic(props: ChatficProps) {
                   alignItems: isRight ? "flex-end" : "flex-start",
               }),
     }
+
+    if (isWidgetHidden) return null
 
     return (
         <div ref={containerRef} style={containerStyle}>
@@ -710,6 +1028,9 @@ export default function Chatfic(props: ChatficProps) {
                 width: max-content !important;
                 max-width: 320px !important;
                 z-index: 100 !important;
+                cursor: pointer !important;
+                user-select: none !important;
+                animation: cfFadeIn .22s ease both !important;
               }
               .cf-canvas-greeting-close {
                 border: none !important;
@@ -755,6 +1076,13 @@ export default function Chatfic(props: ChatficProps) {
                 font-weight: 600 !important;
                 width: max-content !important;
                 margin-top: 4px !important;
+              }
+              .cf-canvas-response-badge.offline {
+                background: rgba(0, 0, 0, 0.3) !important;
+                color: rgba(255, 255, 255, 0.9) !important;
+              }
+              .cf-canvas-agent-av-badge.offline {
+                background: #6b7280 !important;
               }
               .cf-canvas-agents-wrap {
                 padding: 14px !important;
@@ -894,7 +1222,8 @@ export default function Chatfic(props: ChatficProps) {
                 style={mainBtnStyle}
                 onClick={(e) => {
                     e.stopPropagation()
-                    setIsOpen(!isOpen)
+                    const nextOpen = !isOpen
+                    setIsOpen(nextOpen)
                     if (isOpen) setSelectedAgent(null)
                 }}
                 aria-label={ariaLabel}
@@ -920,13 +1249,22 @@ export default function Chatfic(props: ChatficProps) {
                 ) : null}
             </button>
 
-            {greetingEnabled && !greetingDismissed && !isOpen ? (
-                <div className="cf-canvas-greeting" style={greetingPosStyle}>
+            {greetingEnabled && greetingVisible && !greetingDismissed && !isOpen ? (
+                <div
+                    className="cf-canvas-greeting"
+                    style={greetingPosStyle}
+                    onClick={() => {
+                        setIsOpen(true)
+                    }}
+                >
                     <span>{greetingText}</span>
                     <button
                         type="button"
                         className="cf-canvas-greeting-close"
-                        onClick={() => setGreetingDismissed(true)}
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            setGreetingDismissed(true)
+                        }}
                     >
                         x
                     </button>
@@ -991,10 +1329,10 @@ export default function Chatfic(props: ChatficProps) {
                         <p className="cf-canvas-modal-p">
                             {selectedAgent ? selectedAgent.role : modalSubtitle}
                         </p>
-                        {!selectedAgent && modalResponseTime ? (
-                            <span className="cf-canvas-response-badge">
+                        {!selectedAgent && (modalResponseTime || (scheduleEnabled && isOffline)) ? (
+                            <span className={"cf-canvas-response-badge" + (isOffline ? " offline" : "")}>
                                 <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.2l2.2 1.3"/></svg>
-                                <span>{modalResponseTime}</span>
+                                <span>{isOffline ? (scheduleOfflineText || "Back tomorrow at 9:00 AM") : modalResponseTime}</span>
                             </span>
                         ) : null}
                     </div>
@@ -1022,15 +1360,15 @@ export default function Chatfic(props: ChatficProps) {
                                                 className="cf-canvas-agent-av-img"
                                             />
                                             <span
-                                                className="cf-canvas-agent-av-badge"
-                                                style={agentBadgeBgStyle}
+                                                className={"cf-canvas-agent-av-badge" + (isOffline ? " offline" : "")}
+                                                style={isOffline ? { background: "#6b7280" } : agentBadgeBgStyle}
                                                 dangerouslySetInnerHTML={{ __html: ICONS[agent.channelId] || "" }}
                                             />
                                         </div>
                                         <div className="cf-canvas-agent-info">
                                             <div className="cf-canvas-agent-name">{agent.name}</div>
                                             <div className="cf-canvas-agent-role">
-                                                {agent.role}
+                                                {agent.role}{isOffline ? " • Offline" : ""}
                                             </div>
                                         </div>
                                         <span>
@@ -1112,6 +1450,17 @@ export default function Chatfic(props: ChatficProps) {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     onClick={() => {
+                                        if (enableAnalytics && typeof window !== "undefined") {
+                                            try {
+                                                if (Array.isArray((window as any).dataLayer)) {
+                                                    (window as any).dataLayer.push({ event: "chatfic_click", channel: channel.id, channel_label: channel.label })
+                                                }
+                                                if (typeof (window as any).gtag === "function") {
+                                                    (window as any).gtag("event", "chatfic_click", { channel: channel.id, channel_label: channel.label })
+                                                }
+                                                window.dispatchEvent(new CustomEvent("chatfic_interaction", { detail: { channel: channel.id, channelLabel: channel.label } }))
+                                            } catch {}
+                                        }
                                         if (closeAfterClick) setIsOpen(false)
                                     }}
                                     className="cf-channel-btn"
@@ -1336,11 +1685,17 @@ addPropertyControls(Chatfic, {
     },
     enableSound: {
         type: ControlType.Boolean,
-        title: "Bubble Sound",
+        title: "Notification Sound",
         defaultValue: ${Boolean(config.enableSound)},
-        hidden(props: any) {
-            return !props.greetingEnabled
-        },
+    },
+    greetingDelay: {
+        type: ControlType.Number,
+        title: "Greeting Delay (ms)",
+        min: 0,
+        max: 30000,
+        step: 500,
+        defaultValue: ${Number(config.greetingDelay ?? 2000)},
+        hidden: (props: any) => !props.greetingEnabled,
     },
     whatsapp: {
         type: ControlType.String,
@@ -1472,6 +1827,12 @@ addPropertyControls(Chatfic, {
         placeholder: "https://example.com/chat",
         defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "custom")?.value || "")},
     },
+    customLabel: {
+        type: ControlType.String,
+        title: "Custom Label",
+        placeholder: "Custom",
+        defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "custom")?.label || "Custom")},
+    },
     scrollTriggerEnabled: {
         type: ControlType.Boolean,
         title: "Scroll Trigger",
@@ -1486,10 +1847,26 @@ addPropertyControls(Chatfic, {
         defaultValue: ${Number(config.scrollTriggerPercent ?? 25)},
         hidden: (props: any) => !props.scrollTriggerEnabled,
     },
+    scrollTriggerTarget: {
+        type: ControlType.Enum,
+        title: "Scroll Target",
+        options: ["launcher", "greeting"],
+        optionTitles: ["Reveal Launcher", "Reveal Greeting"],
+        defaultValue: ${JSON.stringify(config.scrollTriggerTarget || "launcher")},
+        hidden: (props: any) => !props.scrollTriggerEnabled,
+    },
     exitIntentEnabled: {
         type: ControlType.Boolean,
         title: "Exit-Intent (Desktop)",
         defaultValue: ${Boolean(config.exitIntentEnabled)},
+    },
+    exitIntentAction: {
+        type: ControlType.Enum,
+        title: "Exit Action",
+        options: ["modal", "greeting"],
+        optionTitles: ["Pop Open Chat", "Show Greeting"],
+        defaultValue: ${JSON.stringify(config.exitIntentAction || "modal")},
+        hidden: (props: any) => !props.exitIntentEnabled,
     },
     scheduleEnabled: {
         type: ControlType.Boolean,
@@ -1508,16 +1885,32 @@ addPropertyControls(Chatfic, {
         defaultValue: ${JSON.stringify(config.scheduleEnd || "18:00")},
         hidden: (props: any) => !props.scheduleEnabled,
     },
+    scheduleOfflineAction: {
+        type: ControlType.Enum,
+        title: "Offline Action",
+        options: ["badge", "hide"],
+        optionTitles: ["Offline Badge", "Hide Widget"],
+        defaultValue: ${JSON.stringify(config.scheduleOfflineAction || "badge")},
+        hidden: (props: any) => !props.scheduleEnabled,
+    },
     scheduleOfflineText: {
         type: ControlType.String,
         title: "Offline Message",
         defaultValue: ${JSON.stringify(config.scheduleOfflineText || "Back tomorrow at 9:00 AM")},
-        hidden: (props: any) => !props.scheduleEnabled,
+        hidden: (props: any) => !props.scheduleEnabled || props.scheduleOfflineAction === "hide",
     },
     targetingEnabled: {
         type: ControlType.Boolean,
         title: "Page Targeting",
         defaultValue: ${Boolean(config.targetingEnabled)},
+    },
+    targetingMode: {
+        type: ControlType.Enum,
+        title: "Targeting Mode",
+        options: ["show", "hide"],
+        optionTitles: ["Show Only on Paths", "Hide on Paths"],
+        defaultValue: ${JSON.stringify(config.targetingMode || "show")},
+        hidden: (props: any) => !props.targetingEnabled,
     },
     targetingRules: {
         type: ControlType.String,
@@ -1558,6 +1951,16 @@ export async function insertCanvasComponent(config: ChatConfig): Promise<{ succe
                     controls: {
                         canvasPreview: "modal",
                         widgetMode: config.widgetMode || "modal",
+                        greetingEnabled: Boolean(config.greetingEnabled),
+                        greetingText: config.greetingText || "Need help? Chat with us.",
+                        enableSound: Boolean(config.enableSound),
+                        showBadge: Boolean(config.showBadge),
+                        badgeText: config.badgeText || "1",
+                        autoOpen: Boolean(config.autoOpen),
+                        scrollTriggerEnabled: Boolean(config.scrollTriggerEnabled),
+                        exitIntentEnabled: Boolean(config.exitIntentEnabled),
+                        scheduleEnabled: Boolean(config.scheduleEnabled),
+                        targetingEnabled: Boolean(config.targetingEnabled),
                     },
                 },
             })) as any

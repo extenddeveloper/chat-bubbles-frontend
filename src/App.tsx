@@ -35,6 +35,11 @@ import {
     IconPluginAnnouncement,
     IconPluginConnect,
     IconVolume,
+    IconChevronDown,
+    IconNoticeInfo,
+    IconNoticeSuccess,
+    IconNoticeWarning,
+    IconNoticeError,
 } from "./ui/icons"
 import { playNotificationChime } from "./core/sound"
 import "./ui/styles.css"
@@ -164,7 +169,20 @@ export function App() {
     const [canvasCount, setCanvasCount] = useState(0)
     const [previewOpen, setPreviewOpen] = useState(true)
     const [previewSelectedAgent, setPreviewSelectedAgent] = useState<ChatAgent | null>(null)
-    const [message, setMessage] = useState<{ type: "info" | "success" | "error"; text: string } | null>(null)
+    const [message, setMessage] = useState<{
+        type: "info" | "success" | "warning" | "error"
+        title?: string
+        text: string
+    } | null>(null)
+
+    // Auto-dismiss notice after 5 seconds
+    useEffect(() => {
+        if (!message) return
+        const timer = setTimeout(() => {
+            setMessage(null)
+        }, 5000)
+        return () => clearTimeout(timer)
+    }, [message])
 
     // Agent creation & configuration state
     const [showAddAgent, setShowAddAgent] = useState(false)
@@ -178,6 +196,14 @@ export function App() {
     const [isUploadingNewAvatar, setIsUploadingNewAvatar] = useState(false)
     const [expandedAgentId, setExpandedAgentId] = useState<string | null>(null)
     const [uploadingAgentId, setUploadingAgentId] = useState<string | null>(null)
+    const [collapsedChannels, setCollapsedChannels] = useState<Record<string, boolean>>({})
+
+    function toggleChannelCollapse(channelId: ChannelId) {
+        setCollapsedChannels((prev) => ({
+            ...prev,
+            [channelId]: !prev[channelId],
+        }))
+    }
 
     // Automatic Canvas Theme Sync + Subscription (Read-only observer)
     useEffect(() => {
@@ -435,6 +461,12 @@ export function App() {
 
     // Render interactive simulation preview block
     function renderPreview() {
+        const hasActiveTriggers = Boolean(
+            config.scheduleEnabled ||
+            config.scrollTriggerEnabled ||
+            config.targetingEnabled
+        )
+
         return (
             <div className="preview-container">
                 <div className="preview-toolbar">
@@ -464,7 +496,60 @@ export function App() {
                     </div>
                 </div>
 
-                <div className="preview-viewport">
+                {hasActiveTriggers && (
+                    <div className="preview-active-triggers-bar">
+                        {config.scheduleEnabled && (
+                            <span
+                                className={`preview-status-tag ${isScheduleOffline ? "is-offline" : "is-online"}`}
+                                title={
+                                    isScheduleOffline
+                                        ? config.scheduleOfflineAction === "hide"
+                                            ? "Outside business hours: Widget hidden on site"
+                                            : `Offline notice badge: ${config.scheduleOfflineText || "Back tomorrow at 9:00 AM"}`
+                                        : "Store currently within business hours"
+                                }
+                            >
+                                {isScheduleOffline
+                                    ? config.scheduleOfflineAction === "hide"
+                                        ? "Closed (Hidden)"
+                                        : "Closed (Offline Badge)"
+                                    : "Open"}
+                            </span>
+                        )}
+                        {config.scrollTriggerEnabled && (
+                            <span
+                                className="preview-status-tag is-trigger"
+                                title={`Reveals after visitor scrolls ${config.scrollTriggerPercent}% (${config.scrollTriggerTarget})`}
+                            >
+                                Scroll {config.scrollTriggerPercent}%
+                            </span>
+                        )}
+                        {config.targetingEnabled && (
+                            <span
+                                className="preview-status-tag is-trigger"
+                                title={`URL targeting filter: ${config.targetingMode} on configured paths`}
+                            >
+                                Path Filter
+                            </span>
+                        )}
+                    </div>
+                )}
+
+                <div
+                    className="preview-viewport"
+                    onMouseLeave={(e) => {
+                        if (!config.exitIntentEnabled) return
+                        const rect = e.currentTarget.getBoundingClientRect()
+                        if (e.clientY <= rect.top + 30) {
+                            if (config.exitIntentAction === "greeting") {
+                                setPreviewOpen(false)
+                                if (config.enableSound) playNotificationChime()
+                            } else {
+                                setPreviewOpen(true)
+                            }
+                        }
+                    }}
+                >
                     <div className="preview-mock-page">
                         <div className="preview-mock-line short" />
                         <div className="preview-mock-line long" />
@@ -583,25 +668,28 @@ export function App() {
 
                         {config.widgetMode === "buttons" && previewOpen ? (
                             <div className={`preview-buttons-list layout-${config.layout}`}>
-                                {enabledChannels.map((channel) => (
-                                    <div key={channel.id} className="preview-channel-button-item">
-                                        {config.showLabels && (
-                                            <span className="preview-channel-label">{channel.label}</span>
-                                        )}
-                                        <div
-                                            className={`preview-channel-btn shape-${config.buttonShape} cf-ch-${channel.id}`}
-                                            title={channel.label}
-                                            onClick={() => {
-                                                setMessage({
-                                                    type: "info",
-                                                    text: `Opened ${channel.label} directly (${channel.value || "Configured"})!`,
-                                                })
-                                            }}
-                                        >
-                                            <span dangerouslySetInnerHTML={{ __html: ICONS[channel.id] || "" }} />
+                                {enabledChannels.map((channel) => {
+                                    const displayLabel = channel.label?.trim() || (channel.id === "custom" ? "Custom" : channel.label)
+                                    return (
+                                        <div key={channel.id} className="preview-channel-button-item">
+                                            {config.showLabels && (
+                                                <span className="preview-channel-label">{displayLabel}</span>
+                                            )}
+                                            <div
+                                                className={`preview-channel-btn shape-${config.buttonShape} cf-ch-${channel.id}`}
+                                                title={displayLabel}
+                                                onClick={() => {
+                                                    setMessage({
+                                                        type: "info",
+                                                        text: `Opened ${displayLabel} directly (${channel.value || "Configured"})!`,
+                                                    })
+                                                }}
+                                            >
+                                                <span dangerouslySetInnerHTML={{ __html: ICONS[channel.id] || "" }} />
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    )
+                                })}
                             </div>
                         ) : null}
 
@@ -732,7 +820,26 @@ export function App() {
             <main className="content">
                 {message && (
                     <div className={"cf-notice " + message.type}>
-                        <span>{message.text}</span>
+                        <div className="cf-notice-icon-col">
+                            {message.type === "info" && <IconNoticeInfo size={18} />}
+                            {message.type === "success" && <IconNoticeSuccess size={18} />}
+                            {message.type === "warning" && <IconNoticeWarning size={18} />}
+                            {message.type === "error" && <IconNoticeError size={18} />}
+                        </div>
+                        <div className="cf-notice-content">
+                            <h5 className="cf-notice-title">
+                                {message.title || (message.type === "success" ? "Success" : message.type === "error" ? "Error" : message.type === "warning" ? "Warning" : "Notice")}
+                            </h5>
+                            <p className="cf-notice-desc">{message.text}</p>
+                        </div>
+                        <button
+                            type="button"
+                            className="cf-notice-close"
+                            onClick={() => setMessage(null)}
+                            aria-label="Dismiss notice"
+                        >
+                            <IconX size={12} />
+                        </button>
                     </div>
                 )}
 
@@ -907,17 +1014,36 @@ export function App() {
                                         {config.channels.map((channel) => {
                                             const meta = channelMeta[channel.id]
                                             const chClass = `cf-ch-${channel.id}`
+                                            const isMinimized = channel.enabled && Boolean(collapsedChannels[channel.id])
                                             return (
-                                                <div key={channel.id} className={"cf-channel-card " + (channel.enabled ? "is-active" : "")}>
+                                                <div
+                                                    key={channel.id}
+                                                    className={
+                                                        "cf-channel-card " +
+                                                        (channel.enabled ? "is-active" : "") +
+                                                        (isMinimized ? " is-minimized" : "")
+                                                    }
+                                                >
                                                     <div className="cf-channel-header">
-                                                        <div className="cf-channel-info">
+                                                        <div
+                                                            className="cf-channel-info"
+                                                            onClick={() => channel.enabled && toggleChannelCollapse(channel.id)}
+                                                            style={{ cursor: channel.enabled ? "pointer" : "default" }}
+                                                            title={
+                                                                channel.enabled
+                                                                    ? isMinimized
+                                                                        ? "Click to expand options"
+                                                                        : "Click to minimize options"
+                                                                    : undefined
+                                                            }
+                                                        >
                                                             <span
                                                                 className={"cf-channel-icon-badge " + chClass}
                                                                 dangerouslySetInnerHTML={{ __html: ICONS[channel.id] || "" }}
                                                             />
                                                             <div className="cf-channel-meta">
                                                                 <div className="cf-channel-meta-title">
-                                                                    {channel.label}
+                                                                    {channel.id === "custom" ? (channel.label.trim() || "Custom") : channel.label}
                                                                     {channel.enabled && channel.value.trim() ? (
                                                                         <span className="cf-channel-pill live">Active</span>
                                                                     ) : null}
@@ -925,41 +1051,116 @@ export function App() {
                                                                 <div className="cf-channel-meta-hint">{meta?.hint || ""}</div>
                                                             </div>
                                                         </div>
-                                                        <Switch
-                                                            checked={channel.enabled}
-                                                            onChange={(enabled) => updateChannel(channel.id, { enabled })}
-                                                        />
+                                                        <div className="cf-channel-actions">
+                                                            {channel.enabled && (
+                                                                <button
+                                                                    type="button"
+                                                                    className={"cf-channel-btn-collapse " + (isMinimized ? "is-collapsed" : "")}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation()
+                                                                        toggleChannelCollapse(channel.id)
+                                                                    }}
+                                                                    title={isMinimized ? "Expand options" : "Minimize options"}
+                                                                    aria-label={isMinimized ? "Expand options" : "Minimize options"}
+                                                                >
+                                                                    <IconChevronDown size={14} />
+                                                                </button>
+                                                            )}
+                                                            <Switch
+                                                                checked={channel.enabled}
+                                                                onChange={(enabled) => {
+                                                                    updateChannel(channel.id, { enabled })
+                                                                    if (enabled) {
+                                                                        setCollapsedChannels((prev) => ({ ...prev, [channel.id]: false }))
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </div>
                                                     </div>
 
-                                                    {channel.enabled && (
+                                                    {channel.enabled && !isMinimized && (
                                                         <div className="cf-channel-body">
-                                                            <div className="cf-field-grid">
-                                                                <Field label={meta?.label || "Handle / ID"}>
-                                                                    <input
-                                                                        className="cf-input"
-                                                                        maxLength={150}
-                                                                        value={channel.value}
-                                                                        onChange={(e) => updateChannel(channel.id, { value: e.target.value })}
-                                                                        placeholder={meta?.placeholder}
-                                                                    />
-                                                                </Field>
-                                                                <Field label="Button Color">
-                                                                    <div className="cf-flex-center-gap-6">
-                                                                        <input
-                                                                            type="color"
-                                                                            className="cf-color-picker"
-                                                                            value={channel.color}
-                                                                            onChange={(e) => updateChannel(channel.id, { color: e.target.value })}
-                                                                        />
-                                                                        <input
-                                                                            className="cf-input cf-input-w80"
-                                                                            maxLength={30}
-                                                                            value={channel.color}
-                                                                            onChange={(e) => updateChannel(channel.id, { color: e.target.value })}
-                                                                        />
+                                                            {channel.id === "custom" ? (
+                                                                <>
+                                                                    <div className="cf-field-grid">
+                                                                        <Field label="Custom URL Link" hint="Any valid web URL or custom protocol.">
+                                                                            <input
+                                                                                className="cf-input"
+                                                                                maxLength={150}
+                                                                                value={channel.value}
+                                                                                onChange={(e) => updateChannel(channel.id, { value: e.target.value })}
+                                                                                placeholder={meta?.placeholder || "https://yourwebsite.com/chat"}
+                                                                            />
+                                                                        </Field>
+                                                                        <Field label="Channel / Button Label" hint="Name displayed on button badge & tooltip.">
+                                                                            <input
+                                                                                className="cf-input"
+                                                                                maxLength={40}
+                                                                                value={channel.label}
+                                                                                onChange={(e) => updateChannel(channel.id, { label: e.target.value })}
+                                                                                placeholder="Custom"
+                                                                            />
+                                                                        </Field>
                                                                     </div>
-                                                                </Field>
-                                                            </div>
+                                                                    <div className="cf-field-grid">
+                                                                        <Field label="Button Color">
+                                                                            <div className="cf-flex-center-gap-6">
+                                                                                <input
+                                                                                    type="color"
+                                                                                    className="cf-color-picker"
+                                                                                    value={channel.color}
+                                                                                    onChange={(e) => updateChannel(channel.id, { color: e.target.value })}
+                                                                                />
+                                                                                <input
+                                                                                    className="cf-input cf-input-w80"
+                                                                                    maxLength={30}
+                                                                                    value={channel.color}
+                                                                                    onChange={(e) => updateChannel(channel.id, { color: e.target.value })}
+                                                                                />
+                                                                            </div>
+                                                                        </Field>
+                                                                        <Field label="Open Link In">
+                                                                            <div className="cf-flex-center-gap-6" style={{ marginTop: "6px" }}>
+                                                                                <Switch
+                                                                                    checked={channel.openInNewTab}
+                                                                                    onChange={(openInNewTab) => updateChannel(channel.id, { openInNewTab })}
+                                                                                />
+                                                                                <span style={{ fontSize: "11px", color: "var(--cf-text-secondary)" }}>
+                                                                                    {channel.openInNewTab ? "New browser tab" : "Same browser tab"}
+                                                                                </span>
+                                                                            </div>
+                                                                        </Field>
+                                                                    </div>
+                                                                </>
+                                                            ) : (
+                                                                <div className="cf-field-grid">
+                                                                    <Field label={meta?.label || "Handle / ID"}>
+                                                                        <input
+                                                                            className="cf-input"
+                                                                            maxLength={150}
+                                                                            value={channel.value}
+                                                                            onChange={(e) => updateChannel(channel.id, { value: e.target.value })}
+                                                                            placeholder={meta?.placeholder}
+                                                                        />
+                                                                    </Field>
+                                                                    <Field label="Button Color">
+                                                                        <div className="cf-flex-center-gap-6">
+                                                                            <input
+                                                                                type="color"
+                                                                                className="cf-color-picker"
+                                                                                value={channel.color}
+                                                                                onChange={(e) => updateChannel(channel.id, { color: e.target.value })}
+                                                                            />
+                                                                            <input
+                                                                                className="cf-input cf-input-w80"
+                                                                                maxLength={30}
+                                                                                value={channel.color}
+                                                                                onChange={(e) => updateChannel(channel.id, { color: e.target.value })}
+                                                                            />
+                                                                        </div>
+                                                                    </Field>
+                                                                </div>
+                                                            )}
                                                             {["whatsapp", "telegram", "sms"].includes(channel.id) && (
                                                                 <Field
                                                                     label="Pre-filled Welcome Message"

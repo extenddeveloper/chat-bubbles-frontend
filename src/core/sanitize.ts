@@ -2,23 +2,22 @@ import type { ChannelId, ChatAgent, ChatChannel, ChatConfig, ModalTheme } from "
 import { AVATAR_PRESETS, MODAL_THEME_GRADIENTS } from "./config"
 
 /**
- * Strips HTML tags, trims whitespace, removes control characters, and truncates to maxLength.
+ * Strips HTML tags, removes dangerous control characters, and truncates to maxLength.
+ * Preserves normal whitespace so users can type spaces in input fields.
  */
 export function sanitizeText(value: unknown, maxLength = 250, fallback = ""): string {
     if (value === null || value === undefined) return fallback
     const str = String(value)
         // Remove HTML tags
         .replace(/<[^>]*>/g, "")
-        // Remove dangerous control characters (excluding standard whitespace)
+        // Remove dangerous control characters (excluding standard whitespace like space and tab)
         .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
-        .trim()
 
-    if (!str) return fallback
     return str.slice(0, maxLength)
 }
 
 /**
- * Strips HTML tags from multiline text, preserves standard newlines, and truncates to maxLength.
+ * Strips HTML tags from multiline text, preserves standard newlines and whitespace, and truncates to maxLength.
  */
 export function sanitizeMultilineText(value: unknown, maxLength = 600, fallback = ""): string {
     if (value === null || value === undefined) return fallback
@@ -27,9 +26,7 @@ export function sanitizeMultilineText(value: unknown, maxLength = 600, fallback 
         .replace(/<[^>]*>/g, "")
         // Remove control characters except newline and tab
         .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
-        .trim()
 
-    if (!str) return fallback
     return str.slice(0, maxLength)
 }
 
@@ -330,7 +327,7 @@ export function sanitizeChannel(channel: ChatChannel): ChatChannel {
     return {
         id: channel.id,
         enabled: Boolean(channel.enabled),
-        label: sanitizeText(channel.label, 40, channel.id),
+        label: sanitizeText(channel.label ?? channel.id, 40, channel.id),
         value: sanitizeText(channel.value, 150, ""),
         message: channel.message ? sanitizeMultilineText(channel.message, 300, "") : undefined,
         color: sanitizeColor(channel.color, "#25D366"),
@@ -343,15 +340,15 @@ export function sanitizeChannel(channel: ChatChannel): ChatChannel {
  */
 export function sanitizeAgent(agent: ChatAgent): ChatAgent {
     const cleanValue = sanitizeText(agent.value, 150, "")
-    const cleanMessage = sanitizeMultilineText(agent.message, 300, "")
+    const cleanMessage = agent.message ? sanitizeMultilineText(agent.message, 300, "") : undefined
     return {
         id: sanitizeText(agent.id, 50, "agent-" + Date.now()),
-        name: sanitizeText(agent.name, 60, "Support Agent"),
-        role: sanitizeText(agent.role, 80, "Customer Support"),
+        name: sanitizeText(agent.name ?? "Support Agent", 60, "Support Agent"),
+        role: sanitizeText(agent.role ?? "Customer Support", 80, "Customer Support"),
         avatar: sanitizeAvatarUrl(agent.avatar),
         channelId: agent.channelId || "whatsapp",
         value: cleanValue || undefined,
-        message: cleanMessage || undefined,
+        message: cleanMessage,
         online: agent.online !== false,
     }
 }
