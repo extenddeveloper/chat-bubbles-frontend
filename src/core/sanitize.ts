@@ -483,6 +483,7 @@ export function sanitizeConfig(config: Partial<ChatConfig>): ChatConfig {
         mobileShowLabels: Boolean(config.mobileShowLabels ?? false),
         mobileOffsetX: sanitizeNumber(config.mobileOffsetX, 0, 200, 16),
         mobileOffsetY: sanitizeNumber(config.mobileOffsetY, 0, 200, 16),
+        mobileCapChannels: Boolean(config.mobileCapChannels ?? true),
         ariaLabel: sanitizeText(config.ariaLabel, 80, "Open chat options"),
         scrollTriggerEnabled: Boolean(config.scrollTriggerEnabled ?? false),
         scrollTriggerPercent: sanitizeNumber(config.scrollTriggerPercent, 1, 100, 25),

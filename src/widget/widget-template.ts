@@ -92,6 +92,7 @@ export function buildWidgetCode(config: ChatConfig): string {
         mobileShowLabels: config.mobileShowLabels,
         mobileOffsetX: config.mobileOffsetX,
         mobileOffsetY: config.mobileOffsetY,
+        mobileCapChannels: config.mobileCapChannels ?? true,
         ariaLabel: config.ariaLabel,
         enableAnalytics: config.enableAnalytics !== false,
         scrollTriggerEnabled: Boolean(config.scrollTriggerEnabled),
@@ -212,6 +213,56 @@ export function buildWidgetCode(config: ChatConfig): string {
     #\${ROOT_ID}.left .scb-item{flex-direction:row}
     #\${ROOT_ID} .scb-label{max-width:190px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:7px 10px;border-radius:9px;background:\${SETTINGS.labelBackground};color:\${SETTINGS.labelColor};font-size:12px;font-weight:600;box-shadow:0 7px 20px rgba(0,0,0,.13);opacity:0;transform:translateX(6px);transition:opacity .18s ease,transform .18s ease}
     #\${ROOT_ID}.open .scb-item:hover .scb-label,#\${ROOT_ID}.open .scb-item:focus-within .scb-label{opacity:1;transform:none}
+
+    /* Mobile Layout Constraint & More Expander */
+    @media (max-width: 640px) {
+      #\${ROOT_ID} .scb-list {
+        max-height: calc(100vh - 130px);
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        padding-right: 4px;
+        scrollbar-width: thin;
+      }
+      #\${ROOT_ID} .scb-list::-webkit-scrollbar { width: 4px; }
+      #\${ROOT_ID} .scb-list::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 4px; }
+      #\${ROOT_ID} .scb-list:not(.mobile-expanded) .scb-item.scb-overflow-item {
+        display: none !important;
+      }
+      #\${ROOT_ID} .scb-more-item {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        pointer-events: auto;
+      }
+      #\${ROOT_ID} .scb-more-button {
+        width: \${SETTINGS.buttonSize}px;
+        height: \${SETTINGS.buttonSize}px;
+        background: #374151;
+        color: #ffffff;
+        border: 0;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 700;
+        box-shadow: \${SETTINGS.shadow};
+        transition: transform .18s ease, background .18s ease;
+      }
+      #\${ROOT_ID} .scb-more-button:hover {
+        transform: scale(1.06);
+        background: #1f2937;
+      }
+      #\${ROOT_ID} .scb-more-button.is-expanded {
+        background: \${SETTINGS.buttonColor};
+      }
+    }
+    @media (min-width: 641px) {
+      #\${ROOT_ID} .scb-more-item {
+        display: none !important;
+      }
+    }
 
     /* Live Chat Modal Card */
     #\${ROOT_ID} .scb-modal{width:360px;max-width:calc(100vw - 32px);max-height:calc(100vh - 110px);background:#ffffff;border-radius:24px;box-shadow:0 22px 55px rgba(0,0,0,.22),0 8px 20px rgba(0,0,0,.08);overflow:hidden;display:flex;flex-direction:column;pointer-events:none;opacity:0;visibility:hidden;transform:translateY(16px) scale(.96);transition:opacity .25s cubic-bezier(.16,1,.3,1),transform .25s cubic-bezier(.16,1,.3,1),visibility .25s}
@@ -568,8 +619,11 @@ export function buildWidgetCode(config: ChatConfig): string {
     } else {
       // 2. Classic Icon Buttons Mode
       var list = create("div","scb-list");
+      var mobileExpanded = false;
+      var hasOverflow = CHANNELS.length > 4 && (SETTINGS.mobileCapChannels !== false);
+
       CHANNELS.forEach(function(channel,index){
-        var item = create("div","scb-item");
+        var item = create("div","scb-item" + (hasOverflow && index >= 4 ? " scb-overflow-item" : ""));
         item.style.setProperty("--scb-color", channel.color || "#111827");
         var label = create("span","scb-label");
         label.textContent = SETTINGS.showChannelNames ? channel.label : "";
@@ -597,6 +651,42 @@ export function buildWidgetCode(config: ChatConfig): string {
         }
         list.appendChild(item);
       });
+
+      if(hasOverflow){
+        var moreItem = create("div","scb-more-item");
+        var moreLabel = create("span","scb-label");
+        moreLabel.textContent = "+" + (CHANNELS.length - 4) + " More";
+        if(!SETTINGS.showLabels) moreLabel.style.display = "none";
+
+        var moreBtn = create("button","scb-more-button " + SETTINGS.buttonShape);
+        moreBtn.type = "button";
+        moreBtn.setAttribute("aria-label", "Show more channels");
+        moreBtn.textContent = "+" + (CHANNELS.length - 4);
+        moreBtn.onclick = function(e){
+          e.stopPropagation();
+          mobileExpanded = !mobileExpanded;
+          if(mobileExpanded){
+            list.classList.add("mobile-expanded");
+            moreBtn.classList.add("is-expanded");
+            moreBtn.textContent = "−";
+            moreLabel.textContent = "Show Less";
+          } else {
+            list.classList.remove("mobile-expanded");
+            moreBtn.classList.remove("is-expanded");
+            moreBtn.textContent = "+" + (CHANNELS.length - 4);
+            moreLabel.textContent = "+" + (CHANNELS.length - 4) + " More";
+          }
+        };
+
+        if(root.classList.contains("left")){
+          moreItem.appendChild(moreBtn);
+          if(SETTINGS.showLabels) moreItem.appendChild(moreLabel);
+        } else {
+          if(SETTINGS.showLabels) moreItem.appendChild(moreLabel);
+          moreItem.appendChild(moreBtn);
+        }
+        list.appendChild(moreItem);
+      }
       root.appendChild(list);
     }
 

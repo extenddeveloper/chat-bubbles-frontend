@@ -97,6 +97,7 @@ export interface ChatConfig {
     mobileShowLabels: boolean
     mobileOffsetX: number
     mobileOffsetY: number
+    mobileCapChannels?: boolean
     ariaLabel: string
     // Behavioral Triggers & Smart Display
     scrollTriggerEnabled?: boolean

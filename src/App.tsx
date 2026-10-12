@@ -167,6 +167,7 @@ export function App() {
     const [canvasCount, setCanvasCount] = useState(0)
     const [previewOpen, setPreviewOpen] = useState(true)
     const [previewSelectedAgent, setPreviewSelectedAgent] = useState<ChatAgent | null>(null)
+    const [previewMobileExpanded, setPreviewMobileExpanded] = useState(false)
     const [message, setMessage] = useState<{
         type: "info" | "success" | "warning" | "error"
         title?: string
@@ -281,6 +282,14 @@ export function App() {
         () => config.channels.filter((channel) => channel.enabled && channel.value.trim()),
         [config.channels],
     )
+
+    const previewChannels = useMemo(() => {
+        const active = config.channels.filter((channel) => channel.enabled && channel.value.trim())
+        if (active.length > 0) return active
+        const justEnabled = config.channels.filter((channel) => channel.enabled)
+        if (justEnabled.length > 0) return justEnabled
+        return config.channels.slice(0, 6)
+    }, [config.channels])
 
     const resolvedGradientClass = useMemo(() => {
         const key = config.modalTheme || "whatsapp"
@@ -676,8 +685,11 @@ export function App() {
 
                         {config.widgetMode === "buttons" && previewOpen ? (
                             <div className={`preview-buttons-list layout-${config.layout}`}>
-                                {enabledChannels.map((channel) => {
+                                {previewChannels.map((channel, idx) => {
                                     const displayLabel = channel.label?.trim() || (channel.id === "custom" ? "Custom" : channel.label)
+                                    const isCapped = Boolean(config.mobileCapChannels ?? true) && previewChannels.length > 4 && !previewMobileExpanded && idx >= 4
+                                    if (isCapped) return null
+
                                     return (
                                         <div key={channel.id} className="preview-channel-button-item">
                                             {config.showLabels && (
@@ -698,6 +710,24 @@ export function App() {
                                         </div>
                                     )
                                 })}
+
+                                {Boolean(config.mobileCapChannels ?? true) && previewChannels.length > 4 && (
+                                    <div className="preview-channel-button-item">
+                                        {config.showLabels && (
+                                            <span className="preview-channel-label">
+                                                {previewMobileExpanded ? "Show Less" : `+${previewChannels.length - 4} More`}
+                                            </span>
+                                        )}
+                                        <button
+                                            type="button"
+                                            className={`preview-more-btn shape-${config.buttonShape} ${previewMobileExpanded ? "is-expanded" : ""}`}
+                                            title={previewMobileExpanded ? "Show Less" : `View ${previewChannels.length - 4} more channels`}
+                                            onClick={() => setPreviewMobileExpanded(!previewMobileExpanded)}
+                                        >
+                                            {previewMobileExpanded ? "−" : `+${previewChannels.length - 4}`}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         ) : null}
 
@@ -717,11 +747,18 @@ export function App() {
 
                         <button
                             type="button"
-                            className={`preview-main-btn ${launcherShapeClass} ${launcherSizeClass}`}
+                            className={`preview-main-btn ${launcherShapeClass} ${launcherSizeClass} ${resolvedGradientClass}`}
                             onClick={() => setPreviewOpen(!previewOpen)}
+                            aria-label="Toggle preview"
                         >
-                            <span dangerouslySetInnerHTML={{ __html: LAUNCHER_ICONS[config.launcherIcon || "chat"] || LAUNCHER_ICONS.chat }} />
-                            {config.showBadge && (
+                            <span
+                                dangerouslySetInnerHTML={{
+                                    __html: previewOpen
+                                        ? '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>'
+                                        : LAUNCHER_ICONS[config.launcherIcon || "chat"] || LAUNCHER_ICONS.chat,
+                                }}
+                            />
+                            {config.showBadge && !previewOpen && (
                                 <span className="preview-badge-pill">{config.badgeText || "1"}</span>
                             )}
                         </button>
@@ -1844,6 +1881,21 @@ export function App() {
                                                         onChange={(e) => updateConfig({ mobileOffsetY: Number(e.target.value) || 0 })}
                                                     />
                                                 </Field>
+                                            </div>
+
+                                            <div className="cf-flex-between">
+                                                <div className="cf-setting-info">
+                                                    <div className="cf-text-sm-semibold">
+                                                        Mobile Layout Constraint (Cap 4+)
+                                                    </div>
+                                                    <div className="cf-text-xs-secondary">
+                                                        When 5+ channels are enabled, caps visible mobile buttons (&lt;640px) to the top 4 channels with an expandable '+ More' button to prevent screen clutter.
+                                                    </div>
+                                                </div>
+                                                <Switch
+                                                    checked={config.mobileCapChannels ?? true}
+                                                    onChange={(mobileCapChannels) => updateConfig({ mobileCapChannels })}
+                                                />
                                             </div>
 
                                             <Field label="Accessibility ARIA Label" hint="Screen reader text describing the floating launcher button">

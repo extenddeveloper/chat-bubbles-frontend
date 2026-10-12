@@ -1644,6 +1644,12 @@ button.preview-status-tag.is-clickable:hover {
     transition: transform 0.15s ease !important;
     position: relative !important;
     color: #ffffff !important;
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
 }
 
 .preview-main-btn:hover {
@@ -1651,9 +1657,44 @@ button.preview-status-tag.is-clickable:hover {
 }
 
 .preview-main-btn svg {
-    width: 24px !important;
-    height: 24px !important;
-    fill: currentColor !important;
+    width: 22px !important;
+    height: 22px !important;
+    display: block !important;
+}
+
+.preview-main-btn.size-46 {
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
+    min-height: 42px !important;
+}
+
+.preview-main-btn.size-56 {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+}
+
+.preview-main-btn.size-64 {
+    width: 54px !important;
+    height: 54px !important;
+    min-width: 54px !important;
+    min-height: 54px !important;
+}
+
+.preview-main-btn.shape-circle {
+    border-radius: 50% !important;
+}
+
+.preview-main-btn.shape-rounded {
+    border-radius: 14px !important;
+}
+
+.preview-main-btn.shape-pill {
+    border-radius: 999px !important;
+    width: auto !important;
+    padding: 0 18px !important;
 }
 
 .preview-badge-pill {
@@ -1969,10 +2010,24 @@ p.preview-modal-subtitle {
     gap: 8px;
     z-index: 100;
     margin-bottom: 8px;
+    max-height: 280px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 4px;
+    scrollbar-width: thin;
+}
+
+.preview-buttons-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.preview-buttons-list::-webkit-scrollbar-thumb {
+    background: rgba(150, 150, 150, 0.35);
+    border-radius: 4px;
 }
 
 .preview-buttons-list.layout-stack {
-    flex-direction: column;
+    flex-direction: column-reverse;
     align-items: flex-end;
 }
 
@@ -1991,7 +2046,48 @@ p.preview-modal-subtitle {
 .preview-channel-button-item {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     gap: 6px;
+    width: 100%;
+}
+
+.preview-channel-button-item.is-overflow-hidden {
+    display: none !important;
+}
+
+.preview-more-btn {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+    max-width: 36px !important;
+    max-height: 36px !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+    background: #374151;
+    color: #ffffff !important;
+    border: none !important;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+    font-size: 11px;
+    font-weight: 700;
+    transition: transform 0.15s ease, background 0.15s ease;
+    line-height: 1;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.preview-more-btn:hover {
+    transform: scale(1.08);
+    background: #1f2937;
+}
+
+.preview-more-btn.is-expanded {
+    background: #5271ff;
+    color: #ffffff;
 }
 
 .preview-channel-label {
@@ -2011,12 +2107,23 @@ p.preview-modal-subtitle {
 .preview-channel-btn:visited,
 .preview-channel-btn:hover,
 .preview-channel-btn:active {
-    display: grid;
-    place-items: center;
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+    max-width: 36px !important;
+    max-height: 36px !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
     color: #ffffff !important;
     cursor: pointer;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
     transition: transform 0.15s ease;
+    padding: 0 !important;
+    margin: 0 !important;
 }
 
 .preview-channel-btn:hover {
@@ -2024,10 +2131,10 @@ p.preview-modal-subtitle {
 }
 
 .preview-channel-btn svg {
-    width: 20px !important;
-    height: 20px !important;
-    max-width: 20px !important;
-    max-height: 20px !important;
+    width: 18px !important;
+    height: 18px !important;
+    max-width: 18px !important;
+    max-height: 18px !important;
     display: block !important;
     fill: #ffffff !important;
     color: #ffffff !important;
@@ -2038,17 +2145,22 @@ p.preview-modal-subtitle {
     fill: #ffffff !important;
 }
 
-.preview-channel-btn.shape-circle {
-    border-radius: 50%;
+.preview-channel-btn.shape-circle,
+.preview-more-btn.shape-circle {
+    border-radius: 50% !important;
 }
 
-.preview-channel-btn.shape-rounded {
-    border-radius: 12px;
+.preview-channel-btn.shape-rounded,
+.preview-more-btn.shape-rounded {
+    border-radius: 10px !important;
 }
 
-.preview-channel-btn.shape-pill {
-    border-radius: 999px;
-    padding: 0 12px;
+.preview-channel-btn.shape-pill,
+.preview-more-btn.shape-pill {
+    border-radius: 999px !important;
+    width: auto !important;
+    min-width: 36px !important;
+    padding: 0 10px !important;
 }
 
 /* ==========================================================================

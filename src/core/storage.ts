@@ -71,6 +71,7 @@ function compactConfig(config: ChatConfig): any {
         mobileShowLabels: config.mobileShowLabels,
         mobileOffsetX: config.mobileOffsetX,
         mobileOffsetY: config.mobileOffsetY,
+        mobileCapChannels: config.mobileCapChannels,
         closeOnOutsideClick: config.closeOnOutsideClick,
         closeOnEscape: config.closeOnEscape,
         closeAfterClick: config.closeAfterClick,

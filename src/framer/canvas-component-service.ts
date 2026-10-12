@@ -91,6 +91,7 @@ interface ChatficProps {
     mobileShowLabels?: boolean
     mobileOffsetX?: number
     mobileOffsetY?: number
+    mobileCapChannels?: boolean
     closeOnOutsideClick?: boolean
     closeOnEscape?: boolean
     closeAfterClick?: boolean
@@ -251,6 +252,7 @@ export default function Chatfic(props: ChatficProps) {
         mobileShowLabels = ${Boolean(config.mobileShowLabels ?? false)},
         mobileOffsetX = ${Number(config.mobileOffsetX ?? 16)},
         mobileOffsetY = ${Number(config.mobileOffsetY ?? 16)},
+        mobileCapChannels = ${Boolean(config.mobileCapChannels ?? true)},
         closeOnOutsideClick = ${Boolean(config.closeOnOutsideClick ?? true)},
         closeOnEscape = ${Boolean(config.closeOnEscape ?? true)},
         closeAfterClick = ${Boolean(config.closeAfterClick ?? true)},
@@ -309,6 +311,7 @@ export default function Chatfic(props: ChatficProps) {
     const [greetingDismissed, setGreetingDismissed] = React.useState(false)
     const [selectedAgent, setSelectedAgent] = React.useState<any | null>(null)
     const [customMessage, setCustomMessage] = React.useState("")
+    const [mobileExpanded, setMobileExpanded] = React.useState(false)
 
     // Delays normalization (supports milliseconds or seconds)
     const finalGreetingDelay = Number(greetingDelay ?? 2000) > 60 ? Number(greetingDelay ?? 2000) : Number(greetingDelay ?? 2) * 1000
@@ -1230,6 +1233,47 @@ export default function Chatfic(props: ChatficProps) {
                 flex-shrink: 0 !important;
                 overflow: hidden !important;
               }
+
+              @media (max-width: 640px) {
+                .cf-canvas-buttons-container {
+                  max-height: calc(100vh - 130px) !important;
+                  overflow-y: auto !important;
+                  overflow-x: hidden !important;
+                  -webkit-overflow-scrolling: touch !important;
+                  padding-right: 4px !important;
+                  scrollbar-width: thin !important;
+                }
+                .cf-canvas-channel-item.is-overflow-hidden {
+                  display: none !important;
+                }
+                .cf-canvas-more-btn {
+                  width: 44px !important;
+                  height: 44px !important;
+                  display: flex !important;
+                  align-items: center !important;
+                  justify-content: center !important;
+                  background-color: #374151 !important;
+                  color: #ffffff !important;
+                  font-size: 13px !important;
+                  font-weight: 700 !important;
+                  cursor: pointer !important;
+                  border: none !important;
+                  box-shadow: 0 4px 12px rgba(0,0,0,0.18) !important;
+                  transition: transform 0.15s ease, background-color 0.15s ease !important;
+                }
+                .cf-canvas-more-btn:hover {
+                  transform: scale(1.06) !important;
+                  background-color: #1f2937 !important;
+                }
+                .cf-canvas-more-btn.is-expanded {
+                  background-color: #5271ff !important;
+                }
+              }
+              @media (min-width: 641px) {
+                .cf-canvas-more-item {
+                  display: none !important;
+                }
+              }
             \`}</style>
             <button
                 type="button"
@@ -1450,7 +1494,7 @@ export default function Chatfic(props: ChatficProps) {
 
             {isOpen && widgetMode === "buttons" ? (
                 <div className="cf-canvas-buttons-container" style={buttonsContainerStyle}>
-                    {channels.map((channel) => {
+                    {channels.map((channel, idx) => {
                         const channelItemStyle: React.CSSProperties = {
                             flexDirection: isRight ? "row-reverse" : "row",
                         }
@@ -1459,10 +1503,11 @@ export default function Chatfic(props: ChatficProps) {
                             backgroundColor: channel.color,
                             color: "#ffffff",
                         }
+                        const isCapped = Boolean(mobileCapChannels ?? true) && channels.length > 4 && !mobileExpanded && idx >= 4
                         return (
                             <div
                                 key={channel.id}
-                                className="cf-canvas-channel-item"
+                                className={"cf-canvas-channel-item" + (isCapped ? " is-overflow-hidden" : "")}
                                 style={channelItemStyle}
                             >
                                 <a
@@ -1499,6 +1544,41 @@ export default function Chatfic(props: ChatficProps) {
                             </div>
                         )
                     })}
+
+                    {Boolean(mobileCapChannels ?? true) && channels.length > 4 ? (
+                        (() => {
+                            const moreItemStyle: React.CSSProperties = {
+                                flexDirection: isRight ? "row-reverse" : "row",
+                            }
+                            const moreBtnStyle: React.CSSProperties = {
+                                borderRadius: radius,
+                            }
+                            return (
+                                <div
+                                    className="cf-canvas-channel-item cf-canvas-more-item"
+                                    style={moreItemStyle}
+                                >
+                                    <button
+                                        type="button"
+                                        className={"cf-canvas-more-btn" + (mobileExpanded ? " is-expanded" : "")}
+                                        style={moreBtnStyle}
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            setMobileExpanded(!mobileExpanded)
+                                        }}
+                                        aria-label={mobileExpanded ? "Show less channels" : "Show more channels"}
+                                    >
+                                        {mobileExpanded ? "−" : "+" + (channels.length - 4)}
+                                    </button>
+                                    {showLabels ? (
+                                        <span className="cf-canvas-channel-label">
+                                            {mobileExpanded ? "Show Less" : "+" + (channels.length - 4) + " More"}
+                                        </span>
+                                    ) : null}
+                                </div>
+                            )
+                        })()
+                    ) : null}
                 </div>
             ) : null}
         </div>
@@ -1640,6 +1720,14 @@ addPropertyControls(Chatfic, {
         type: ControlType.Boolean,
         title: "Show Labels",
         defaultValue: ${Boolean(config.showLabels)},
+        hidden(props: any) {
+            return props.widgetMode === "modal"
+        },
+    },
+    mobileCapChannels: {
+        type: ControlType.Boolean,
+        title: "Mobile Cap (4+)",
+        defaultValue: ${Boolean(config.mobileCapChannels ?? true)},
         hidden(props: any) {
             return props.widgetMode === "modal"
         },

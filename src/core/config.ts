@@ -116,6 +116,7 @@ export const DEFAULT_CONFIG: ChatConfig = {
     mobileShowLabels: false,
     mobileOffsetX: 16,
     mobileOffsetY: 16,
+    mobileCapChannels: true,
     ariaLabel: "Open chat options",
     scrollTriggerEnabled: false,
     scrollTriggerPercent: 25,
