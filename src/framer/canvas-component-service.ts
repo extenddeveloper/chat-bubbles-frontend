@@ -316,7 +316,7 @@ export default function Chatfic(props: ChatficProps) {
 
     // 1. Operating Hours & Days Schedule Calculation
     const isOffline = React.useMemo(() => {
-        if (!scheduleEnabled) return false
+        if (isCanvas || !scheduleEnabled) return false
         try {
             const now = new Date()
             const curDay = now.getDay()
@@ -335,7 +335,7 @@ export default function Chatfic(props: ChatficProps) {
         } catch {
             return false
         }
-    }, [scheduleEnabled, scheduleDays, scheduleStart, scheduleEnd])
+    }, [isCanvas, scheduleEnabled, scheduleDays, scheduleStart, scheduleEnd])
 
     // 2. Page / URL Targeting Filter (supports path wildcards and clean rule parsing)
     const isTargetingAllowed = React.useMemo(() => {
@@ -1062,6 +1062,7 @@ export default function Chatfic(props: ChatficProps) {
               .cf-canvas-modal-p {
                 margin: 0 !important;
                 font-size: 13px !important;
+                color: #ffffff !important;
                 opacity: 0.92 !important;
                 line-height: 1.4 !important;
               }
@@ -1113,6 +1114,20 @@ export default function Chatfic(props: ChatficProps) {
                 height: 42px !important;
                 border-radius: 50% !important;
                 object-fit: cover !important;
+              }
+              .cf-canvas-agent-name-row {
+                display: flex !important;
+                align-items: center !important;
+                gap: 6px !important;
+              }
+              .cf-canvas-agent-online-dot {
+                width: 7px !important;
+                height: 7px !important;
+                border-radius: 50% !important;
+                background-color: #22c55e !important;
+                box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.25) !important;
+                flex-shrink: 0 !important;
+                display: inline-block !important;
               }
               .cf-canvas-agent-av-badge {
                 position: absolute !important;
@@ -1366,7 +1381,12 @@ export default function Chatfic(props: ChatficProps) {
                                             />
                                         </div>
                                         <div className="cf-canvas-agent-info">
-                                            <div className="cf-canvas-agent-name">{agent.name}</div>
+                                            <div className="cf-canvas-agent-name-row">
+                                                <span className="cf-canvas-agent-name">{agent.name}</span>
+                                                {agent.online !== false && !isOffline ? (
+                                                    <span className="cf-canvas-agent-online-dot" />
+                                                ) : null}
+                                            </div>
                                             <div className="cf-canvas-agent-role">
                                                 {agent.role}{isOffline ? " • Offline" : ""}
                                             </div>

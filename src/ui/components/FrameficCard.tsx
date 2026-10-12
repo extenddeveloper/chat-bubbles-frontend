@@ -1,16 +1,17 @@
 import React from "react"
-import { IconExternalLink } from "../icons"
 
 interface FrameficCardProps {
     name: string
     description: string
-    logoIcon: React.ReactNode
+    logoSrc?: string
+    logoIcon?: React.ReactNode
     marketplaceUrl: string
 }
 
 export function FrameficCard({
     name,
     description,
+    logoSrc,
     logoIcon,
     marketplaceUrl,
 }: FrameficCardProps) {
@@ -19,16 +20,30 @@ export function FrameficCard({
             href={marketplaceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="cf-marketplace-card"
+            className="help-product-card"
             aria-label={`Open ${name} on Framer Marketplace`}
         >
-            <div className="cf-marketplace-card-logo">{logoIcon}</div>
-            <div className="cf-marketplace-card-info">
-                <h4 className="cf-marketplace-card-name">{name}</h4>
-                <p className="cf-marketplace-card-desc">{description}</p>
+            <div className="product-icon">
+                {logoSrc ? (
+                    <img src={logoSrc} alt={name} className="promo-logo" />
+                ) : (
+                    logoIcon
+                )}
             </div>
-            <div className="cf-marketplace-card-open">
-                <IconExternalLink size={14} />
+            <div className="product-info">
+                <h5>{name}</h5>
+                <p>{description}</p>
+            </div>
+            <div className="product-arrow" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M7 17L17 7M17 7H7M17 7V17"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    />
+                </svg>
             </div>
         </a>
     )

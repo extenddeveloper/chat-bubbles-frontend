@@ -19,9 +19,9 @@ body,
     --cf-text-tertiary: #71717a;
     --cf-border: rgba(255, 255, 255, 0.1);
     --cf-border-hover: rgba(255, 255, 255, 0.2);
-    --cf-tint: #0099ff;
-    --cf-tint-dark: #0080dd;
-    --cf-tint-subtle: rgba(0, 153, 255, 0.15);
+    --cf-tint: #5271ff;
+    --cf-tint-dark: #3e67eb;
+    --cf-tint-subtle: rgba(82, 113, 255, 0.15);
     --cf-danger: #ef4444;
     --cf-danger-subtle: rgba(239, 68, 68, 0.15);
     --cf-success: #22c55e;
@@ -33,6 +33,43 @@ body,
     --cf-preview-bg: linear-gradient(135deg, #161618, #0e0e10);
     --cf-preview-grid: rgba(255, 255, 255, 0.04);
     --cf-preview-mock: rgba(255, 255, 255, 0.05);
+
+    /* Framefic & BEAF Style Guide Tokens */
+    --Secondary-Default: #5271ff;
+    --secondary-default: #5271ff;
+    --beaf-color-1: #3e67eb;
+    --beaf-surface: #201f1f;
+    --beaf-surface-2: #242323;
+    --beaf-surface-3: #323131;
+    --beaf-surface-border: #535151;
+    --beaf-heading: #ffffff;
+    --beaf-text-muted: #bfbfbf;
+    --beaf-text-soft: #adb1b6;
+    --beaf-input-text: #ffffff;
+    --beaf-shadow: rgba(0, 0, 0, 0.28);
+    --beaf-help-card-bg: linear-gradient(180deg, #323131 0%, #242323 100%);
+    --beaf-help-card-border: #2D3339;
+    --beaf-help-card-shadow: 0 2px 4px 0 rgba(90, 90, 90, 0.21) inset, 0 2px 4px 0 rgba(0, 0, 0, 0.28);
+    --beaf-help-icon-bg: #222121;
+    --beaf-help-icon-border: #1b1f22;
+    --beaf-help-icon-color: #5271FF;
+    --beaf-help-arrow-bg: transparent;
+    --beaf-help-arrow-border: #1b1f22;
+
+    /* Interactive Preview Modal Tokens (Dark Mode) */
+    --cf-preview-modal-bg: #1c202a;
+    --cf-preview-modal-border: rgba(255, 255, 255, 0.1);
+    --cf-preview-agent-bg: #232836;
+    --cf-preview-agent-border: rgba(255, 255, 255, 0.08);
+    --cf-preview-agent-hover-bg: #2b3142;
+    --cf-preview-agent-hover-border: rgba(255, 255, 255, 0.16);
+    --cf-preview-text-primary: #ffffff;
+    --cf-preview-text-secondary: #9ca3af;
+    --cf-preview-arrow-color: #6b7280;
+    --cf-preview-bubble-bg: #262c3a;
+    --cf-preview-bubble-border: rgba(255, 255, 255, 0.1);
+    --cf-preview-bubble-text: #f3f4f6;
+    --cf-preview-badge-border: #1c202a;
 }
 
 /* Light Theme Variables - Active when canvas is light or user toggles light */
@@ -49,9 +86,9 @@ body,
     --cf-text-tertiary: #8e8e93;
     --cf-border: rgba(0, 0, 0, 0.1);
     --cf-border-hover: rgba(0, 0, 0, 0.2);
-    --cf-tint: #0099ff;
-    --cf-tint-dark: #0080dd;
-    --cf-tint-subtle: rgba(0, 153, 255, 0.08);
+    --cf-tint: #5271ff;
+    --cf-tint-dark: #3e67eb;
+    --cf-tint-subtle: rgba(82, 113, 255, 0.08);
     --cf-danger: #dc2626;
     --cf-danger-subtle: rgba(239, 68, 68, 0.08);
     --cf-success: #16a34a;
@@ -60,6 +97,43 @@ body,
     --cf-preview-bg: linear-gradient(135deg, #f4f5f7, #e8eaee);
     --cf-preview-grid: rgba(0, 0, 0, 0.04);
     --cf-preview-mock: rgba(255, 255, 255, 0.9);
+
+    /* Framefic & BEAF Style Guide Tokens (Light Mode) */
+    --Secondary-Default: #5271ff;
+    --secondary-default: #5271ff;
+    --beaf-color-1: #3e67eb;
+    --beaf-surface: #ffffff;
+    --beaf-surface-2: #f3f6fb;
+    --beaf-surface-3: #e4e9f2;
+    --beaf-surface-border: #cfd7e3;
+    --beaf-heading: #101828;
+    --beaf-text-muted: #5f6b7a;
+    --beaf-text-soft: #6b7280;
+    --beaf-input-text: #101828;
+    --beaf-shadow: rgba(15, 23, 42, 0.12);
+    --beaf-help-card-bg: linear-gradient(180deg, #ffffff 0%, #f3f6fb 100%);
+    --beaf-help-card-border: #d5ddea;
+    --beaf-help-card-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+    --beaf-help-icon-bg: #ffffff;
+    --beaf-help-icon-border: #dbe3ef;
+    --beaf-help-icon-color: #5271FF;
+    --beaf-help-arrow-bg: #ffffff;
+    --beaf-help-arrow-border: #dbe3ef;
+
+    /* Interactive Preview Modal Tokens (Light Mode) */
+    --cf-preview-modal-bg: #ffffff;
+    --cf-preview-modal-border: rgba(0, 0, 0, 0.08);
+    --cf-preview-agent-bg: #f9fafb;
+    --cf-preview-agent-border: #f3f4f6;
+    --cf-preview-agent-hover-bg: #f3f4f6;
+    --cf-preview-agent-hover-border: #e5e7eb;
+    --cf-preview-text-primary: #111827;
+    --cf-preview-text-secondary: #6b7280;
+    --cf-preview-arrow-color: #9ca3af;
+    --cf-preview-bubble-bg: #f3f4f6;
+    --cf-preview-bubble-border: #e5e7eb;
+    --cf-preview-bubble-text: #1f2937;
+    --cf-preview-badge-border: #ffffff;
 }
 
 * {
@@ -393,9 +467,9 @@ textarea.cf-textarea {
     all: unset !important;
     box-sizing: border-box !important;
     width: 100% !important;
-    background-color: var(--cf-control) !important;
-    color: var(--cf-text) !important;
-    border: 1px solid var(--cf-border) !important;
+    background-color: var(--beaf-surface, #201f1f) !important;
+    color: var(--beaf-input-text, #ffffff) !important;
+    border: 1px solid var(--beaf-surface-border, #535151) !important;
     border-radius: var(--cf-radius-sm) !important;
     font-family: inherit !important;
     font-size: 12px !important;
@@ -423,8 +497,8 @@ select.cf-select {
 }
 
 select option {
-    background-color: var(--cf-bg-secondary) !important;
-    color: var(--cf-text) !important;
+    background-color: var(--beaf-surface-2, #242323) !important;
+    color: var(--beaf-input-text, #ffffff) !important;
 }
 
 textarea.cf-input,
@@ -443,13 +517,13 @@ select.cf-input:focus,
 select.cf-select:focus,
 textarea.cf-input:focus,
 textarea.cf-textarea:focus {
-    border-color: #5271ff !important;
+    border-color: var(--Secondary-Default, #5271ff) !important;
     box-shadow: 0 0 0 2px rgba(82, 113, 255, 0.25) !important;
 }
 
 .cf-input::placeholder,
 textarea.cf-input::placeholder {
-    color: var(--cf-text-tertiary) !important;
+    color: var(--beaf-text-muted, #bfbfbf) !important;
 }
 
 /* Color Picker */
@@ -459,10 +533,10 @@ input.cf-color-picker {
     width: 32px !important;
     height: 32px !important;
     border-radius: var(--cf-radius-sm) !important;
-    border: 1px solid var(--cf-border) !important;
+    border: 1px solid var(--beaf-surface-border, #535151) !important;
     cursor: pointer !important;
     padding: 2px !important;
-    background: var(--cf-control) !important;
+    background: var(--beaf-surface, #201f1f) !important;
     flex-shrink: 0 !important;
 }
 
@@ -483,8 +557,8 @@ button.cf-switch {
     align-items: center !important;
     width: 36px !important;
     height: 20px !important;
-    background: var(--cf-control) !important;
-    border: 1px solid var(--cf-border) !important;
+    background: var(--beaf-surface, #201f1f) !important;
+    border: 1px solid var(--beaf-surface-border, #535151) !important;
     border-radius: 999px !important;
     padding: 2px !important;
     cursor: pointer !important;
@@ -493,8 +567,8 @@ button.cf-switch {
 }
 
 button.cf-switch.is-on {
-    background: var(--cf-tint) !important;
-    border-color: var(--cf-tint) !important;
+    background: var(--Secondary-Default, #5271ff) !important;
+    border-color: var(--Secondary-Default, #5271ff) !important;
 }
 
 button.cf-switch .cf-switch-thumb {
@@ -510,6 +584,20 @@ button.cf-switch .cf-switch-thumb {
 
 button.cf-switch.is-on .cf-switch-thumb {
     transform: translateX(16px) !important;
+}
+
+/* Utility classes for form layout and text */
+.cf-channel-info-clickable {
+    cursor: pointer;
+}
+
+.cf-mt-6 {
+    margin-top: 6px;
+}
+
+.cf-subtext-sm {
+    font-size: 11px;
+    color: var(--cf-text-secondary);
 }
 
 /* Channel Cards in Channels Tab */
@@ -1585,10 +1673,10 @@ button.preview-status-tag.is-clickable:hover {
 .preview-modal-card {
     width: 270px;
     max-width: 90%;
-    background: var(--cf-bg);
-    border-radius: 16px;
-    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
-    border: 1px solid var(--cf-border);
+    background: var(--cf-preview-modal-bg);
+    border-radius: 20px;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
+    border: 1px solid var(--cf-preview-modal-border);
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -1616,6 +1704,7 @@ button.preview-status-tag.is-clickable:hover {
     font-weight: 700;
     margin: 0;
     line-height: 1.2;
+    color: #ffffff !important;
 }
 
 .preview-modal-close-btn {
@@ -1633,24 +1722,29 @@ button.preview-status-tag.is-clickable:hover {
     font-size: 11px !important;
 }
 
-.preview-modal-subtitle {
-    font-size: 11px;
-    opacity: 0.9;
-    margin: 0;
-    line-height: 1.3;
+.preview-modal-subtitle,
+.preview-modal-header p,
+p.preview-modal-subtitle {
+    font-size: 11px !important;
+    color: #ffffff !important;
+    opacity: 0.92 !important;
+    margin: 0 !important;
+    line-height: 1.3 !important;
 }
 
 .preview-modal-badge {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    background: rgba(0, 0, 0, 0.2);
-    padding: 2px 8px;
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+    padding: 3px 9px;
     border-radius: 999px;
     font-size: 10px;
     font-weight: 600;
     width: fit-content;
-    margin-top: 2px;
+    margin-top: 3px;
+    backdrop-filter: blur(4px);
 }
 
 .preview-modal-body {
@@ -1658,8 +1752,9 @@ button.preview-status-tag.is-clickable:hover {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    max-height: 240px;
+    max-height: 250px;
     overflow-y: auto;
+    background: var(--cf-preview-modal-bg);
 }
 
 .preview-agent-card {
@@ -1667,23 +1762,23 @@ button.preview-status-tag.is-clickable:hover {
     align-items: center;
     gap: 10px;
     padding: 8px 10px;
-    border-radius: 10px;
-    background: var(--cf-bg-secondary);
-    border: 1px solid var(--cf-border);
+    border-radius: 12px;
+    background: var(--cf-preview-agent-bg);
+    border: 1px solid var(--cf-preview-agent-border);
     cursor: pointer;
     transition: all 0.15s ease;
 }
 
 .preview-agent-card:hover {
-    border-color: var(--cf-border-hover);
-    background: var(--cf-control-hover);
+    border-color: var(--cf-preview-agent-hover-border);
+    background: var(--cf-preview-agent-hover-bg);
     transform: translateY(-1px);
 }
 
 .preview-agent-avatar-wrap {
     position: relative;
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     flex-shrink: 0;
 }
 
@@ -1692,17 +1787,37 @@ button.preview-status-tag.is-clickable:hover {
     height: 100%;
     border-radius: 50%;
     object-fit: cover;
+    display: block;
 }
 
-.preview-agent-online-dot {
+.preview-agent-av-badge {
     position: absolute;
-    bottom: -1px;
-    right: -1px;
-    width: 8px;
-    height: 8px;
+    bottom: -2px;
+    right: -2px;
+    width: 15px;
+    height: 15px;
     border-radius: 50%;
-    background: #22c55e;
-    border: 1.5px solid var(--cf-bg);
+    display: grid;
+    place-items: center;
+    border: 1.5px solid var(--cf-preview-badge-border);
+    color: #ffffff;
+    z-index: 1;
+}
+
+.preview-agent-av-badge svg {
+    width: 8.5px;
+    height: 8.5px;
+    display: block;
+    fill: #ffffff !important;
+    color: #ffffff !important;
+}
+
+.preview-agent-av-badge svg path {
+    fill: #ffffff !important;
+}
+
+.preview-agent-av-badge.offline {
+    background: #6b7280 !important;
 }
 
 .preview-agent-details {
@@ -1710,40 +1825,52 @@ button.preview-status-tag.is-clickable:hover {
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 1px;
+    gap: 2px;
+}
+
+.preview-agent-name-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .preview-agent-name {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
-    color: var(--cf-text);
+    color: var(--cf-preview-text-primary);
+    line-height: 1.2;
+}
+
+.preview-agent-online-dot {
+    width: 6.5px;
+    height: 6.5px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.25);
+    flex-shrink: 0;
+    display: inline-block;
+}
+
+.preview-agent-offline-dot {
+    width: 6.5px;
+    height: 6.5px;
+    border-radius: 50%;
+    background: #9ca3af;
+    flex-shrink: 0;
+    display: inline-block;
 }
 
 .preview-agent-role {
     font-size: 10px;
-    color: var(--cf-text-secondary);
+    color: var(--cf-preview-text-secondary);
 }
 
-.preview-agent-channel-badge {
-    width: 22px;
-    height: 22px;
-    border-radius: 6px;
-    display: grid;
-    place-items: center;
-    color: #ffffff;
+.preview-agent-arrow {
+    display: flex;
+    align-items: center;
+    color: var(--cf-preview-arrow-color);
     flex-shrink: 0;
-}
-
-.preview-agent-channel-badge svg {
-    width: 12px;
-    height: 12px;
-    display: block;
-    fill: #ffffff !important;
-    color: #ffffff !important;
-}
-
-.preview-agent-channel-badge svg path {
-    fill: #ffffff !important;
+    margin-left: auto;
 }
 
 /* Chat view inside preview modal */
@@ -1766,15 +1893,15 @@ button.preview-status-tag.is-clickable:hover {
 }
 
 .preview-chat-bubble {
-    background: var(--cf-bg-secondary);
-    border: 1px solid var(--cf-border);
+    background: var(--cf-preview-bubble-bg);
+    border: 1px solid var(--cf-preview-bubble-border);
     border-radius: 12px;
     border-top-left-radius: 4px;
     padding: 10px 12px;
     font-size: 11px;
-    color: var(--cf-text);
+    color: var(--cf-preview-bubble-text);
     line-height: 1.4;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
 
 .preview-start-btn {
@@ -2253,13 +2380,16 @@ button.cf-hero-config-item:hover {
 }
 
 /* 5. Help Tiles Row (.cf-help-tile-row) */
+/* 5. Help Tiles Row (.cf-help-tile-row / .help-categories) */
+.help-categories,
 .cf-help-tile-row {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 8px;
-    margin-top: 10px;
+    margin: 10px 0;
 }
 
+.help-card,
 .cf-help-tile {
     all: unset;
     box-sizing: border-box;
@@ -2267,30 +2397,60 @@ button.cf-hero-config-item:hover {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    padding: 10px 8px;
-    background: var(--cf-bg-secondary);
-    border: 1px solid var(--cf-border);
+    padding: 10px 4px;
+    background: var(--beaf-help-card-bg);
+    border: 1px solid var(--beaf-help-card-border);
     border-radius: 10px;
     cursor: pointer;
     text-decoration: none;
-    color: var(--cf-text);
-    transition: all 0.15s ease;
+    color: var(--beaf-heading, #ffffff);
+    transition: all 0.2s ease;
+    box-shadow: var(--beaf-help-card-shadow);
 }
 
+.help-card:hover,
 .cf-help-tile:hover {
-    border-color: var(--cf-tint);
-    background: var(--cf-bg-tertiary);
+    border-color: var(--Secondary-Default, #5271FF);
     transform: translateY(-1px);
 }
 
+.help-card:focus-visible,
+.cf-help-tile:focus-visible {
+    outline: 2px solid #5271FF;
+    outline-offset: 2px;
+}
+
+.help-card-icon,
 .cf-help-tile-icon-box {
-    position: relative;
-    width: 28px;
-    height: 28px;
-    display: grid;
-    place-items: center;
-    color: var(--cf-tint);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--beaf-help-icon-bg);
+    box-shadow: var(--beaf-help-card-shadow);
+    border: 1px solid var(--beaf-help-icon-border);
+    flex-shrink: 0;
+}
+
+.help-card-icon svg,
+.cf-help-tile-icon-box svg {
+    color: var(--beaf-help-icon-color, #5271FF);
+    width: 18px;
+    height: 18px;
+}
+
+.help-card h4,
+.cf-help-tile-label {
+    margin: 0;
+    color: var(--beaf-heading, #ffffff);
+    font-size: 11px;
+    font-weight: 500;
+    font-family: var(--font-sans);
+    text-align: center;
+    white-space: nowrap;
 }
 
 .cf-help-tile-dot {
@@ -2301,14 +2461,6 @@ button.cf-hero-config-item:hover {
     height: 6px;
     border-radius: 50%;
     background: #ef4444;
-}
-
-.cf-help-tile-label {
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--cf-text-secondary);
-    text-align: center;
-    white-space: nowrap;
 }
 
 /* 6. Quick Summary Card & Stats */
@@ -2618,37 +2770,73 @@ button.cf-hero-config-item:hover {
 
 /* 10. Builder Sub-Tabs Navigation */
 .cf-builder-subtabs {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    background: var(--cf-bg-secondary);
-    padding: 3px;
-    border-radius: 9px;
-    margin-bottom: 14px;
-    border: 1px solid var(--cf-border);
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    background: var(--cf-bg-secondary, #1c1c1e) !important;
+    padding: 3px !important;
+    border-radius: 9px !important;
+    margin-bottom: 14px !important;
+    border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.1)) !important;
+    gap: 3px !important;
 }
 
+.app.light .cf-builder-subtabs {
+    background: #f1f3f5 !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+button.cf-builder-subtab,
 .cf-builder-subtab {
-    all: unset;
-    box-sizing: border-box;
-    padding: 6px 4px;
-    font-size: 11.5px;
-    font-weight: 500;
-    text-align: center;
-    border-radius: 6px;
-    color: var(--cf-text-secondary);
-    cursor: pointer;
-    transition: all 0.15s ease;
+    all: unset !important;
+    box-sizing: border-box !important;
+    padding: 7px 12px !important;
+    font-size: 11.5px !important;
+    font-weight: 500 !important;
+    text-align: center !important;
+    border-radius: 6px !important;
+    color: var(--cf-text-secondary, #a1a1aa) !important;
+    background: transparent !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+    user-select: none !important;
+    white-space: nowrap !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
 }
 
+button.cf-builder-subtab:hover,
 .cf-builder-subtab:hover {
-    color: var(--cf-text);
+    color: var(--cf-text, #ffffff) !important;
+    background: rgba(255, 255, 255, 0.04) !important;
 }
 
+button.cf-builder-subtab.active,
 .cf-builder-subtab.active {
-    color: var(--cf-text);
-    background: var(--cf-bg);
-    font-weight: 600;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    color: #ffffff !important;
+    background: var(--cf-control, #252528) !important;
+    font-weight: 600 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+.app.light button.cf-builder-subtab,
+.app.light .cf-builder-subtab {
+    color: #52525b !important;
+    background: transparent !important;
+}
+
+.app.light button.cf-builder-subtab:hover,
+.app.light .cf-builder-subtab:hover {
+    color: #111827 !important;
+    background: rgba(0, 0, 0, 0.04) !important;
+}
+
+.app.light button.cf-builder-subtab.active,
+.app.light .cf-builder-subtab.active {
+    color: #111827 !important;
+    background: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
 }
 
 /* 11. Channel Specific Colors (Zero-Inline-CSS for Channel Badges) */
@@ -2927,12 +3115,12 @@ button.cf-hero-config-item:hover {
 .preview-chat-name {
     font-size: 12px;
     font-weight: 700;
-    color: var(--cf-text);
+    color: var(--cf-preview-text-primary);
 }
 
 .preview-chat-role {
     font-size: 10px;
-    color: var(--cf-text-secondary);
+    color: var(--cf-preview-text-secondary);
 }
 
 .preview-section-title {
@@ -3028,80 +3216,122 @@ button.cf-hero-config-item:hover {
 
 
 /* 16. More from Framefic Section & Cards (Framer Marketplace) */
+.help-section {
+    margin-top: 14px;
+    margin-bottom: 6px;
+}
+
+.help-section-title {
+    margin: 12px 0 10px 0;
+    color: var(--beaf-heading, #ffffff);
+    font-size: 16px;
+    font-weight: 600;
+    font-family: var(--font-sans);
+}
+
+.help-products,
 .cf-marketplace-list {
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
 
+.help-product-card,
 .cf-marketplace-card {
+    background: var(--beaf-help-card-bg);
+    border: 1px solid var(--beaf-help-card-border);
+    border-radius: 10px;
+    padding: 12px;
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px 14px;
-    border-radius: 12px;
-    background: var(--cf-bg-secondary);
-    border: 1px solid var(--cf-border);
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
     text-decoration: none;
-    transition: all 0.18s ease;
+    box-shadow: var(--beaf-help-card-shadow);
     box-sizing: border-box;
 }
 
+.help-product-card:hover,
 .cf-marketplace-card:hover {
-    background: var(--cf-control-hover);
-    border-color: var(--cf-border-hover);
+    border-color: var(--Secondary-Default, #5271FF);
     transform: translateY(-1px);
 }
 
-.cf-marketplace-card-logo {
-    width: 38px;
-    height: 38px;
-    border-radius: 9px;
-    background: linear-gradient(135deg, #3b82f6, #2563eb);
-    color: #ffffff;
-    display: grid;
-    place-items: center;
-    flex-shrink: 0;
-    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+.help-product-card:focus-visible,
+.cf-marketplace-card:focus-visible {
+    outline: 2px solid #5271FF;
+    outline-offset: 2px;
 }
 
+.help-product-card .product-icon,
+.cf-marketplace-card-logo {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.promo-logo {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    box-shadow: var(--beaf-help-card-shadow);
+    display: block;
+    object-fit: cover;
+}
+
+.help-product-card .product-info,
 .cf-marketplace-card-info {
     flex: 1;
     min-width: 0;
 }
 
+.help-product-card .product-info h5,
 .cf-marketplace-card-name {
     margin: 0 0 2px 0;
-    font-size: 12.5px;
+    color: var(--beaf-heading, #ffffff);
+    font-size: 13px;
     font-weight: 600;
-    color: var(--cf-text);
+    font-family: var(--font-sans);
     line-height: 1.3;
 }
 
+.help-product-card .product-info p,
 .cf-marketplace-card-desc {
     margin: 0;
+    color: var(--beaf-text-muted, #bfbfbf);
     font-size: 11px;
-    color: var(--cf-text-secondary);
-    line-height: 1.35;
+    font-family: var(--font-body, var(--font-sans));
+    line-height: 140%;
 }
 
+.help-product-card .product-arrow,
 .cf-marketplace-card-open {
-    width: 30px;
-    height: 30px;
-    border-radius: 7px;
-    background: var(--cf-bg-tertiary);
-    border: 1px solid var(--cf-border);
-    display: grid;
-    place-items: center;
-    color: var(--cf-text-secondary);
+    color: var(--beaf-heading, #ffffff);
     flex-shrink: 0;
-    transition: all 0.15s ease;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+    box-shadow: var(--beaf-help-card-shadow);
+    border-radius: 10px;
+    border: 1px solid var(--beaf-help-arrow-border);
+    background: var(--beaf-help-arrow-bg);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
+.help-product-card .product-arrow svg,
+.cf-marketplace-card-open svg {
+    width: 16px;
+    height: 16px;
+}
+
+.help-product-card:hover .product-arrow,
 .cf-marketplace-card:hover .cf-marketplace-card-open {
-    color: var(--cf-text);
-    background: var(--cf-control);
-    border-color: var(--cf-border-hover);
+    opacity: 1;
 }
 
 .cf-more-framefic-footer-link {
@@ -3345,13 +3575,15 @@ button.cf-btn-test-chime:hover {
 
 .preview-agent-offline-dot {
     position: absolute;
-    bottom: -1px;
+    top: -1px;
     right: -1px;
-    width: 9px;
-    height: 9px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     background: #9ca3af;
-    border: 2px solid #ffffff;
+    border: 1.5px solid #ffffff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    z-index: 2;
 }
 
 /* 17. Shell Geometry Footer */
@@ -3382,6 +3614,10 @@ button.cf-btn-test-chime:hover {
 .cf-shell-version {
     font-size: 10.5px;
     color: var(--cf-text-tertiary);
+}
+
+#framer-environment-error {
+    display: none !important;
 }
 
 

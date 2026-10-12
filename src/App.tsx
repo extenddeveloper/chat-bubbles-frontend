@@ -11,6 +11,7 @@ import { HeroCard } from "./ui/components/HeroCard"
 import { HelpRow } from "./ui/components/HelpRow"
 import { ProfilePage } from "./ui/components/ProfilePage"
 import { FrameficCard } from "./ui/components/FrameficCard"
+import { CustomColorPicker } from "./ui/components/CustomColorPicker"
 import { ICONS, LAUNCHER_ICONS } from "./widget/icons"
 import { sanitizeAgent, sanitizeAvatarUrl, sanitizeChannel, sanitizeMultilineText, sanitizeText } from "./core/sanitize"
 import {
@@ -31,9 +32,6 @@ import {
     IconMoon,
     IconSparkles,
     IconExternalLink,
-    IconPluginSlider,
-    IconPluginAnnouncement,
-    IconPluginConnect,
     IconVolume,
     IconChevronDown,
     IconNoticeInfo,
@@ -575,10 +573,12 @@ export function App() {
                                         {config.modalSubtitle || "Welcome to our live chat! Feel free to ask any questions."}
                                     </p>
                                     <div className={`preview-modal-badge ${isScheduleOffline ? "offline" : ""}`}>
-                                        <span className={`preview-modal-dot ${isScheduleOffline ? "offline" : ""}`} />
-                                        {isScheduleOffline
-                                            ? (config.scheduleOfflineText || "Back tomorrow at 9:00 AM")
-                                            : (config.modalResponseTime || "Typically replies in minutes")}
+                                        <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.2l2.2 1.3"/></svg>
+                                        <span>
+                                            {isScheduleOffline
+                                                ? (config.scheduleOfflineText || "Back tomorrow at 9:00 AM")
+                                                : (config.modalResponseTime || "Typically replies in minutes")}
+                                        </span>
                                     </div>
                                 </div>
 
@@ -629,9 +629,6 @@ export function App() {
                                         </div>
                                     ) : (
                                         <>
-                                            <span className="preview-section-title">
-                                                Support Team
-                                            </span>
                                             {config.agents.map((agent) => {
                                                 const chClass = `cf-ch-${agent.channelId}`
                                                 return (
@@ -643,20 +640,31 @@ export function App() {
                                                     >
                                                         <div className="preview-agent-avatar-wrap">
                                                             <img src={agent.avatar} alt={agent.name} />
-                                                            {agent.online !== false && !isScheduleOffline && <span className="preview-agent-online-dot" />}
-                                                            {isScheduleOffline && <span className="preview-agent-offline-dot" />}
+                                                            <span
+                                                                className={"preview-agent-av-badge " + chClass + (isScheduleOffline ? " offline" : "")}
+                                                                dangerouslySetInnerHTML={{ __html: ICONS[agent.channelId] || "" }}
+                                                            />
                                                         </div>
                                                         <div className="preview-agent-details">
-                                                            <span className="preview-agent-name">{agent.name}</span>
+                                                            <div className="preview-agent-name-row">
+                                                                <span className="preview-agent-name">{agent.name}</span>
+                                                                {agent.online !== false && !isScheduleOffline && (
+                                                                    <span className="preview-agent-online-dot" title="Online" />
+                                                                )}
+                                                                {isScheduleOffline && (
+                                                                    <span className="preview-agent-offline-dot" title="Offline" />
+                                                                )}
+                                                            </div>
                                                             <span className="preview-agent-role">
                                                                 {agent.role}
-                                                                {isScheduleOffline ? " • Offline" : (agent.value ? ` • ${agent.value}` : "")}
+                                                                {isScheduleOffline ? " • Offline" : ""}
                                                             </span>
                                                         </div>
-                                                        <span
-                                                            className={"preview-agent-channel-badge " + chClass}
-                                                            dangerouslySetInnerHTML={{ __html: ICONS[agent.channelId] || "" }}
-                                                        />
+                                                        <span className="preview-agent-arrow">
+                                                            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                <path d="M6 3.5L10.5 8L6 12.5" />
+                                                            </svg>
+                                                        </span>
                                                     </div>
                                                 )
                                             })}
@@ -958,31 +966,29 @@ export function App() {
 
                                 <HelpRow />
 
-                                <Section
-                                    title="More from Framefic"
-                                    description="Discover powerful plugins built specifically for Framer creators."
-                                >
-                                    <div className="cf-marketplace-list">
+                                <div className="help-section">
+                                    <h3 className="help-section-title">More from Framefic</h3>
+                                    <div className="help-products">
                                         <FrameficCard
-                                            name="Before After Image Slider"
-                                            description="Advanced slider features and fully customizable"
-                                            logoIcon={<IconPluginSlider size={20} />}
+                                            name="Before After Images Slider"
+                                            description="Advanced image slider fully customizable and responsive"
+                                            logoSrc="./Favicon.png"
                                             marketplaceUrl="https://www.framer.com/marketplace/plugins/beaf/"
+                                        />
+                                        <FrameficCard
+                                            name="Connectfic"
+                                            description="Connect your framer site with shopify store and components"
+                                            logoSrc="./Connectfic.png"
+                                            marketplaceUrl="https://www.framer.com/marketplace/plugins/connectfic/"
                                         />
                                         <FrameficCard
                                             name="Announcement Bar"
                                             description="Create bars and countdown timers to boost engagement and conversions."
-                                            logoIcon={<IconPluginAnnouncement size={20} />}
-                                            marketplaceUrl="https://www.framer.com/marketplace/plugins/announcement-bar/"
-                                        />
-                                        <FrameficCard
-                                            name="Connectfic"
-                                            description="Seamlessly connect forms, spreadsheets, and databases with Framer."
-                                            logoIcon={<IconPluginConnect size={20} />}
-                                            marketplaceUrl="https://www.framer.com/marketplace/plugins/connectfic/"
+                                            logoSrc="./Crestbar.png"
+                                            marketplaceUrl="https://www.framer.com/community/marketplace/plugins/announcement-bar/"
                                         />
                                     </div>
-                                </Section>
+                                </div>
                             </>
                         )}
 
@@ -1026,9 +1032,8 @@ export function App() {
                                                 >
                                                     <div className="cf-channel-header">
                                                         <div
-                                                            className="cf-channel-info"
+                                                            className={"cf-channel-info" + (channel.enabled ? " cf-channel-info-clickable" : "")}
                                                             onClick={() => channel.enabled && toggleChannelCollapse(channel.id)}
-                                                            style={{ cursor: channel.enabled ? "pointer" : "default" }}
                                                             title={
                                                                 channel.enabled
                                                                     ? isMinimized
@@ -1104,28 +1109,20 @@ export function App() {
                                                                     </div>
                                                                     <div className="cf-field-grid">
                                                                         <Field label="Button Color">
-                                                                            <div className="cf-flex-center-gap-6">
-                                                                                <input
-                                                                                    type="color"
-                                                                                    className="cf-color-picker"
-                                                                                    value={channel.color}
-                                                                                    onChange={(e) => updateChannel(channel.id, { color: e.target.value })}
-                                                                                />
-                                                                                <input
-                                                                                    className="cf-input cf-input-w80"
-                                                                                    maxLength={30}
-                                                                                    value={channel.color}
-                                                                                    onChange={(e) => updateChannel(channel.id, { color: e.target.value })}
-                                                                                />
-                                                                            </div>
+                                                                            <CustomColorPicker
+                                                                                value={channel.color || "#5271FF"}
+                                                                                fallback="#5271FF"
+                                                                                onChange={(color) => updateChannel(channel.id, { color })}
+                                                                                ariaLabel="Button Color"
+                                                                            />
                                                                         </Field>
                                                                         <Field label="Open Link In">
-                                                                            <div className="cf-flex-center-gap-6" style={{ marginTop: "6px" }}>
+                                                                            <div className="cf-flex-center-gap-6 cf-mt-6">
                                                                                 <Switch
                                                                                     checked={channel.openInNewTab}
                                                                                     onChange={(openInNewTab) => updateChannel(channel.id, { openInNewTab })}
                                                                                 />
-                                                                                <span style={{ fontSize: "11px", color: "var(--cf-text-secondary)" }}>
+                                                                                <span className="cf-subtext-sm">
                                                                                     {channel.openInNewTab ? "New browser tab" : "Same browser tab"}
                                                                                 </span>
                                                                             </div>
@@ -1144,20 +1141,12 @@ export function App() {
                                                                         />
                                                                     </Field>
                                                                     <Field label="Button Color">
-                                                                        <div className="cf-flex-center-gap-6">
-                                                                            <input
-                                                                                type="color"
-                                                                                className="cf-color-picker"
-                                                                                value={channel.color}
-                                                                                onChange={(e) => updateChannel(channel.id, { color: e.target.value })}
-                                                                            />
-                                                                            <input
-                                                                                className="cf-input cf-input-w80"
-                                                                                maxLength={30}
-                                                                                value={channel.color}
-                                                                                onChange={(e) => updateChannel(channel.id, { color: e.target.value })}
-                                                                            />
-                                                                        </div>
+                                                                        <CustomColorPicker
+                                                                            value={channel.color || "#5271FF"}
+                                                                            fallback="#5271FF"
+                                                                            onChange={(color) => updateChannel(channel.id, { color })}
+                                                                            ariaLabel="Button Color"
+                                                                        />
                                                                     </Field>
                                                                 </div>
                                                             )}
@@ -1802,20 +1791,12 @@ export function App() {
                                                     </select>
                                                 </Field>
                                                 <Field label="Launcher Default Color">
-                                                    <div className="cf-flex-center-gap-6">
-                                                        <input
-                                                            type="color"
-                                                            className="cf-color-picker"
-                                                            value={config.buttonColor}
-                                                            onChange={(e) => updateConfig({ buttonColor: e.target.value })}
-                                                        />
-                                                        <input
-                                                            className="cf-input cf-input-w80"
-                                                            maxLength={30}
-                                                            value={config.buttonColor}
-                                                            onChange={(e) => updateConfig({ buttonColor: e.target.value })}
-                                                        />
-                                                    </div>
+                                                    <CustomColorPicker
+                                                        value={config.buttonColor || "#5271FF"}
+                                                        fallback="#5271FF"
+                                                        onChange={(buttonColor) => updateConfig({ buttonColor })}
+                                                        ariaLabel="Launcher Default Color"
+                                                    />
                                                 </Field>
                                             </div>
 
@@ -2396,11 +2377,11 @@ export function App() {
                 </div>
                 <div className="cf-shell-footer-bar">
                     <a
-                        href="https://www.framer.com/@framefic/"
+                        href="https://www.framefic.com/"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="cf-shell-company-link"
-                        title="View Framefic profile on Framer"
+                        title="Visit Framefic website"
                     >
                         <span>@Framefic</span>
                         <IconExternalLink size={12} />

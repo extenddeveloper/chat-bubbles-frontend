@@ -226,7 +226,7 @@ export function buildWidgetCode(config: ChatConfig): string {
     .scb-modal-close-btn:hover{background:rgba(255,255,255,.35)}
     .scb-modal-close-btn svg{width:11px;height:11px;display:block;margin:0}
     .scb-modal-title{font-size:18px;font-weight:700;line-height:1.2;margin:0}
-    .scb-modal-subtitle{font-size:13px;line-height:1.45;opacity:.92;margin:0}
+    .scb-modal-subtitle{font-size:13px;line-height:1.45;color:#ffffff;opacity:.92;margin:0}
     .scb-modal-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.2);padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;width:max-content;backdrop-filter:blur(4px)}
 
     /* Modal Body & Agents */
@@ -238,7 +238,9 @@ export function buildWidgetCode(config: ChatConfig): string {
     .scb-agent-badge{position:absolute;bottom:-2px;right:-2px;width:17px;height:17px;border-radius:50%;display:grid;place-items:center;border:2px solid #ffffff;color:#ffffff}
     .scb-agent-badge svg{width:10px;height:10px}
     .scb-agent-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+    .scb-agent-name-row{display:flex;align-items:center;gap:6px}
     .scb-agent-name{font-size:14px;font-weight:600;color:#111827}
+    .scb-agent-online-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 2px rgba(34,197,94,.25);flex-shrink:0;display:inline-block}
     .scb-agent-role{font-size:12px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .scb-agent-arrow{color:#9ca3af;font-size:14px}
 
@@ -493,11 +495,19 @@ export function buildWidgetCode(config: ChatConfig): string {
           card.appendChild(avatarWrap);
 
           var info = create("div","scb-agent-info");
-          var name = create("div","scb-agent-name");
+          var nameRow = create("div","scb-agent-name-row");
+          var name = create("span","scb-agent-name");
           name.textContent = agent.name;
+          nameRow.appendChild(name);
+
+          if (agent.online !== false && isOnline) {
+            var dot = create("span", "scb-agent-online-dot");
+            nameRow.appendChild(dot);
+          }
+          info.appendChild(nameRow);
+
           var role = create("div","scb-agent-role");
           role.textContent = agent.role + (!isOnline ? " • Offline" : "");
-          info.appendChild(name);
           info.appendChild(role);
           card.appendChild(info);
 

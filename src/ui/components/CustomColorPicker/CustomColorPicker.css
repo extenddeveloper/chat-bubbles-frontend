@@ -1,0 +1,371 @@
+/* ============================================================
+   CustomColorPicker.css
+   Framer-Standard Custom Color Picker Component
+   Zero Inline CSS · 100% Theme Synchronized · RGBA + HEX Support
+   Full Radius Circular Swatches · Checkerboard Underlay
+   ============================================================ */
+
+.framer-color-picker-wrap {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.framer-color-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 1. Full Radius Circular Swatch Trigger Button */
+.framer-color-swatch-btn {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50% !important;
+  border: 2px solid var(--beaf-surface-border, #535151) !important;
+  background: var(--beaf-surface-2, #242323) !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  position: relative !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  flex-shrink: 0 !important;
+  outline: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease !important;
+  background-image: conic-gradient(
+    rgba(255, 255, 255, 0.22) 0% 25%,
+    rgba(0, 0, 0, 0.28) 25% 50%,
+    rgba(255, 255, 255, 0.22) 50% 75%,
+    rgba(0, 0, 0, 0.28) 75% 100%
+  ) !important;
+  background-size: 8px 8px !important;
+}
+
+.framer-color-swatch-btn:hover:not(:disabled) {
+  border-color: var(--Secondary-Default, #5271FF) !important;
+  transform: scale(1.05) !important;
+}
+
+.framer-color-swatch-btn:focus-visible,
+.framer-color-swatch-btn.open {
+  border-color: var(--Secondary-Default, #5271FF) !important;
+  box-shadow: 0 0 0 2px rgba(82, 113, 255, 0.4) !important;
+}
+
+.framer-color-swatch-btn:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+.framer-color-swatch-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: block;
+}
+
+/* 2. Color Text Input in Trigger Row */
+.framer-color-picker-wrap input[type="text"].framer-color-text-input,
+.framer-color-text-input {
+  flex: 1 1 0% !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  height: 30px !important;
+  padding: 0 8px !important;
+  border-radius: 6px !important;
+  border: 1px solid var(--beaf-surface-border, #535151) !important;
+  background: var(--beaf-surface, #201f1f) !important;
+  color: var(--beaf-input-text, #ffffff) !important;
+  font-family: "Inter", monospace, sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  text-transform: uppercase !important;
+  letter-spacing: -0.2px !important;
+  text-decoration: none !important;
+  box-sizing: border-box !important;
+  outline: none !important;
+  box-shadow: none !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.framer-color-picker-wrap input[type="text"].framer-color-text-input:focus,
+.framer-color-text-input:focus {
+  border-color: var(--Secondary-Default, #5271FF) !important;
+  box-shadow: 0 0 0 1px rgba(82, 113, 255, 0.9), 0 0 0 2px rgba(82, 113, 255, 0.25) !important;
+}
+
+.framer-color-text-input:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+}
+
+/* Opacity Badge in Trigger Row */
+.framer-color-picker-wrap .framer-color-opacity-badge,
+.framer-color-opacity-badge {
+  flex: 0 0 36px !important;
+  width: 36px !important;
+  min-width: 36px !important;
+  max-width: 36px !important;
+  height: 30px !important;
+  padding: 0 2px !important;
+  border-radius: 6px !important;
+  border: 1px solid var(--beaf-surface-border, #535151) !important;
+  background: var(--beaf-surface-2, #242323) !important;
+  color: var(--beaf-text-muted, #bfbfbf) !important;
+  font-family: "Inter", sans-serif !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  user-select: none !important;
+  flex-shrink: 0 !important;
+}
+
+/* 3. Popover Panel - Fixed Width & Smart Boundary Alignment */
+.framer-color-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: auto;
+  z-index: 1000;
+  width: 220px !important;
+  border-radius: 8px;
+  border: 1px solid var(--beaf-surface-border, #535151);
+  background: var(--beaf-surface-2, #242323);
+  box-shadow: 0 12px 32px var(--beaf-shadow, rgba(0, 0, 0, 0.55));
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-sizing: border-box;
+  animation: colorPickerFadeIn 0.14s ease-out;
+}
+
+/* Align right when inside right column or near right edge of viewport */
+.framer-color-popover.align-right,
+.framer-color-picker-wrap.align-right .framer-color-popover {
+  left: auto !important;
+  right: 0 !important;
+}
+
+@keyframes colorPickerFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 4. 2D SV Saturation-Value Canvas Box */
+.framer-sv-canvas-wrap {
+  position: relative;
+  width: 100%;
+  height: 120px;
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: crosshair;
+  user-select: none;
+  touch-action: none;
+  border: 1px solid var(--beaf-surface-border, #535151);
+  box-sizing: border-box;
+}
+
+.framer-sv-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* 5. Sliders Area (Dropper + Full Radius Live Color Show + Hue + Alpha) */
+.framer-color-sliders-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.framer-color-dropper-btn {
+  all: unset;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid var(--beaf-surface-border, #535151);
+  background: var(--beaf-surface, #201f1f);
+  color: var(--beaf-text-muted, #bfbfbf);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+}
+
+.framer-color-dropper-btn:hover {
+  border-color: var(--Secondary-Default, #5271FF);
+  color: #ffffff;
+  background: var(--beaf-surface-3, #323131);
+}
+
+.framer-color-circle-preview {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--beaf-surface-border, #535151);
+  background: var(--beaf-surface, #201f1f);
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  background-image: conic-gradient(
+    rgba(255, 255, 255, 0.22) 0% 25%,
+    rgba(0, 0, 0, 0.28) 25% 50%,
+    rgba(255, 255, 255, 0.22) 50% 75%,
+    rgba(0, 0, 0, 0.28) 75% 100%
+  );
+  background-size: 8px 8px;
+}
+
+.framer-color-circle-preview-svg {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: block;
+}
+
+.framer-color-sliders-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.framer-slider-canvas-wrap {
+  position: relative;
+  width: 100%;
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+  touch-action: none;
+  border: 1px solid var(--beaf-surface-border, #535151);
+  box-sizing: border-box;
+}
+
+.framer-slider-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* 6. Subinputs (HEX and Alpha %) */
+.framer-color-details-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.framer-color-format-label {
+  font-family: "Inter", sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--beaf-text-muted, #bfbfbf);
+  letter-spacing: 0.2px;
+  user-select: none;
+  flex-shrink: 0;
+  padding-left: 2px;
+}
+
+.framer-color-hex-subinput {
+  flex: 1;
+  min-width: 0;
+  height: 26px !important;
+  padding: 0 6px !important;
+  border-radius: 4px !important;
+  border: 1px solid var(--beaf-surface-border, #535151) !important;
+  background: var(--beaf-surface, #201f1f) !important;
+  color: var(--beaf-input-text, #ffffff) !important;
+  font-family: "Inter", monospace, sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  text-transform: uppercase !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.15s ease !important;
+}
+
+.framer-color-hex-subinput:focus {
+  border-color: var(--Secondary-Default, #5271FF) !important;
+}
+
+.framer-color-alpha-subinput {
+  width: 44px !important;
+  flex-shrink: 0;
+  height: 26px !important;
+  padding: 0 4px !important;
+  border-radius: 4px !important;
+  border: 1px solid var(--beaf-surface-border, #535151) !important;
+  background: var(--beaf-surface, #201f1f) !important;
+  color: var(--beaf-input-text, #ffffff) !important;
+  font-family: "Inter", sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  text-align: center !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.15s ease !important;
+}
+
+.framer-color-alpha-subinput:focus {
+  border-color: var(--Secondary-Default, #5271FF) !important;
+}
+
+/* 7. Preset Palette Swatches */
+.framer-color-palette {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+  width: 100%;
+  box-sizing: border-box;
+  padding-top: 2px;
+  border-top: 1px solid var(--beaf-surface-border, rgba(255, 255, 255, 0.08));
+}
+
+.framer-palette-btn {
+  all: unset;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  transition: transform 0.15s ease;
+}
+
+.framer-palette-btn:hover {
+  transform: scale(1.15);
+}
+
+.framer-palette-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: block;
+}
