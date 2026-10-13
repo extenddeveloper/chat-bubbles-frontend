@@ -69,7 +69,7 @@ const LAUNCHER_ICONS: Record<string, string> = {
   support: '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 2a9 9 0 0 0-9 9v4a3 3 0 0 0 3 3h1v-6H5v-1a7 7 0 1 1 14 0v1h-2v6h1a3 3 0 0 0 3-3v-4a9 9 0 0 0-9-9Zm-5 13v3H6a1 1 0 0 1-1-1v-2h2Zm12 2a1 1 0 0 1-1 1h-1v-3h2v2Z"/></svg>',
 }
 
-interface ChatficProps {
+interface ChatBubblesProps {
     style?: React.CSSProperties
     canvasPreview?: "modal" | "chat" | "closed"
     widgetMode?: "modal" | "buttons"
@@ -229,7 +229,7 @@ function playNotificationChimeDirect(force: boolean = false) {
     }
 }
 
-export default function Chatfic(props: ChatficProps) {
+export default function ChatBubbles(props: ChatBubblesProps) {
     const {
         style,
         canvasPreview = "modal",
@@ -1518,12 +1518,12 @@ export default function Chatfic(props: ChatficProps) {
                                         if (enableAnalytics && typeof window !== "undefined") {
                                             try {
                                                 if (Array.isArray((window as any).dataLayer)) {
-                                                    (window as any).dataLayer.push({ event: "chatfic_click", channel: channel.id, channel_label: channel.label })
+                                                    (window as any).dataLayer.push({ event: "chat_bubbles_click", channel: channel.id, channel_label: channel.label })
                                                 }
                                                 if (typeof (window as any).gtag === "function") {
-                                                    (window as any).gtag("event", "chatfic_click", { channel: channel.id, channel_label: channel.label })
+                                                    (window as any).gtag("event", "chat_bubbles_click", { channel: channel.id, channel_label: channel.label })
                                                 }
-                                                window.dispatchEvent(new CustomEvent("chatfic_interaction", { detail: { channel: channel.id, channelLabel: channel.label } }))
+                                                window.dispatchEvent(new CustomEvent("chat_bubbles_interaction", { detail: { channel: channel.id, channelLabel: channel.label } }))
                                             } catch {}
                                         }
                                         if (closeAfterClick) setIsOpen(false)
@@ -1585,14 +1585,14 @@ export default function Chatfic(props: ChatficProps) {
     )
 }
 
-Chatfic.defaultProps = {
+ChatBubbles.defaultProps = {
     width: 60,
     height: 60,
     canvasPreview: "modal",
     widgetMode: ${JSON.stringify(config.widgetMode || "modal")},
 }
 
-addPropertyControls(Chatfic, {
+addPropertyControls(ChatBubbles, {
     canvasPreview: {
         type: ControlType.Enum,
         title: "Canvas State",
@@ -2033,7 +2033,7 @@ addPropertyControls(Chatfic, {
 
 export async function insertCanvasComponent(config: ChatConfig): Promise<{ success: boolean; message: string }> {
     const code = generateComponentCode(config)
-    const fileName = "Chatfic.tsx"
+    const fileName = "ChatBubbles.tsx"
 
     try {
         if (typeof (framer as any).isAllowedTo === "function") {
@@ -2042,7 +2042,7 @@ export async function insertCanvasComponent(config: ChatConfig): Promise<{ succe
             } catch {}
         }
         const files = await framer.getCodeFiles()
-        let file = files.find((f) => f.name === fileName || f.name === "Chatfic")
+        let file = files.find((f) => f.name === fileName || f.name === "ChatBubbles" || f.name === "Chatfic")
 
         if (file) {
             await file.setFileContent(code)
@@ -2083,13 +2083,13 @@ export async function insertCanvasComponent(config: ChatConfig): Promise<{ succe
 
             return {
                 success: true,
-                message: "Chatfic component inserted onto the canvas! Customize it in the property panel and drag it into your frame as needed.",
+                message: "Chat Bubbles component inserted onto the canvas! Customize it in the property panel and drag it into your frame as needed.",
             }
         }
 
         return {
             success: true,
-            message: "Chatfic component created in your Code Assets! You can drag it onto any page.",
+            message: "Chat Bubbles component created in your Code Assets! You can drag it onto any page.",
         }
     } catch (error) {
         return {
@@ -2099,20 +2099,22 @@ export async function insertCanvasComponent(config: ChatConfig): Promise<{ succe
     }
 }
 
-export function isChatficInstance(node: any): boolean {
+export function isChatBubblesInstance(node: any): boolean {
     if (!node) return false
-    if (node.componentName === "Chatfic") return true
-    if (typeof node.name === "string" && node.name.includes("Chatfic")) return true
-    if (typeof node.insertURL === "string" && node.insertURL.includes("Chatfic")) return true
-    if (typeof node.componentIdentifier === "string" && node.componentIdentifier.includes("Chatfic")) return true
+    if (node.componentName === "ChatBubbles" || node.componentName === "Chatfic") return true
+    if (typeof node.name === "string" && (node.name.includes("ChatBubbles") || node.name.includes("Chatfic"))) return true
+    if (typeof node.insertURL === "string" && (node.insertURL.includes("ChatBubbles") || node.insertURL.includes("Chatfic"))) return true
+    if (typeof node.componentIdentifier === "string" && (node.componentIdentifier.includes("ChatBubbles") || node.componentIdentifier.includes("Chatfic"))) return true
     return false
 }
+
+export const isChatficInstance = isChatBubblesInstance
 
 export async function getCanvasInstancesCount(): Promise<number> {
     try {
         const instances = (await framer.getNodesWithType("ComponentInstanceNode")) as any[]
         if (!instances) return 0
-        return instances.filter(isChatficInstance).length
+        return instances.filter(isChatBubblesInstance).length
     } catch {
         return 0
     }
@@ -2124,7 +2126,7 @@ export async function removeAllCanvasInstances(): Promise<number> {
         if (!instances || instances.length === 0) return 0
         let removed = 0
         for (const inst of instances) {
-            if (isChatficInstance(inst)) {
+            if (isChatBubblesInstance(inst)) {
                 if (typeof inst.remove === "function") {
                     await inst.remove()
                     removed++

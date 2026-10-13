@@ -1,4 +1,4 @@
-# Social Chat Buttons for Framer — Frontend MVP Plan
+# Chat Bubbles — WhatsApp & Social Chat Buttons for Framer — Frontend MVP Plan
 
 ## Goal
 

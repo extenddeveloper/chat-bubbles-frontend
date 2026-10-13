@@ -10,7 +10,7 @@ export interface ProfilePageProps {
 export function ProfilePage({ onBack, onManageSubscription }: ProfilePageProps) {
     const [userName, setUserName] = useState<string>("Site Owner")
     const [userEmail, setUserEmail] = useState<string>("owner@framer.website")
-    const [plan] = useState<string>("Chatfic Pro")
+    const [plan] = useState<string>("Chat Bubbles Pro")
 
     useEffect(() => {
         let isMounted = true
@@ -105,7 +105,7 @@ export function ProfilePage({ onBack, onManageSubscription }: ProfilePageProps) 
             </div>
 
             <div className="cf-profile-footer-info">
-                <span>Chatfic Plugin · v0.1.0 · Framefic</span>
+                <span>Chat Bubbles Plugin · v0.1.0 · Framefic</span>
             </div>
         </div>
     )

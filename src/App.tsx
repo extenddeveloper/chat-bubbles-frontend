@@ -778,8 +778,8 @@ export function App() {
                         </svg>
                     </div>
                     <div className="app-brand-info">
-                        <h1>Chatfic</h1>
-                        <p>Live Social Chat &amp; Contact Widgets</p>
+                        <h1>Chat Bubbles</h1>
+                        <p>WhatsApp &amp; Social Chat Buttons</p>
                     </div>
                 </div>
                 <div className="header-actions">
@@ -905,8 +905,8 @@ export function App() {
                                             <span>{canvasCount > 0 ? `${canvasCount} on Canvas` : "Ready"}</span>
                                         </div>
                                     }
-                                    title="Welcome to Chatfic"
-                                    description="Live social chat and multi-channel contact widgets for Framer."
+                                    title="Welcome to Chat Bubbles"
+                                    description="WhatsApp &amp; multi-channel social chat buttons for Framer."
                                     ctaLabel="Configure in Builder"
                                     ctaIcon={<IconArrowRight size={14} />}
                                     onCtaClick={() => {
@@ -2411,7 +2411,7 @@ export function App() {
                         className="primary-cta"
                         onClick={handleInsertToCanvas}
                         disabled={inserting}
-                        title="Insert reusable Chatfic component onto the Framer canvas"
+                        title="Insert reusable Chat Bubbles component onto the Framer canvas"
                     >
                         <IconSparkles size={16} />
                         <span>{inserting ? "Inserting..." : "Insert into Canvas"}</span>

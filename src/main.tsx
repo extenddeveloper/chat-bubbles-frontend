@@ -18,7 +18,7 @@ class ErrorBoundary extends React.Component<
     }
 
     componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-        console.error("Chatfic Plugin Error Boundary Caught:", error, errorInfo)
+        console.error("Chat Bubbles Plugin Error Boundary Caught:", error, errorInfo)
     }
 
     render() {
@@ -30,7 +30,7 @@ class ErrorBoundary extends React.Component<
                         <h3 className="cf-error-title">Plugin Error</h3>
                     </div>
                     <p className="cf-error-text">
-                        {this.state.error?.message || "An unexpected error occurred while loading Chatfic."}
+                        {this.state.error?.message || "An unexpected error occurred while loading Chat Bubbles."}
                     </p>
                     <button
                         className="cf-error-btn"

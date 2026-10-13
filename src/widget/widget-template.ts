@@ -387,8 +387,8 @@ export function buildWidgetCode(config: ChatConfig): string {
     if(!SETTINGS.enableAnalytics) return;
     try {
       if(typeof window.gtag === "function"){
-        window.gtag("event", "chatfic_click", {
-          event_category: "Chatfic",
+        window.gtag("event", "chat_bubbles_click", {
+          event_category: "Chat Bubbles",
           event_label: channelLabel || channelId,
           channel_id: channelId,
           channel_name: channelLabel || channelId,
@@ -398,11 +398,11 @@ export function buildWidgetCode(config: ChatConfig): string {
       }
       if(Array.isArray(window.dataLayer)){
         window.dataLayer.push({
-          event: "chatfic_click",
-          chatfic_channel: channelId,
-          chatfic_channel_name: channelLabel || channelId,
-          chatfic_agent: agentName || "",
-          chatfic_target_url: targetUrl || ""
+          event: "chat_bubbles_click",
+          channel: channelId,
+          channel_name: channelLabel || channelId,
+          agent: agentName || "",
+          target_url: targetUrl || ""
         });
       }
     } catch(e){}

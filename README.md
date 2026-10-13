@@ -1,4 +1,4 @@
-# Social Chat Buttons for Framer
+# Chat Bubbles - WhatsApp & Social Chat Buttons for Framer
 
 Frontend-first advanced social/chat floating widget for Framer.
 
