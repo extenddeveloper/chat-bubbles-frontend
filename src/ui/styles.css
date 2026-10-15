@@ -57,8 +57,8 @@ body,
     --beaf-help-arrow-border: #1b1f22;
 
     /* Primary & Secondary CTA Tokens */
-    --cf-primary-cta-bg: linear-gradient(180deg, #5271ff 0%, #3b51b8 100%);
-    --cf-primary-cta-bg-hover: linear-gradient(180deg, #4761db 0%, #3448a6 100%);
+    --cf-primary-cta-bg: linear-gradient(#5271FF, #3B51B8) padding-box, linear-gradient(180deg, #5271FF 0%, #3B51B8 100%) border-box !important;
+    --cf-primary-cta-bg-hover: linear-gradient(#5271FF, #3B51B8) padding-box, linear-gradient(180deg, #5271FF 0%, #3B51B8 100%) border-box;
     --cf-primary-cta-bg-active: #3b51b8;
     --cf-primary-cta-color: #ffffff;
     --cf-primary-cta-border: transparent;
@@ -182,9 +182,8 @@ body,
     --beaf-help-arrow-bg: #ffffff;
     --beaf-help-arrow-border: #dbe3ef;
 
-    /* Primary & Secondary CTA Standards (Light Mode) */
-    --cf-primary-cta-bg: linear-gradient(180deg, #5271ff 0%, #3b51b8 100%);
-    --cf-primary-cta-bg-hover: linear-gradient(180deg, #4761db 0%, #3448a6 100%);
+    --cf-primary-cta-bg: linear-gradient(#5271FF, #3B51B8) padding-box, linear-gradient(180deg, #5271FF 0%, #3B51B8 100%) border-box !important;
+    --cf-primary-cta-bg-hover: linear-gradient(#5271FF, #3B51B8) padding-box, linear-gradient(180deg, #5271FF 0%, #3B51B8 100%) border-box;
     --cf-primary-cta-bg-active: #3b51b8;
     --cf-primary-cta-color: #ffffff;
     --cf-primary-cta-border: transparent;
@@ -2247,7 +2246,6 @@ p.preview-modal-subtitle {
     color: var(--cf-primary-cta-color) !important;
     border: 2px solid transparent !important;
     border-radius: var(--cf-primary-cta-radius);
-    box-shadow: var(--cf-primary-cta-shadow);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -2263,14 +2261,12 @@ p.preview-modal-subtitle {
 
 .primary-cta:hover:not(:disabled) {
     background: var(--cf-primary-cta-bg-hover) !important;
-    box-shadow: var(--cf-primary-cta-shadow-hover);
     transform: translateY(-1px);
 }
 
 .primary-cta:active:not(:disabled) {
     background: var(--cf-primary-cta-bg-active) !important;
     transform: scale(0.985);
-    box-shadow: 0 1px 3px rgba(82, 113, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .primary-cta:disabled {
