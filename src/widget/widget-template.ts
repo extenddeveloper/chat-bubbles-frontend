@@ -2,6 +2,9 @@ import type { ChatConfig } from "../types"
 import { ICONS } from "./icons"
 import { MODAL_THEME_GRADIENTS } from "../core/config"
 import { resolveSafeChannelUrl, safeJsonStringify, sanitizeAvatarUrl } from "../core/sanitize"
+import { SVG_AVATAR_PRESETS } from "../core/avatars"
+
+const DEFAULT_FALLBACK_AVATAR = SVG_AVATAR_PRESETS[0]
 
 const getUrl = resolveSafeChannelUrl
 
@@ -125,21 +128,42 @@ export function buildWidgetCode(config: ChatConfig): string {
   /* 1. Page / URL Targeting Filter */
   if (SETTINGS.targetingEnabled && SETTINGS.targetingRules) {
     try {
-      var curPath = (window.location && window.location.pathname) ? window.location.pathname : "/";
-      var normPath = curPath.toLowerCase();
-      var rawRules = String(SETTINGS.targetingRules).split(/[\n,]/);
+      var curPath = (window.location && window.location.pathname) ? window.location.pathname.toLowerCase().trim() : "/";
+      var curHref = (window.location && window.location.href) ? window.location.href.toLowerCase() : "";
+      var rawRules = String(SETTINGS.targetingRules).split(/[\r\n,;]+/);
       var rules = [];
       for (var rIdx = 0; rIdx < rawRules.length; rIdx++) {
         var rTrim = rawRules[rIdx].trim().toLowerCase();
         if (rTrim) rules.push(rTrim);
       }
       if (rules.length > 0) {
-        var isMatch = rules.some(function(rule) {
-          if (rule.slice(-1) === "*") {
-            var prefix = rule.slice(0, -1);
-            return normPath.indexOf(prefix) === 0;
+        var isMatch = rules.some(function(ruleInput) {
+          var rule = ruleInput;
+          if (rule === "*" || rule === "/*") return true;
+          if (rule.indexOf("://") !== -1 || rule.indexOf(".") !== -1) {
+            if (curHref === rule || curHref === rule + "/") return true;
+            if (rule.slice(-1) === "*" && curHref.indexOf(rule.slice(0, -1)) === 0) return true;
+            try {
+              var parsed = new URL(rule.indexOf("://") !== -1 ? rule : "https://" + rule);
+              rule = parsed.pathname;
+            } catch(e) {}
           }
-          return normPath === rule || normPath === rule + "/" || (rule.slice(-1) === "/" && normPath + "/" === rule);
+          var cleanRule = rule.indexOf("/") === 0 ? rule : "/" + rule;
+          var isHomeRule = cleanRule === "/" || cleanRule === "/home" || cleanRule === "/index";
+          var isHomePath = curPath === "/" || curPath === "" || curPath === "/home" || curPath === "/index";
+          if (isHomeRule && isHomePath) return true;
+
+          if (cleanRule.slice(-2) === "/*") {
+            var prefix = cleanRule.slice(0, -2);
+            return curPath === prefix || curPath === prefix + "/" || curPath.indexOf(prefix + "/") === 0;
+          }
+          if (cleanRule.slice(-1) === "*") {
+            var prefix = cleanRule.slice(0, -1);
+            return curPath.indexOf(prefix) === 0;
+          }
+          var ruleNoSlash = cleanRule.replace(/\/+$/, "");
+          var pathNoSlash = curPath.replace(/\/+$/, "");
+          return curPath === cleanRule || pathNoSlash === ruleNoSlash;
         });
         if (SETTINGS.targetingMode === "hide" && isMatch) return;
         if (SETTINGS.targetingMode === "show" && !isMatch) return;
@@ -268,17 +292,18 @@ export function buildWidgetCode(config: ChatConfig): string {
     #\${ROOT_ID} .scb-modal{width:360px;max-width:calc(100vw - 32px);max-height:calc(100vh - 110px);background:#ffffff;border-radius:24px;box-shadow:0 22px 55px rgba(0,0,0,.22),0 8px 20px rgba(0,0,0,.08);overflow:hidden;display:flex;flex-direction:column;pointer-events:none;opacity:0;visibility:hidden;transform:translateY(16px) scale(.96);transition:opacity .25s cubic-bezier(.16,1,.3,1),transform .25s cubic-bezier(.16,1,.3,1),visibility .25s}
     #\${ROOT_ID}.open .scb-modal{pointer-events:auto;opacity:1;visibility:visible;transform:none}
 
-    .scb-modal-header{background:\${SETTINGS.modalGradient};padding:22px 20px 20px;color:#ffffff;border-radius:24px 24px 0 0;position:relative;display:flex;flex-direction:column;gap:8px}
-    .scb-modal-header-top{display:flex;align-items:center;justify-content:space-between;width:100%}
-    .scb-modal-back-btn{background:rgba(255,255,255,.22);border:0;border-radius:50%;width:28px;height:28px;color:#ffffff;display:flex;align-items:center;justify-content:center;padding:0;margin:0;cursor:pointer;transition:background .15s}
+    .scb-modal-header{background:\${SETTINGS.modalGradient};padding:22px 20px 20px;color:#ffffff;border-radius:24px 24px 0 0;position:relative;display:flex;flex-direction:column;gap:6px}
+    .scb-modal-header-top{display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:12px}
+    .scb-modal-back-btn{background:rgba(255,255,255,.22);border:0;border-radius:50%;width:28px;height:28px;color:#ffffff;display:flex;align-items:center;justify-content:center;padding:0;margin:0;cursor:pointer;transition:background .15s;animation:scbFadeScale .22s cubic-bezier(.16,1,.3,1) both}
     .scb-modal-back-btn:hover{background:rgba(255,255,255,.35)}
     .scb-modal-back-btn svg{width:11px;height:11px;display:block;margin:0}
-    .scb-modal-close-btn{background:rgba(255,255,255,.22);border:0;border-radius:50%;width:28px;height:28px;color:#ffffff;display:flex;align-items:center;justify-content:center;padding:0;margin:0;cursor:pointer;transition:background .15s;margin-left:auto}
+    .scb-modal-close-btn{background:rgba(255,255,255,.22);border:0;border-radius:50%;width:28px;height:28px;color:#ffffff;display:flex;align-items:center;justify-content:center;padding:0;margin:0;cursor:pointer;transition:background .15s;margin-left:auto !important}
     .scb-modal-close-btn:hover{background:rgba(255,255,255,.35)}
     .scb-modal-close-btn svg{width:11px;height:11px;display:block;margin:0}
+    .scb-modal-header-info{display:flex;flex-direction:column;gap:6px}
     .scb-modal-title{font-size:18px;font-weight:700;line-height:1.2;margin:0}
     .scb-modal-subtitle{font-size:13px;line-height:1.45;color:#ffffff;opacity:.92;margin:0}
-    .scb-modal-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.2);padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;width:max-content;backdrop-filter:blur(4px)}
+    .scb-modal-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.2);padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;width:max-content;backdrop-filter:blur(4px);margin-top:2px}
 
     /* Modal Body & Agents */
     .scb-modal-body{padding:14px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;background:#ffffff;max-height:340px}
@@ -286,14 +311,17 @@ export function buildWidgetCode(config: ChatConfig): string {
     .scb-agent-card:hover{background:#f3f4f6;transform:translateY(-1px);border-color:#e5e7eb}
     .scb-agent-avatar-wrap{position:relative;width:42px;height:42px;flex-shrink:0}
     .scb-agent-avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;display:block}
-    .scb-agent-badge{position:absolute;bottom:-2px;right:-2px;width:17px;height:17px;border-radius:50%;display:grid;place-items:center;border:2px solid #ffffff;color:#ffffff}
-    .scb-agent-badge svg{width:10px;height:10px}
+    .scb-agent-badge{position:absolute;bottom:-2px;right:-2px;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid #ffffff;color:#ffffff;box-sizing:border-box;padding:0;margin:0;line-height:0;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+    .scb-agent-badge svg{width:10px;height:10px;display:block;margin:0 auto;flex-shrink:0}
+    .scb-agent-badge[data-channel="telegram"] svg{transform:translate(-0.5px, 0.5px)}
+    .scb-agent-badge[data-channel="whatsapp"] svg{transform:translate(0.3px, -0.3px)}
     .scb-agent-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
     .scb-agent-name-row{display:flex;align-items:center;gap:6px}
     .scb-agent-name{font-size:14px;font-weight:600;color:#111827}
     .scb-agent-online-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 2px rgba(34,197,94,.25);flex-shrink:0;display:inline-block}
     .scb-agent-role{font-size:12px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .scb-agent-arrow{color:#9ca3af;font-size:14px}
+    .scb-agent-arrow{color:#9ca3af;font-size:14px;transition:transform .18s ease;display:flex;align-items:center}
+    .scb-agent-card:hover .scb-agent-arrow{transform:translateX(2px)}
 
     /* Direct Chat View inside Modal */
     .scb-chat-view{padding:18px 16px;display:flex;flex-direction:column;gap:14px}
@@ -331,6 +359,12 @@ export function buildWidgetCode(config: ChatConfig): string {
     @keyframes scb-slide{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
     @keyframes scb-pulse{0%,100%{transform:scale(1);box-shadow:\${SETTINGS.shadow}}50%{transform:scale(1.08);box-shadow:0 0 20px \${SETTINGS.buttonColor}}}
     @keyframes scb-greet{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:none}}
+    @keyframes scbSlideInRight{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
+    @keyframes scbSlideInLeft{from{opacity:0;transform:translateX(-24px)}to{opacity:1;transform:translateX(0)}}
+    @keyframes scbFadeScale{from{opacity:0;transform:scale(.75)}to{opacity:1;transform:scale(1)}}
+
+    .scb-view-slide-forward{animation:scbSlideInRight .28s cubic-bezier(.16,1,.3,1) both !important;will-change:transform,opacity !important}
+    .scb-view-slide-backward{animation:scbSlideInLeft .28s cubic-bezier(.16,1,.3,1) both !important;will-change:transform,opacity !important}
 
     #\${ROOT_ID}.anim-pop.open .scb-modal, #\${ROOT_ID}.anim-pop.open .scb-list{animation:scb-pop .25s cubic-bezier(.16,1,.3,1) both}
     #\${ROOT_ID}.anim-bounce.open .scb-modal, #\${ROOT_ID}.anim-bounce.open .scb-list{animation:scb-bounce .35s cubic-bezier(.34,1.56,.64,1) both}
@@ -409,14 +443,17 @@ export function buildWidgetCode(config: ChatConfig): string {
   }
 
   var activeAgent = null;
+  var navDirection = "forward";
 
   function openDirectChat(agent){
     trackClick(agent.channelId, agent.channelId, agent.name, agent.url);
+    navDirection = "forward";
     activeAgent = agent;
     render();
   }
 
   function backToList(){
+    navDirection = "backward";
     activeAgent = null;
     render();
   }
@@ -426,6 +463,7 @@ export function buildWidgetCode(config: ChatConfig): string {
     if(isOpen){
       closeMenu();
     } else {
+      navDirection = "forward";
       root.classList.add("open");
       var btn = root.querySelector(".scb-main .scb-button");
       if(btn) btn.setAttribute("aria-expanded","true");
@@ -435,6 +473,7 @@ export function buildWidgetCode(config: ChatConfig): string {
   function closeMenu(restoreFocus){
     root.classList.remove("open");
     activeAgent = null;
+    navDirection = "forward";
     var btn = root.querySelector(".scb-main .scb-button");
     if(btn){
       btn.setAttribute("aria-expanded","false");
@@ -470,14 +509,16 @@ export function buildWidgetCode(config: ChatConfig): string {
       headerTop.appendChild(closeBtn);
       header.appendChild(headerTop);
 
+      var headerInfo = create("div", "scb-modal-header-info" + (activeAgent ? " scb-view-slide-forward" : (navDirection === "backward" ? " scb-view-slide-backward" : "")));
+
       if(!activeAgent){
         var title = create("h3","scb-modal-title");
         title.textContent = SETTINGS.modalTitle;
-        header.appendChild(title);
+        headerInfo.appendChild(title);
 
         var subtitle = create("p","scb-modal-subtitle");
         subtitle.textContent = SETTINGS.modalSubtitle;
-        header.appendChild(subtitle);
+        headerInfo.appendChild(subtitle);
 
         var responseBadgeText = SETTINGS.modalResponseTime;
         if(SETTINGS.scheduleEnabled && !isOnline){
@@ -486,28 +527,29 @@ export function buildWidgetCode(config: ChatConfig): string {
         if(responseBadgeText){
           var badge = create("span","scb-modal-badge" + (!isOnline ? " offline" : ""));
           badge.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px;"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.2l2.2 1.3"/></svg>' + responseBadgeText;
-          header.appendChild(badge);
+          headerInfo.appendChild(badge);
         }
       } else {
         var agentTitle = create("h3","scb-modal-title");
         agentTitle.textContent = activeAgent.name;
-        header.appendChild(agentTitle);
+        headerInfo.appendChild(agentTitle);
 
         var agentSubtitle = create("p","scb-modal-subtitle");
         agentSubtitle.textContent = activeAgent.role;
-        header.appendChild(agentSubtitle);
+        headerInfo.appendChild(agentSubtitle);
       }
 
+      header.appendChild(headerInfo);
       modal.appendChild(header);
 
       if(!activeAgent){
-        var body = create("div","scb-modal-body");
+        var body = create("div","scb-modal-body" + (navDirection === "backward" ? " scb-view-slide-backward" : ""));
         var listToRender = AGENTS.length ? AGENTS : CHANNELS.map(function(c, i){
           return {
             id: c.id,
             name: c.label + " Team",
             role: "Customer Support",
-            avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80",
+            avatar: ${JSON.stringify(DEFAULT_FALLBACK_AVATAR)},
             channelId: c.id,
             color: c.color,
             icon: c.icon,
@@ -535,11 +577,12 @@ export function buildWidgetCode(config: ChatConfig): string {
           var rawAvatar = agent.avatar || "";
           avatar.src = (rawAvatar.indexOf("http://") === 0 || rawAvatar.indexOf("https://") === 0 || rawAvatar.indexOf("data:image/") === 0)
             ? rawAvatar
-            : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80";
+            : ${JSON.stringify(DEFAULT_FALLBACK_AVATAR)};
           avatar.alt = agent.name;
           avatarWrap.appendChild(avatar);
 
           var badge = create("span","scb-agent-badge" + (!isOnline ? " offline" : ""));
+          badge.setAttribute("data-channel", agent.channelId || "");
           badge.style.background = (!isOnline ? "#6b7280" : (agent.color || "#25D366"));
           badge.innerHTML = agent.icon || "";
           avatarWrap.appendChild(badge);
@@ -570,7 +613,7 @@ export function buildWidgetCode(config: ChatConfig): string {
         });
         modal.appendChild(body);
       } else {
-        var chatView = create("div","scb-chat-view");
+        var chatView = create("div","scb-chat-view scb-view-slide-forward");
         var bubble = create("div","scb-chat-bubble");
         bubble.textContent = activeAgent.message || SETTINGS.modalChatBubble;
         chatView.appendChild(bubble);

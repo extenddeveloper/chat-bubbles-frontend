@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { framer } from "@framer/plugin"
 import { cloneDefaultConfig, normalizeConfig } from "./core/config"
 import { loadConfig, saveConfig } from "./core/storage"
-import { getCanvasInstancesCount, insertCanvasComponent } from "./framer/canvas-component-service"
+import { enforceSingleInstance, insertCanvasComponent, syncCanvasInstance } from "./framer/canvas-component-service"
 import type { ChannelId, ChatAgent, ChatChannel, ChatConfig, ModalTheme } from "./types"
 import { Field } from "./ui/components/Field"
 import { Section } from "./ui/components/Section"
@@ -12,7 +12,9 @@ import { HelpRow } from "./ui/components/HelpRow"
 import { ProfilePage } from "./ui/components/ProfilePage"
 import { FrameficCard } from "./ui/components/FrameficCard"
 import { CustomColorPicker } from "./ui/components/CustomColorPicker"
-import { ICONS, LAUNCHER_ICONS } from "./widget/icons"
+import { GradientColorPicker } from "./ui/components/GradientColorPicker"
+import { SVG_AVATAR_PRESETS } from "./core/avatars"
+import { ICONS } from "./widget/icons"
 import { sanitizeAgent, sanitizeAvatarUrl, sanitizeChannel, sanitizeMultilineText, sanitizeText } from "./core/sanitize"
 import {
     IconCamera,
@@ -22,14 +24,11 @@ import {
     IconUser,
     IconLink,
     IconRefresh,
-    IconArrowLeft,
     IconArrowRight,
     IconSpinner,
     IconLayoutModal,
     IconLayoutButtons,
     IconPlus,
-    IconSun,
-    IconMoon,
     IconSparkles,
     IconExternalLink,
     IconVolume,
@@ -45,12 +44,7 @@ import "./ui/styles.css"
 type Tab = "home" | "builder" | "design" | "settings"
 type BuilderSubTab = "channels" | "agents"
 
-const AVATAR_PRESETS = [
-    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&auto=format&fit=crop&q=80",
-]
+const AVATAR_PRESETS = SVG_AVATAR_PRESETS
 
 const channelMeta: Record<ChannelId, { label: string; placeholder: string; hint: string }> = {
     whatsapp: {
@@ -152,11 +146,25 @@ const channelMeta: Record<ChannelId, { label: string; placeholder: string; hint:
 
 export function App() {
     const [config, setConfig] = useState<ChatConfig>(cloneDefaultConfig())
-    const [themeMode, setThemeMode] = useState<"dark" | "light">(() => {
+    const [themePreference, setThemePreference] = useState<"light" | "dark" | "auto">(() => {
+        try {
+            // Clean up any stale legacy keys that were locking the shell to light mode
+            localStorage.removeItem("chatfic_theme_preference")
+            localStorage.removeItem("chatfic_theme_pref_v2")
+            localStorage.removeItem("chatfic_theme_pref_v3")
+            const saved = localStorage.getItem("chatfic_theme_pref_v4")
+            if (saved === "light" || saved === "dark" || saved === "auto") {
+                return saved
+            }
+        } catch {}
+        return "auto"
+    })
+    const [canvasTheme, setCanvasTheme] = useState<"light" | "dark">(() => {
         if (typeof document !== "undefined") {
-            const bodyTheme = document.body?.dataset?.framerTheme
-            const htmlTheme = document.documentElement?.dataset?.framerTheme
-            if (bodyTheme === "light" || htmlTheme === "light") return "light"
+            const bodyTheme = document.body?.getAttribute("data-framer-theme")
+            if (bodyTheme === "light" || bodyTheme === "dark") return bodyTheme
+            const htmlTheme = document.documentElement?.getAttribute("data-framer-theme")
+            if (htmlTheme === "light" || htmlTheme === "dark") return htmlTheme
         }
         return "dark"
     })
@@ -164,10 +172,6 @@ export function App() {
     const [builderSubTab, setBuilderSubTab] = useState<BuilderSubTab>("channels")
     const [isProfileOpen, setIsProfileOpen] = useState(false)
     const [inserting, setInserting] = useState(false)
-    const [canvasCount, setCanvasCount] = useState(0)
-    const [previewOpen, setPreviewOpen] = useState(true)
-    const [previewSelectedAgent, setPreviewSelectedAgent] = useState<ChatAgent | null>(null)
-    const [previewMobileExpanded, setPreviewMobileExpanded] = useState(false)
     const [message, setMessage] = useState<{
         type: "info" | "success" | "warning" | "error"
         title?: string
@@ -204,26 +208,53 @@ export function App() {
         }))
     }
 
-    // Automatic Canvas Theme Sync + Subscription (Read-only observer)
+    // Automatic Canvas Theme Sync + Subscription (Framer SDK driven)
     useEffect(() => {
-        function readCanvasTheme() {
-            const bodyTheme = document.body.getAttribute("data-framer-theme")
-            const htmlTheme = document.documentElement.getAttribute("data-framer-theme")
-            if (bodyTheme === "light" || htmlTheme === "light") {
-                setThemeMode("light")
-            } else if (bodyTheme === "dark" || htmlTheme === "dark") {
-                setThemeMode("dark")
+        function readCanvasTheme(): "light" | "dark" {
+            // 1. Check document.body and documentElement attributes set by Framer SDK
+            const bodyTheme = document.body?.getAttribute("data-framer-theme")
+            if (bodyTheme === "light" || bodyTheme === "dark") {
+                return bodyTheme
             }
+            const htmlTheme = document.documentElement?.getAttribute("data-framer-theme")
+            if (htmlTheme === "light" || htmlTheme === "dark") {
+                return htmlTheme
+            }
+
+            // 2. Check Framer API if available
+            try {
+                if (typeof (framer as any).getTheme === "function") {
+                    const t = (framer as any).getTheme()
+                    const mode = typeof t === "string" ? t : t?.mode
+                    if (mode === "light" || mode === "dark") {
+                        return mode
+                    }
+                }
+                if ((framer as any).theme) {
+                    const t = (framer as any).theme
+                    const mode = typeof t === "string" ? t : t?.mode
+                    if (mode === "light" || mode === "dark") {
+                        return mode
+                    }
+                }
+            } catch {}
+
+            // 3. Fallback to dark (Framer canvas default)
+            return "dark"
         }
 
-        readCanvasTheme()
+        const detected = readCanvasTheme()
+        setCanvasTheme(detected)
 
         let unsubscribe: (() => void) | undefined
         try {
             if (typeof (framer as any).subscribe === "function") {
                 unsubscribe = (framer as any).subscribe("theme", (themeData: any) => {
-                    if (themeData && (themeData.mode === "light" || themeData.mode === "dark")) {
-                        setThemeMode(themeData.mode)
+                    const mode = typeof themeData === "string" ? themeData : themeData?.mode
+                    if (mode === "light" || mode === "dark") {
+                        setCanvasTheme(mode)
+                        // When user toggles theme in Framer canvas, immediately sync shell
+                        setThemePreference("auto")
                     }
                 })
             }
@@ -232,10 +263,23 @@ export function App() {
         }
 
         const observer = new MutationObserver(() => {
-            readCanvasTheme()
+            const current = readCanvasTheme()
+            setCanvasTheme((prev) => {
+                if (prev !== current) {
+                    // Canvas theme changed -> sync shell to canvas
+                    setThemePreference("auto")
+                    return current
+                }
+                return prev
+            })
         })
-        observer.observe(document.body, { attributes: true, attributeFilter: ["data-framer-theme"] })
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-framer-theme"] })
+
+        if (document.body) {
+            observer.observe(document.body, { attributes: true, attributeFilter: ["data-framer-theme"] })
+        }
+        if (document.documentElement) {
+            observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-framer-theme"] })
+        }
 
         return () => {
             if (unsubscribe) unsubscribe()
@@ -243,23 +287,54 @@ export function App() {
         }
     }, [])
 
-    function toggleTheme() {
-        const next = themeMode === "dark" ? "light" : "dark"
-        setThemeMode(next)
-        document.documentElement.setAttribute("data-framer-theme", next)
-        document.body.setAttribute("data-framer-theme", next)
+    const resolvedTheme = themePreference === "auto" ? canvasTheme : themePreference
+
+    useEffect(() => {
+        if (themePreference !== "auto") {
+            document.documentElement.setAttribute("data-framer-theme", resolvedTheme)
+        } else {
+            // In auto mode, ensure documentElement matches canvasTheme
+            document.documentElement.setAttribute("data-framer-theme", canvasTheme)
+        }
+    }, [resolvedTheme, themePreference, canvasTheme])
+
+    function handleThemeChange(preference: "light" | "dark" | "auto") {
+        setThemePreference(preference)
+        try {
+            localStorage.setItem("chatfic_theme_pref_v4", preference)
+        } catch {}
     }
 
     useEffect(() => {
-        Promise.all([loadConfig(), getCanvasInstancesCount()])
-            .then(([saved, count]) => {
+        loadConfig()
+            .then((saved) => {
                 setConfig(saved)
-                setCanvasCount(count)
             })
             .catch(() => setMessage({ type: "error", text: "Unable to load plugin data." }))
     }, [])
 
+    // Enforce single-instance policy on mount & selection changes
+    useEffect(() => {
+        void enforceSingleInstance()
+
+        let unsubscribe: (() => void) | undefined
+        try {
+            if (typeof (framer as any).subscribeToSelection === "function") {
+                unsubscribe = (framer as any).subscribeToSelection(() => {
+                    void enforceSingleInstance()
+                })
+            }
+        } catch {}
+
+        return () => {
+            if (typeof unsubscribe === "function") {
+                unsubscribe()
+            }
+        }
+    }, [])
+
     const isFirstLoad = useRef(true)
+    // Synchronize changes made in Shell directly to canvas component & local storage
     useEffect(() => {
         if (isFirstLoad.current) {
             isFirstLoad.current = false
@@ -270,10 +345,11 @@ export function App() {
             try {
                 const normalized = normalizeConfig(config)
                 await saveConfig(normalized)
+                await syncCanvasInstance(normalized)
             } catch (err) {
-                console.warn("Auto-save config failed:", err)
+                console.warn("Auto-save and sync config failed:", err)
             }
-        }, 500)
+        }, 300)
 
         return () => clearTimeout(timer)
     }, [config])
@@ -282,37 +358,6 @@ export function App() {
         () => config.channels.filter((channel) => channel.enabled && channel.value.trim()),
         [config.channels],
     )
-
-    const previewChannels = useMemo(() => {
-        const active = config.channels.filter((channel) => channel.enabled && channel.value.trim())
-        if (active.length > 0) return active
-        const justEnabled = config.channels.filter((channel) => channel.enabled)
-        if (justEnabled.length > 0) return justEnabled
-        return config.channels.slice(0, 6)
-    }, [config.channels])
-
-    const resolvedGradientClass = useMemo(() => {
-        const key = config.modalTheme || "whatsapp"
-        return `cf-theme-grad-${key}`
-    }, [config.modalTheme])
-
-    const isScheduleOffline = useMemo(() => {
-        if (!config.scheduleEnabled) return false
-        const now = new Date()
-        const curDay = now.getDay()
-        const days = config.scheduleDays || [1, 2, 3, 4, 5]
-        if (!days.includes(curDay)) return true
-        const curMins = now.getHours() * 60 + now.getMinutes()
-        const [sH, sM] = (config.scheduleStart || "09:00").split(":").map(Number)
-        const [eH, eM] = (config.scheduleEnd || "18:00").split(":").map(Number)
-        const sMins = (sH || 9) * 60 + (sM || 0)
-        const eMins = (eH || 18) * 60 + (eM || 0)
-        if (sMins <= eMins) {
-            return curMins < sMins || curMins >= eMins
-        } else {
-            return curMins < sMins && curMins >= eMins
-        }
-    }, [config.scheduleEnabled, config.scheduleDays, config.scheduleStart, config.scheduleEnd])
 
     function updateConfig(patch: Partial<ChatConfig>) {
         setConfig((current) => normalizeConfig({ ...current, ...patch }))
@@ -342,9 +387,6 @@ export function App() {
             ...current,
             agents: current.agents.filter((ag) => ag.id !== id),
         }))
-        if (previewSelectedAgent?.id === id) {
-            setPreviewSelectedAgent(null)
-        }
     }
 
     async function uploadAvatarFile(file: File): Promise<string> {
@@ -439,8 +481,6 @@ export function App() {
             const normalized = normalizeConfig(config)
             await saveConfig(normalized)
             const result = await insertCanvasComponent(normalized)
-            const count = await getCanvasInstancesCount()
-            setCanvasCount(count)
             setMessage({
                 type: result.success ? "success" : "error",
                 text: result.message,
@@ -459,355 +499,12 @@ export function App() {
         const next = cloneDefaultConfig()
         setConfig(next)
         await saveConfig(next)
+        await syncCanvasInstance(next)
         setMessage({ type: "info", text: "Settings restored to defaults." })
     }
 
-    // Helper to get launcher button classes
-    const launcherShapeClass = "shape-" + (config.buttonShape || "circle")
-    const launcherSizeClass = "size-" + (config.buttonSize || 56)
-
-    // Render interactive simulation preview block
-    function renderPreview() {
-        const hasActiveTriggers = Boolean(
-            config.scheduleEnabled ||
-            config.scrollTriggerEnabled ||
-            config.targetingEnabled
-        )
-
-        return (
-            <div className="preview-container">
-                <div className="preview-toolbar">
-                    <span className="preview-pill">Live Simulation</span>
-                    <div className="preview-mode-switch">
-                        <button
-                            type="button"
-                            className={"preview-mode-btn " + (config.widgetMode === "modal" && previewOpen ? "active" : "")}
-                            onClick={() => {
-                                updateConfig({ widgetMode: "modal" })
-                                setPreviewOpen(true)
-                                setPreviewSelectedAgent(null)
-                            }}
-                        >
-                            Modal View
-                        </button>
-                        <button
-                            type="button"
-                            className={"preview-mode-btn " + (config.widgetMode === "buttons" && previewOpen ? "active" : "")}
-                            onClick={() => {
-                                updateConfig({ widgetMode: "buttons" })
-                                setPreviewOpen(true)
-                            }}
-                        >
-                            Button View
-                        </button>
-                    </div>
-                </div>
-
-                {hasActiveTriggers && (
-                    <div className="preview-active-triggers-bar">
-                        {config.scheduleEnabled && (
-                            <span
-                                className={`preview-status-tag ${isScheduleOffline ? "is-offline" : "is-online"}`}
-                                title={
-                                    isScheduleOffline
-                                        ? config.scheduleOfflineAction === "hide"
-                                            ? "Outside business hours: Widget hidden on site"
-                                            : `Offline notice badge: ${config.scheduleOfflineText || "Back tomorrow at 9:00 AM"}`
-                                        : "Store currently within business hours"
-                                }
-                            >
-                                {isScheduleOffline
-                                    ? config.scheduleOfflineAction === "hide"
-                                        ? "Closed (Hidden)"
-                                        : "Closed (Offline Badge)"
-                                    : "Open"}
-                            </span>
-                        )}
-                        {config.scrollTriggerEnabled && (
-                            <span
-                                className="preview-status-tag is-trigger"
-                                title={`Reveals after visitor scrolls ${config.scrollTriggerPercent}% (${config.scrollTriggerTarget})`}
-                            >
-                                Scroll {config.scrollTriggerPercent}%
-                            </span>
-                        )}
-                        {config.targetingEnabled && (
-                            <span
-                                className="preview-status-tag is-trigger"
-                                title={`URL targeting filter: ${config.targetingMode} on configured paths`}
-                            >
-                                Path Filter
-                            </span>
-                        )}
-                    </div>
-                )}
-
-                <div
-                    className="preview-viewport"
-                    onMouseLeave={(e) => {
-                        if (!config.exitIntentEnabled) return
-                        const rect = e.currentTarget.getBoundingClientRect()
-                        if (e.clientY <= rect.top + 30) {
-                            if (config.exitIntentAction === "greeting") {
-                                setPreviewOpen(false)
-                                if (config.enableSound) playNotificationChime()
-                            } else {
-                                setPreviewOpen(true)
-                            }
-                        }
-                    }}
-                >
-                    <div className="preview-mock-page">
-                        <div className="preview-mock-line short" />
-                        <div className="preview-mock-line long" />
-                        <div className="preview-mock-line" />
-                        <div className="preview-mock-line short" />
-                    </div>
-
-                    <div className="preview-launcher-wrap">
-                        {config.widgetMode === "modal" && previewOpen ? (
-                            <div className="preview-modal-card">
-                                <div className={"preview-modal-header " + resolvedGradientClass}>
-                                    <div className="preview-modal-header-top">
-                                        <h4 className="preview-modal-title">{config.modalTitle || "Hi there!"}</h4>
-                                        <button
-                                            type="button"
-                                            className="preview-modal-close-btn"
-                                            onClick={() => setPreviewOpen(false)}
-                                        >
-                                            <IconX size={12} />
-                                        </button>
-                                    </div>
-                                    <p className="preview-modal-subtitle">
-                                        {config.modalSubtitle || "Welcome to our live chat! Feel free to ask any questions."}
-                                    </p>
-                                    <div className={`preview-modal-badge ${isScheduleOffline ? "offline" : ""}`}>
-                                        <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.2l2.2 1.3"/></svg>
-                                        <span>
-                                            {isScheduleOffline
-                                                ? (config.scheduleOfflineText || "Back tomorrow at 9:00 AM")
-                                                : (config.modalResponseTime || "Typically replies in minutes")}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div className="preview-modal-body">
-                                    {previewSelectedAgent ? (
-                                        <div className="preview-chat-view">
-                                            <button
-                                                type="button"
-                                                className="preview-chat-back preview-chat-back-wrap"
-                                                onClick={() => setPreviewSelectedAgent(null)}
-                                            >
-                                                <IconArrowLeft size={12} />
-                                                <span>All Team Members</span>
-                                            </button>
-                                            <div className="preview-chat-agent-info">
-                                                <img
-                                                    src={previewSelectedAgent.avatar}
-                                                    alt={previewSelectedAgent.name}
-                                                    className="preview-chat-avatar"
-                                                />
-                                                <div>
-                                                    <div className="preview-chat-name">
-                                                        {previewSelectedAgent.name}
-                                                    </div>
-                                                    <div className="preview-chat-role">
-                                                        {previewSelectedAgent.role}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="preview-chat-bubble">
-                                                {previewSelectedAgent.message || config.modalChatBubble || "We typically reply within a few minutes. How can we help you today?"}
-                                            </div>
-                                            <button
-                                                type="button"
-                                                className={"preview-start-btn preview-start-btn-wrap " + resolvedGradientClass}
-                                                onClick={() => {
-                                                    const ch = config.channels.find((c) => c.id === previewSelectedAgent.channelId)
-                                                    const targetVal = previewSelectedAgent.value || ch?.value || "(Not configured)"
-                                                    setMessage({
-                                                        type: "info",
-                                                        text: `Simulated chat with ${previewSelectedAgent.name} via ${previewSelectedAgent.channelId} (${targetVal})!`,
-                                                    })
-                                                }}
-                                            >
-                                                <span>{config.modalStartChatText || "Start chat"}</span>
-                                                <IconArrowRight size={13} />
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            {config.agents.map((agent) => {
-                                                const chClass = `cf-ch-${agent.channelId}`
-                                                return (
-                                                    <div
-                                                        key={agent.id}
-                                                        className="preview-agent-card"
-                                                        onClick={() => setPreviewSelectedAgent(agent)}
-                                                        title="Click to preview agent chat screen"
-                                                    >
-                                                        <div className="preview-agent-avatar-wrap">
-                                                            <img src={agent.avatar} alt={agent.name} />
-                                                            <span
-                                                                className={"preview-agent-av-badge " + chClass + (isScheduleOffline ? " offline" : "")}
-                                                                dangerouslySetInnerHTML={{ __html: ICONS[agent.channelId] || "" }}
-                                                            />
-                                                        </div>
-                                                        <div className="preview-agent-details">
-                                                            <div className="preview-agent-name-row">
-                                                                <span className="preview-agent-name">{agent.name}</span>
-                                                                {agent.online !== false && !isScheduleOffline && (
-                                                                    <span className="preview-agent-online-dot" title="Online" />
-                                                                )}
-                                                                {isScheduleOffline && (
-                                                                    <span className="preview-agent-offline-dot" title="Offline" />
-                                                                )}
-                                                            </div>
-                                                            <span className="preview-agent-role">
-                                                                {agent.role}
-                                                                {isScheduleOffline ? " • Offline" : ""}
-                                                            </span>
-                                                        </div>
-                                                        <span className="preview-agent-arrow">
-                                                            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                                <path d="M6 3.5L10.5 8L6 12.5" />
-                                                            </svg>
-                                                        </span>
-                                                    </div>
-                                                )
-                                            })}
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                        ) : null}
-
-                        {config.widgetMode === "buttons" && previewOpen ? (
-                            <div className={`preview-buttons-list layout-${config.layout}`}>
-                                {previewChannels.map((channel, idx) => {
-                                    const displayLabel = channel.label?.trim() || (channel.id === "custom" ? "Custom" : channel.label)
-                                    const isCapped = Boolean(config.mobileCapChannels ?? true) && previewChannels.length > 4 && !previewMobileExpanded && idx >= 4
-                                    if (isCapped) return null
-
-                                    return (
-                                        <div key={channel.id} className="preview-channel-button-item">
-                                            {config.showLabels && (
-                                                <span className="preview-channel-label">{displayLabel}</span>
-                                            )}
-                                            <div
-                                                className={`preview-channel-btn shape-${config.buttonShape} cf-ch-${channel.id}`}
-                                                title={displayLabel}
-                                                onClick={() => {
-                                                    setMessage({
-                                                        type: "info",
-                                                        text: `Opened ${displayLabel} directly (${channel.value || "Configured"})!`,
-                                                    })
-                                                }}
-                                            >
-                                                <span dangerouslySetInnerHTML={{ __html: ICONS[channel.id] || "" }} />
-                                            </div>
-                                        </div>
-                                    )
-                                })}
-
-                                {Boolean(config.mobileCapChannels ?? true) && previewChannels.length > 4 && (
-                                    <div className="preview-channel-button-item">
-                                        {config.showLabels && (
-                                            <span className="preview-channel-label">
-                                                {previewMobileExpanded ? "Show Less" : `+${previewChannels.length - 4} More`}
-                                            </span>
-                                        )}
-                                        <button
-                                            type="button"
-                                            className={`preview-more-btn shape-${config.buttonShape} ${previewMobileExpanded ? "is-expanded" : ""}`}
-                                            title={previewMobileExpanded ? "Show Less" : `View ${previewChannels.length - 4} more channels`}
-                                            onClick={() => setPreviewMobileExpanded(!previewMobileExpanded)}
-                                        >
-                                            {previewMobileExpanded ? "−" : `+${previewChannels.length - 4}`}
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        ) : null}
-
-                        {!previewOpen && config.greetingEnabled && (
-                            <div
-                                className="preview-greeting-pill"
-                                onClick={() => {
-                                    if (config.enableSound) {
-                                        playNotificationChime()
-                                    }
-                                }}
-                                title={config.enableSound ? "Click to hear notification sound preview" : undefined}
-                            >
-                                {config.greetingText || "Need help? Chat with us."}
-                            </div>
-                        )}
-
-                        <button
-                            type="button"
-                            className={`preview-main-btn ${launcherShapeClass} ${launcherSizeClass} ${resolvedGradientClass}`}
-                            onClick={() => setPreviewOpen(!previewOpen)}
-                            aria-label="Toggle preview"
-                        >
-                            <span
-                                dangerouslySetInnerHTML={{
-                                    __html: previewOpen
-                                        ? '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>'
-                                        : LAUNCHER_ICONS[config.launcherIcon || "chat"] || LAUNCHER_ICONS.chat,
-                                }}
-                            />
-                            {config.showBadge && !previewOpen && (
-                                <span className="preview-badge-pill">{config.badgeText || "1"}</span>
-                            )}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        )
-    }
-
     return (
-        <div className={"app " + themeMode}>
-            <header className="header">
-                <div className="app-brand">
-                    <div className="app-logo">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 2a10 10 0 0 0-8.9 14.6L2 22l5.4-1.1A10 10 0 1 0 12 2Zm0 18a8 8 0 0 1-4-1.1l-.4-.2-3.2.7.7-3.1-.2-.4A8 8 0 1 1 12 20Z" />
-                        </svg>
-                    </div>
-                    <div className="app-brand-info">
-                        <h1>Chat Bubbles</h1>
-                        <p>WhatsApp &amp; Social Chat Buttons</p>
-                    </div>
-                </div>
-                <div className="header-actions">
-                    <button
-                        type="button"
-                        className="cf-theme-toggle"
-                        onClick={toggleTheme}
-                        title={"Theme: " + themeMode + ". Click to switch."}
-                    >
-                        {themeMode === "dark" ? (
-                            <>
-                                <IconMoon size={12} />
-                                <span>Dark</span>
-                            </>
-                        ) : (
-                            <>
-                                <IconSun size={12} />
-                                <span>Light</span>
-                            </>
-                        )}
-                    </button>
-                    <div className={"status-badge " + (canvasCount > 0 ? "ok" : "")}>
-                        <span className="status-dot" />
-                        {canvasCount > 0 ? `${canvasCount} on Canvas` : "Ready"}
-                    </div>
-                </div>
-            </header>
-
+        <div className={"app " + resolvedTheme}>
             <nav className="cf-tabs">
                 <div className="cf-tabs-list">
                     <button
@@ -899,12 +596,6 @@ export function App() {
                                     badgeLabel="Chat Widget"
                                     badgeType="brand"
                                     badgeIcon={<IconSparkles size={11} />}
-                                    statusBadge={
-                                        <div className={"status-badge " + (canvasCount > 0 ? "ok" : "")}>
-                                            <span className="status-dot" />
-                                            <span>{canvasCount > 0 ? `${canvasCount} on Canvas` : "Ready"}</span>
-                                        </div>
-                                    }
                                     title="Welcome to Chat Bubbles"
                                     description="WhatsApp &amp; multi-channel social chat buttons for Framer."
                                     ctaLabel="Configure in Builder"
@@ -992,13 +683,6 @@ export function App() {
                                             </span>
                                         </div>
                                     </div>
-                                </Section>
-
-                                <Section
-                                    title="Interactive Live Preview"
-                                    description="Test the interactive widget live. Click the button to toggle the window."
-                                >
-                                    {renderPreview()}
                                 </Section>
 
                                 <HelpRow />
@@ -1686,13 +1370,10 @@ export function App() {
                                             </Field>
 
                                             {config.modalTheme === "custom" && (
-                                                <Field label="Custom CSS Gradient" hint="e.g. linear-gradient(135deg, #6366f1, #a855f7)">
-                                                    <input
-                                                        className="cf-input"
-                                                        maxLength={200}
-                                                        value={config.modalCustomGradient || ""}
-                                                        onChange={(e) => updateConfig({ modalCustomGradient: e.target.value })}
-                                                        placeholder="linear-gradient(135deg, #6366f1, #a855f7)"
+                                                <Field label="Custom Gradient &amp; Color Palette" hint="Choose from curated presets, pick start &amp; end colors, or rotate the angle">
+                                                    <GradientColorPicker
+                                                        value={config.modalCustomGradient || "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)"}
+                                                        onChange={(modalCustomGradient) => updateConfig({ modalCustomGradient })}
                                                     />
                                                 </Field>
                                             )}
@@ -1952,19 +1633,49 @@ export function App() {
                                                 </Field>
                                             )}
                                         </Section>
-
-                                        <Section
-                                    title="Interactive Live Preview"
-                                    description="Live simulation updates automatically as you edit channels, team agents, and appearance."
-                                >
-                                    {renderPreview()}
-                                </Section>
                             </>
                         )}
 
                         {/* SETTINGS TAB */}
                         {tab === "settings" && (
                             <>
+                                <Section
+                                    title="Interface Theme"
+                                    description="Choose your preferred color theme for the Chat Bubbles plugin shell."
+                                >
+                                    <div className="cf-segmented-control-wrapper">
+                                        <div className="cf-segmented-control" role="tablist" aria-label="Theme selection">
+                                            <button
+                                                type="button"
+                                                role="tab"
+                                                aria-selected={themePreference === "light"}
+                                                className={`cf-segment-item ${themePreference === "light" ? "active" : ""}`}
+                                                onClick={() => handleThemeChange("light")}
+                                            >
+                                                Light
+                                            </button>
+                                            <button
+                                                type="button"
+                                                role="tab"
+                                                aria-selected={themePreference === "dark"}
+                                                className={`cf-segment-item ${themePreference === "dark" ? "active" : ""}`}
+                                                onClick={() => handleThemeChange("dark")}
+                                            >
+                                                Dark
+                                            </button>
+                                            <button
+                                                type="button"
+                                                role="tab"
+                                                aria-selected={themePreference === "auto"}
+                                                className={`cf-segment-item ${themePreference === "auto" ? "active" : ""}`}
+                                                onClick={() => handleThemeChange("auto")}
+                                            >
+                                                Match site
+                                            </button>
+                                        </div>
+                                    </div>
+                                </Section>
+
                                 <Section
                                     title="Widget Placement"
                                     description="Configure the default screen anchor for your live chat floating button."
@@ -2148,7 +1859,7 @@ export function App() {
 
                                 <Section
                                     title="Behavioral Triggers & Smart Display"
-                                    description="Enterprise triggers: scroll depth, desktop exit-intent, operating hours schedule, and URL path targeting."
+                                    description="Enterprise triggers: scroll depth, desktop exit-intent, and operating hours schedule."
                                 >
                                     <div className="cf-flex-col-gap-14">
                                         {/* 1. Scroll Depth Trigger */}
@@ -2354,45 +2065,6 @@ export function App() {
                                                             </Field>
                                                         )}
                                                     </div>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* 4. Page / URL Targeting Filter */}
-                                        <div className={`cf-trigger-card ${config.targetingEnabled ? "is-active" : ""}`}>
-                                            <div className="cf-trigger-card-header">
-                                                <div className="cf-trigger-info">
-                                                    <div className="cf-trigger-title">Page / URL Targeting Filter</div>
-                                                    <div className="cf-trigger-desc">
-                                                        Show or hide the widget on specific page paths (e.g., hide on /checkout or only show on /pricing).
-                                                    </div>
-                                                </div>
-                                                <Switch
-                                                    checked={config.targetingEnabled || false}
-                                                    onChange={(targetingEnabled) => updateConfig({ targetingEnabled })}
-                                                />
-                                            </div>
-                                            {config.targetingEnabled && (
-                                                <div className="cf-trigger-body">
-                                                    <Field label="Targeting Mode" hint="Show only on listed paths, or hide on listed paths">
-                                                        <select
-                                                            className="cf-input"
-                                                            value={config.targetingMode || "show"}
-                                                            onChange={(e) => updateConfig({ targetingMode: e.target.value as any })}
-                                                        >
-                                                            <option value="show">Show Widget Only on Listed Paths</option>
-                                                            <option value="hide">Hide Widget on Listed Paths (Show Everywhere Else)</option>
-                                                        </select>
-                                                    </Field>
-                                                    <Field label="URL Paths & Wildcards" hint="Enter paths separated by lines or commas. Use * for wildcards (e.g. /checkout, /blog/*)">
-                                                        <textarea
-                                                            className="cf-textarea"
-                                                            rows={3}
-                                                            value={config.targetingRules || ""}
-                                                            onChange={(e) => updateConfig({ targetingRules: e.target.value })}
-                                                            placeholder={"/pricing\n/checkout\n/products/*"}
-                                                        />
-                                                    </Field>
                                                 </div>
                                             )}
                                         </div>

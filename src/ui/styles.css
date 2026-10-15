@@ -56,20 +56,82 @@ body,
     --beaf-help-arrow-bg: transparent;
     --beaf-help-arrow-border: #1b1f22;
 
-    /* Interactive Preview Modal Tokens (Dark Mode) */
-    --cf-preview-modal-bg: #1c202a;
-    --cf-preview-modal-border: rgba(255, 255, 255, 0.1);
-    --cf-preview-agent-bg: #232836;
-    --cf-preview-agent-border: rgba(255, 255, 255, 0.08);
-    --cf-preview-agent-hover-bg: #2b3142;
-    --cf-preview-agent-hover-border: rgba(255, 255, 255, 0.16);
-    --cf-preview-text-primary: #ffffff;
-    --cf-preview-text-secondary: #9ca3af;
-    --cf-preview-arrow-color: #6b7280;
-    --cf-preview-bubble-bg: #262c3a;
-    --cf-preview-bubble-border: rgba(255, 255, 255, 0.1);
-    --cf-preview-bubble-text: #f3f4f6;
-    --cf-preview-badge-border: #1c202a;
+    /* Primary & Secondary CTA Tokens */
+    --cf-primary-cta-bg: linear-gradient(180deg, #5271ff 0%, #3b51b8 100%);
+    --cf-primary-cta-bg-hover: linear-gradient(180deg, #4761db 0%, #3448a6 100%);
+    --cf-primary-cta-bg-active: #3b51b8;
+    --cf-primary-cta-color: #ffffff;
+    --cf-primary-cta-border: transparent;
+    --cf-primary-cta-radius: 10px;
+    --cf-primary-cta-shadow: 0 2px 6px -2px rgba(82, 113, 255, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    --cf-primary-cta-shadow-hover: 0 4px 14px rgba(82, 113, 255, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+
+    --cf-secondary-cta-bg: var(--cf-bg-tertiary);
+    --cf-secondary-cta-color: var(--cf-text);
+    --cf-secondary-cta-border: var(--cf-border);
+    --cf-secondary-cta-radius: 10px;
+    --cf-secondary-cta-hover-bg: var(--cf-control-hover);
+    --cf-secondary-cta-hover-border: var(--cf-border-hover);
+
+    /* Repeatable Card & Hero Tokens */
+    --cf-card-bg: var(--cf-bg-secondary);
+    --cf-card-border: var(--cf-border);
+    --cf-card-border-hover: var(--cf-border-hover);
+    --cf-card-radius: 12px;
+    --cf-hero-card-bg: var(--cf-bg-secondary);
+    --cf-hero-card-border: var(--cf-border);
+    --cf-hero-card-radius: 18px;
+
+    /* Repeatable Badges */
+    --cf-badge-brand-bg: rgba(82, 113, 255, 0.15);
+    --cf-badge-brand-color: #708aff;
+    --cf-badge-brand-border: rgba(82, 113, 255, 0.3);
+    --cf-badge-pro-bg: rgba(139, 92, 246, 0.18);
+    --cf-badge-pro-color: #c4b5fd;
+    --cf-badge-pro-border: rgba(139, 92, 246, 0.35);
+
+    /* Repeatable Notice Banners (Dark Mode) */
+    --cf-notice-info-bg: rgba(59, 130, 246, 0.12);
+    --cf-notice-info-border: rgba(59, 130, 246, 0.24);
+    --cf-notice-info-icon: #60a5fa;
+    --cf-notice-info-title: #f8fafc;
+    --cf-notice-info-desc: #94a3b8;
+    --cf-notice-info-close: #94a3b8;
+
+    --cf-notice-success-bg: rgba(34, 197, 94, 0.12);
+    --cf-notice-success-border: rgba(34, 197, 94, 0.24);
+    --cf-notice-success-icon: #4ade80;
+    --cf-notice-success-title: #f8fafc;
+    --cf-notice-success-desc: #94a3b8;
+    --cf-notice-success-close: #94a3b8;
+
+    --cf-notice-warning-bg: rgba(245, 158, 11, 0.12);
+    --cf-notice-warning-border: rgba(245, 158, 11, 0.24);
+    --cf-notice-warning-icon: #fbbf24;
+    --cf-notice-warning-title: #f8fafc;
+    --cf-notice-warning-desc: #94a3b8;
+    --cf-notice-warning-close: #94a3b8;
+
+    --cf-notice-error-bg: rgba(239, 68, 68, 0.12);
+    --cf-notice-error-border: rgba(239, 68, 68, 0.24);
+    --cf-notice-error-icon: #f87171;
+    --cf-notice-error-title: #f8fafc;
+    --cf-notice-error-desc: #94a3b8;
+    --cf-notice-error-close: #94a3b8;
+
+    /* Repeatable Channel Brand Colors */
+    --cf-ch-whatsapp: #25d366;
+    --cf-ch-messenger: #0084ff;
+    --cf-ch-telegram: #229ed9;
+    --cf-ch-instagram: #e1306c;
+    --cf-ch-tiktok: #111111;
+    --cf-ch-wechat: #07c160;
+    --cf-ch-viber: #7360f2;
+    --cf-ch-line: #06c755;
+    --cf-ch-signal: #3a76f0;
+    --cf-ch-phone: #111827;
+    --cf-ch-email: #ea4335;
+    --cf-ch-custom: #111827;
 }
 
 /* Light Theme Variables - Active when canvas is light or user toggles light */
@@ -120,20 +182,68 @@ body,
     --beaf-help-arrow-bg: #ffffff;
     --beaf-help-arrow-border: #dbe3ef;
 
-    /* Interactive Preview Modal Tokens (Light Mode) */
-    --cf-preview-modal-bg: #ffffff;
-    --cf-preview-modal-border: rgba(0, 0, 0, 0.08);
-    --cf-preview-agent-bg: #f9fafb;
-    --cf-preview-agent-border: #f3f4f6;
-    --cf-preview-agent-hover-bg: #f3f4f6;
-    --cf-preview-agent-hover-border: #e5e7eb;
-    --cf-preview-text-primary: #111827;
-    --cf-preview-text-secondary: #6b7280;
-    --cf-preview-arrow-color: #9ca3af;
-    --cf-preview-bubble-bg: #f3f4f6;
-    --cf-preview-bubble-border: #e5e7eb;
-    --cf-preview-bubble-text: #1f2937;
-    --cf-preview-badge-border: #ffffff;
+    /* Primary & Secondary CTA Standards (Light Mode) */
+    --cf-primary-cta-bg: linear-gradient(180deg, #5271ff 0%, #3b51b8 100%);
+    --cf-primary-cta-bg-hover: linear-gradient(180deg, #4761db 0%, #3448a6 100%);
+    --cf-primary-cta-bg-active: #3b51b8;
+    --cf-primary-cta-color: #ffffff;
+    --cf-primary-cta-border: transparent;
+    --cf-primary-cta-radius: 10px;
+    --cf-primary-cta-shadow: 0 2px 6px -2px rgba(82, 113, 255, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    --cf-primary-cta-shadow-hover: 0 4px 14px rgba(82, 113, 255, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+
+    --cf-secondary-cta-bg: #ededed;
+    --cf-secondary-cta-color: #1b1f22;
+    --cf-secondary-cta-border: rgba(0, 0, 0, 0.08);
+    --cf-secondary-cta-radius: 10px;
+    --cf-secondary-cta-hover-bg: #f5f5f5;
+    --cf-secondary-cta-hover-border: rgba(0, 0, 0, 0.12);
+
+    /* Repeatable Card & Hero Tokens (Light Mode) */
+    --cf-card-bg: #ffffff;
+    --cf-card-border: rgba(0, 0, 0, 0.08);
+    --cf-card-border-hover: rgba(82, 113, 255, 0.3);
+    --cf-card-radius: 12px;
+    --cf-hero-card-bg: #ffffff;
+    --cf-hero-card-border: rgba(0, 0, 0, 0.08);
+    --cf-hero-card-radius: 18px;
+
+    /* Repeatable Badges (Light Mode) */
+    --cf-badge-brand-bg: rgba(82, 113, 255, 0.12);
+    --cf-badge-brand-color: #3b51b8;
+    --cf-badge-brand-border: rgba(82, 113, 255, 0.25);
+    --cf-badge-pro-bg: rgba(139, 92, 246, 0.12);
+    --cf-badge-pro-color: #7c3aed;
+    --cf-badge-pro-border: rgba(139, 92, 246, 0.28);
+
+    /* Repeatable Notice Banners (Light Mode) */
+    --cf-notice-info-bg: #f0f4ff;
+    --cf-notice-info-border: rgba(59, 130, 246, 0.18);
+    --cf-notice-info-icon: #2563eb;
+    --cf-notice-info-title: #0f172a;
+    --cf-notice-info-desc: #475569;
+    --cf-notice-info-close: #475569;
+
+    --cf-notice-success-bg: #f0fdf4;
+    --cf-notice-success-border: rgba(34, 197, 94, 0.2);
+    --cf-notice-success-icon: #16a34a;
+    --cf-notice-success-title: #0f172a;
+    --cf-notice-success-desc: #475569;
+    --cf-notice-success-close: #475569;
+
+    --cf-notice-warning-bg: #fffbeb;
+    --cf-notice-warning-border: rgba(245, 158, 11, 0.22);
+    --cf-notice-warning-icon: #d97706;
+    --cf-notice-warning-title: #0f172a;
+    --cf-notice-warning-desc: #475569;
+    --cf-notice-warning-close: #475569;
+
+    --cf-notice-error-bg: #fef2f2;
+    --cf-notice-error-border: rgba(239, 68, 68, 0.2);
+    --cf-notice-error-icon: #dc2626;
+    --cf-notice-error-title: #0f172a;
+    --cf-notice-error-desc: #475569;
+    --cf-notice-error-close: #475569;
 }
 
 * {
@@ -286,9 +396,9 @@ button.cf-theme-toggle:hover {
     background: var(--cf-bg-tertiary);
     padding: 3px 4px !important;
     border-radius: 10px;
-    margin: 10px 14px 4px;
+    margin: 8px 14px 4px;
     position: sticky;
-    top: 57px;
+    top: 0px;
     z-index: 15;
     border: 1px solid var(--cf-border);
     box-sizing: border-box;
@@ -308,7 +418,7 @@ button.cf-tab {
     justify-content: center !important;
     flex: 0 0 auto !important;
     padding: 6px 14px !important;
-    font-size: 11.5px !important;
+    font-size: 13px !important;
     font-weight: 500 !important;
     color: var(--cf-text-secondary) !important;
     border-radius: 7px !important;
@@ -557,18 +667,24 @@ button.cf-switch {
     align-items: center !important;
     width: 36px !important;
     height: 20px !important;
-    background: var(--beaf-surface, #201f1f) !important;
-    border: 1px solid var(--beaf-surface-border, #535151) !important;
+    background: #2a2a2e !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
     border-radius: 999px !important;
     padding: 2px !important;
     cursor: pointer !important;
     flex-shrink: 0 !important;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    transition: background 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.app.light button.cf-switch:not(.is-on),
+[data-framer-theme="light"] button.cf-switch:not(.is-on) {
+    background: #e4e4e7 !important;
+    border-color: rgba(0, 0, 0, 0.14) !important;
 }
 
 button.cf-switch.is-on {
-    background: var(--Secondary-Default, #5271ff) !important;
-    border-color: var(--Secondary-Default, #5271ff) !important;
+    background: var(--cf-tint, #5271ff) !important;
+    border-color: var(--cf-tint, #5271ff) !important;
 }
 
 button.cf-switch .cf-switch-thumb {
@@ -577,7 +693,7 @@ button.cf-switch .cf-switch-thumb {
     height: 14px !important;
     border-radius: 50% !important;
     background: #ffffff !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28) !important;
     transform: translateX(0) !important;
     transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
@@ -1150,6 +1266,7 @@ button.cf-agent-del-btn:hover {
         opacity: 0;
         transform: translateY(-4px) scale(0.98);
     }
+
     to {
         opacity: 1;
         transform: translateY(0) scale(1);
@@ -1210,147 +1327,90 @@ button.cf-agent-del-btn:hover {
 
 /* 1. Info Notice (Soft Blue) */
 .cf-notice.info {
-    background-color: #f0f4ff;
-    border: 1px solid rgba(59, 130, 246, 0.18);
+    background-color: var(--cf-notice-info-bg);
+    border: 1px solid var(--cf-notice-info-border);
 }
+
 .cf-notice.info .cf-notice-icon-col {
-    color: #2563eb;
+    color: var(--cf-notice-info-icon);
 }
+
 .cf-notice.info .cf-notice-title {
-    color: #0f172a;
+    color: var(--cf-notice-info-title);
 }
+
 .cf-notice.info .cf-notice-desc {
-    color: #475569;
+    color: var(--cf-notice-info-desc);
 }
+
 .cf-notice.info .cf-notice-close {
-    color: #475569;
+    color: var(--cf-notice-info-close);
 }
 
 /* 2. Success Notice (Soft Mint Green) */
 .cf-notice.success {
-    background-color: #f0fdf4;
-    border: 1px solid rgba(34, 197, 94, 0.2);
+    background-color: var(--cf-notice-success-bg);
+    border: 1px solid var(--cf-notice-success-border);
 }
+
 .cf-notice.success .cf-notice-icon-col {
-    color: #16a34a;
+    color: var(--cf-notice-success-icon);
 }
+
 .cf-notice.success .cf-notice-title {
-    color: #0f172a;
+    color: var(--cf-notice-success-title);
 }
+
 .cf-notice.success .cf-notice-desc {
-    color: #475569;
+    color: var(--cf-notice-success-desc);
 }
+
 .cf-notice.success .cf-notice-close {
-    color: #475569;
+    color: var(--cf-notice-success-close);
 }
 
 /* 3. Warning Notice (Soft Warm Amber) */
 .cf-notice.warning {
-    background-color: #fffbeb;
-    border: 1px solid rgba(245, 158, 11, 0.22);
+    background-color: var(--cf-notice-warning-bg);
+    border: 1px solid var(--cf-notice-warning-border);
 }
+
 .cf-notice.warning .cf-notice-icon-col {
-    color: #d97706;
+    color: var(--cf-notice-warning-icon);
 }
+
 .cf-notice.warning .cf-notice-title {
-    color: #0f172a;
+    color: var(--cf-notice-warning-title);
 }
+
 .cf-notice.warning .cf-notice-desc {
-    color: #475569;
+    color: var(--cf-notice-warning-desc);
 }
+
 .cf-notice.warning .cf-notice-close {
-    color: #475569;
+    color: var(--cf-notice-warning-close);
 }
 
 /* 4. Error Notice (Soft Rose Red) */
 .cf-notice.error {
-    background-color: #fef2f2;
-    border: 1px solid rgba(239, 68, 68, 0.2);
+    background-color: var(--cf-notice-error-bg);
+    border: 1px solid var(--cf-notice-error-border);
 }
+
 .cf-notice.error .cf-notice-icon-col {
-    color: #dc2626;
+    color: var(--cf-notice-error-icon);
 }
+
 .cf-notice.error .cf-notice-title {
-    color: #0f172a;
+    color: var(--cf-notice-error-title);
 }
+
 .cf-notice.error .cf-notice-desc {
-    color: #475569;
+    color: var(--cf-notice-error-desc);
 }
+
 .cf-notice.error .cf-notice-close {
-    color: #475569;
-}
-
-/* ── Dark Mode Adaptations ── */
-body[data-framer-theme="dark"] .cf-notice.info,
-[data-theme="dark"] .cf-notice.info {
-    background-color: rgba(59, 130, 246, 0.12);
-    border-color: rgba(59, 130, 246, 0.24);
-}
-body[data-framer-theme="dark"] .cf-notice.info .cf-notice-icon-col,
-[data-theme="dark"] .cf-notice.info .cf-notice-icon-col {
-    color: #60a5fa;
-}
-body[data-framer-theme="dark"] .cf-notice.info .cf-notice-title,
-[data-theme="dark"] .cf-notice.info .cf-notice-title {
-    color: #f8fafc;
-}
-body[data-framer-theme="dark"] .cf-notice.info .cf-notice-desc,
-[data-theme="dark"] .cf-notice.info .cf-notice-desc {
-    color: #94a3b8;
-}
-
-body[data-framer-theme="dark"] .cf-notice.success,
-[data-theme="dark"] .cf-notice.success {
-    background-color: rgba(34, 197, 94, 0.12);
-    border-color: rgba(34, 197, 94, 0.24);
-}
-body[data-framer-theme="dark"] .cf-notice.success .cf-notice-icon-col,
-[data-theme="dark"] .cf-notice.success .cf-notice-icon-col {
-    color: #4ade80;
-}
-body[data-framer-theme="dark"] .cf-notice.success .cf-notice-title,
-[data-theme="dark"] .cf-notice.success .cf-notice-title {
-    color: #f8fafc;
-}
-body[data-framer-theme="dark"] .cf-notice.success .cf-notice-desc,
-[data-theme="dark"] .cf-notice.success .cf-notice-desc {
-    color: #94a3b8;
-}
-
-body[data-framer-theme="dark"] .cf-notice.warning,
-[data-theme="dark"] .cf-notice.warning {
-    background-color: rgba(245, 158, 11, 0.12);
-    border-color: rgba(245, 158, 11, 0.24);
-}
-body[data-framer-theme="dark"] .cf-notice.warning .cf-notice-icon-col,
-[data-theme="dark"] .cf-notice.warning .cf-notice-icon-col {
-    color: #fbbf24;
-}
-body[data-framer-theme="dark"] .cf-notice.warning .cf-notice-title,
-[data-theme="dark"] .cf-notice.warning .cf-notice-title {
-    color: #f8fafc;
-}
-body[data-framer-theme="dark"] .cf-notice.warning .cf-notice-desc,
-[data-theme="dark"] .cf-notice.warning .cf-notice-desc {
-    color: #94a3b8;
-}
-
-body[data-framer-theme="dark"] .cf-notice.error,
-[data-theme="dark"] .cf-notice.error {
-    background-color: rgba(239, 68, 68, 0.12);
-    border-color: rgba(239, 68, 68, 0.24);
-}
-body[data-framer-theme="dark"] .cf-notice.error .cf-notice-icon-col,
-[data-theme="dark"] .cf-notice.error .cf-notice-icon-col {
-    color: #f87171;
-}
-body[data-framer-theme="dark"] .cf-notice.error .cf-notice-title,
-[data-theme="dark"] .cf-notice.error .cf-notice-title {
-    color: #f8fafc;
-}
-body[data-framer-theme="dark"] .cf-notice.error .cf-notice-desc,
-[data-theme="dark"] .cf-notice.error .cf-notice-desc {
-    color: #94a3b8;
+    color: var(--cf-notice-error-close);
 }
 
 body[data-framer-theme="dark"] .cf-notice-close:hover,
@@ -1450,16 +1510,16 @@ button.cf-reset-link:hover {
 
 /* Interactive Preview Container */
 .preview-container {
-	border: 1px solid var(--cf-border);
-	border-radius: var(--cf-radius);
-	background: var(--cf-preview-bg);
-	background-image: linear-gradient(var(--cf-preview-grid) 1px, transparent 1px), linear-gradient(90deg, var(--cf-preview-grid) 1px, transparent 1px);
-	background-size: 16px 16px;
-	height: 440px;
-	position: relative;
-	overflow: hidden;
-	display: flex;
-	flex-direction: column;
+    border: 1px solid var(--cf-border);
+    border-radius: var(--cf-radius);
+    background: var(--cf-preview-bg);
+    background-image: linear-gradient(var(--cf-preview-grid) 1px, transparent 1px), linear-gradient(90deg, var(--cf-preview-grid) 1px, transparent 1px);
+    background-size: 16px 16px;
+    height: 440px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .preview-toolbar {
@@ -1738,6 +1798,7 @@ button.preview-status-tag.is-clickable:hover {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    margin-bottom: 10px;
 }
 
 .preview-modal-title {
@@ -1761,6 +1822,7 @@ button.preview-status-tag.is-clickable:hover {
     color: #ffffff !important;
     cursor: pointer !important;
     font-size: 11px !important;
+    margin-left: auto !important;
 }
 
 .preview-modal-subtitle,
@@ -1972,6 +2034,7 @@ p.preview-modal-subtitle {
         opacity: 0;
         transform: translateY(12px) scale(0.95);
     }
+
     100% {
         opacity: 1;
         transform: translateY(0) scale(1);
@@ -1983,6 +2046,7 @@ p.preview-modal-subtitle {
         opacity: 0;
         transform: translateY(-4px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -1999,6 +2063,7 @@ p.preview-modal-subtitle {
     from {
         transform: rotate(0deg);
     }
+
     to {
         transform: rotate(360deg);
     }
@@ -2178,11 +2243,11 @@ p.preview-modal-subtitle {
     width: 100%;
     height: 38px;
     padding: 0 16px;
-    background: linear-gradient(180deg, #5271ff 0%, #3b51b8 100%) !important;
-    color: #ffffff !important;
-    border: 1px solid rgba(255, 255, 255, 0.14) !important;
-    border-radius: 10px;
-    box-shadow: 0 2px 6px -2px rgba(82, 113, 255, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    background: var(--cf-primary-cta-bg) !important;
+    color: var(--cf-primary-cta-color) !important;
+    border: 1px solid var(--cf-primary-cta-border) !important;
+    border-radius: var(--cf-primary-cta-radius);
+    box-shadow: var(--cf-primary-cta-shadow);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -2197,13 +2262,13 @@ p.preview-modal-subtitle {
 }
 
 .primary-cta:hover:not(:disabled) {
-    background: linear-gradient(180deg, #4761db 0%, #3448a6 100%) !important;
-    box-shadow: 0 4px 14px rgba(82, 113, 255, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    background: var(--cf-primary-cta-bg-hover) !important;
+    box-shadow: var(--cf-primary-cta-shadow-hover);
     transform: translateY(-1px);
 }
 
 .primary-cta:active:not(:disabled) {
-    background: #3b51b8 !important;
+    background: var(--cf-primary-cta-bg-active) !important;
     transform: scale(0.985);
     box-shadow: 0 1px 3px rgba(82, 113, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
@@ -2230,10 +2295,10 @@ p.preview-modal-subtitle {
     line-height: 1;
     height: 38px !important;
     padding: 0 16px !important;
-    background: var(--cf-bg-tertiary) !important;
-    color: var(--cf-text) !important;
-    border: 1px solid var(--cf-border) !important;
-    border-radius: 10px !important;
+    background: var(--cf-secondary-cta-bg) !important;
+    color: var(--cf-secondary-cta-color) !important;
+    border: 1px solid var(--cf-secondary-cta-border) !important;
+    border-radius: var(--cf-secondary-cta-radius) !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -2248,15 +2313,15 @@ p.preview-modal-subtitle {
 }
 
 .secondary-cta:hover:not(:disabled) {
-    background: var(--cf-control-hover) !important;
-    border-color: var(--cf-border-hover) !important;
-    color: var(--cf-text) !important;
+    background: var(--cf-secondary-cta-hover-bg) !important;
+    border-color: var(--cf-secondary-cta-hover-border) !important;
+    color: var(--cf-secondary-cta-color) !important;
     transform: translateY(-1px);
 }
 
 .secondary-cta:active:not(:disabled) {
     transform: scale(0.985) !important;
-    background: var(--cf-control) !important;
+    background: var(--cf-secondary-cta-bg) !important;
 }
 
 .secondary-cta:focus-visible {
@@ -2341,9 +2406,9 @@ p.preview-modal-subtitle {
 
 /* 3. Hero Card Component (.cf-hero-card) */
 .cf-hero-card {
-    background: var(--cf-bg-secondary);
-    border: 1px solid var(--cf-border);
-    border-radius: 18px;
+    background: var(--cf-hero-card-bg);
+    border: 1px solid var(--cf-hero-card-border);
+    border-radius: var(--cf-hero-card-radius);
     padding: 18px;
     display: flex;
     flex-direction: column;
@@ -2453,8 +2518,8 @@ button.cf-hero-config-item:hover {
 }
 
 .cf-hero-config-val {
-    font-size: 12.5px;
-    font-weight: 700;
+    font-size: 13px;
+    font-weight: 600;
     color: var(--cf-text);
     white-space: nowrap;
     overflow: hidden;
@@ -2480,15 +2545,15 @@ button.cf-hero-config-item:hover {
 }
 
 .cf-badge-brand {
-    background: rgba(82, 113, 255, 0.15);
-    color: #708aff;
-    border: 1px solid rgba(82, 113, 255, 0.3);
+    background: var(--cf-badge-brand-bg);
+    color: var(--cf-badge-brand-color);
+    border: 1px solid var(--cf-badge-brand-border);
 }
 
 .cf-badge-pro {
-    background: rgba(139, 92, 246, 0.18);
-    color: #c4b5fd;
-    border: 1px solid rgba(139, 92, 246, 0.35);
+    background: var(--cf-badge-pro-bg);
+    color: var(--cf-badge-pro-color);
+    border: 1px solid var(--cf-badge-pro-border);
 }
 
 /* 5. Help Tiles Row (.cf-help-tile-row) */
@@ -2952,18 +3017,53 @@ button.cf-builder-subtab.active,
 }
 
 /* 11. Channel Specific Colors (Zero-Inline-CSS for Channel Badges) */
-.cf-ch-whatsapp { background-color: #25d366 !important; }
-.cf-ch-messenger { background-color: #0084ff !important; }
-.cf-ch-telegram { background-color: #229ed9 !important; }
-.cf-ch-instagram { background-color: #e1306c !important; }
-.cf-ch-tiktok { background-color: #111111 !important; }
-.cf-ch-wechat { background-color: #07c160 !important; }
-.cf-ch-viber { background-color: #7360f2 !important; }
-.cf-ch-line { background-color: #06c755 !important; }
-.cf-ch-signal { background-color: #3a76f0 !important; }
-.cf-ch-phone { background-color: #111827 !important; }
-.cf-ch-email { background-color: #ea4335 !important; }
-.cf-ch-custom { background-color: #111827 !important; }
+.cf-ch-whatsapp {
+    background-color: var(--cf-ch-whatsapp) !important;
+}
+
+.cf-ch-messenger {
+    background-color: var(--cf-ch-messenger) !important;
+}
+
+.cf-ch-telegram {
+    background-color: var(--cf-ch-telegram) !important;
+}
+
+.cf-ch-instagram {
+    background-color: var(--cf-ch-instagram) !important;
+}
+
+.cf-ch-tiktok {
+    background-color: var(--cf-ch-tiktok) !important;
+}
+
+.cf-ch-wechat {
+    background-color: var(--cf-ch-wechat) !important;
+}
+
+.cf-ch-viber {
+    background-color: var(--cf-ch-viber) !important;
+}
+
+.cf-ch-line {
+    background-color: var(--cf-ch-line) !important;
+}
+
+.cf-ch-signal {
+    background-color: var(--cf-ch-signal) !important;
+}
+
+.cf-ch-phone {
+    background-color: var(--cf-ch-phone) !important;
+}
+
+.cf-ch-email {
+    background-color: var(--cf-ch-email) !important;
+}
+
+.cf-ch-custom {
+    background-color: var(--cf-ch-custom) !important;
+}
 
 /* 12. Clean Utilities Replacing Inline Styles in App.tsx */
 .cf-hidden-file-input {
@@ -2977,7 +3077,7 @@ button.cf-builder-subtab.active,
     gap: 18px !important;
 }
 
-.cf-flex-between > div:first-child {
+.cf-flex-between>div:first-child {
     flex: 1 1 auto;
     min-width: 0;
 }
@@ -3531,34 +3631,34 @@ button.cf-day-pill {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    height: 30px !important;
+    height: 28px !important;
     width: 100% !important;
     min-width: 0 !important;
     padding: 0 !important;
-    border-radius: 8px !important;
+    border-radius: 6px !important;
     border: 1px solid var(--cf-border) !important;
-    background: var(--cf-control) !important;
+    background: var(--cf-bg-secondary) !important;
     color: var(--cf-text-secondary) !important;
     font-size: 11.5px !important;
-    font-weight: 600 !important;
+    font-weight: 500 !important;
     cursor: pointer !important;
     text-align: center !important;
     user-select: none !important;
-    transition: all 0.15s ease !important;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease !important;
 }
 
 button.cf-day-pill:hover {
     border-color: var(--cf-border-hover) !important;
     color: var(--cf-text) !important;
-    background: var(--cf-control-hover) !important;
+    background: var(--cf-bg-tertiary) !important;
 }
 
 button.cf-day-pill.active {
-    background: #0099ff !important;
-    border-color: #0099ff !important;
+    background: var(--cf-tint, #5271ff) !important;
+    border-color: var(--cf-tint, #5271ff) !important;
     color: #ffffff !important;
-    font-weight: 700 !important;
-    box-shadow: 0 2px 8px rgba(0, 153, 255, 0.4) !important;
+    font-weight: 600 !important;
+    box-shadow: 0 1px 3px rgba(82, 113, 255, 0.28) !important;
 }
 
 .cf-day-presets {
@@ -3576,32 +3676,33 @@ button.cf-preset-btn {
     box-sizing: border-box !important;
     display: inline-flex !important;
     align-items: center !important;
-    padding: 3px 9px !important;
+    height: 24px !important;
+    padding: 0 10px !important;
     border-radius: 999px !important;
     border: 1px solid var(--cf-border) !important;
-    background: var(--cf-bg-tertiary) !important;
+    background: var(--cf-bg-secondary) !important;
     color: var(--cf-text-secondary) !important;
-    font-size: 10.5px !important;
+    font-size: 11px !important;
     font-weight: 500 !important;
     cursor: pointer !important;
     user-select: none !important;
-    transition: all 0.15s ease !important;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease !important;
 }
 
 button.cf-preset-pill:hover,
 button.cf-preset-btn:hover {
     color: var(--cf-text) !important;
-    background: var(--cf-control-hover) !important;
+    background: var(--cf-bg-tertiary) !important;
     border-color: var(--cf-border-hover) !important;
 }
 
 button.cf-preset-pill.is-active,
 button.cf-preset-btn.is-active {
     color: #ffffff !important;
-    border-color: #0099ff !important;
-    background: #0099ff !important;
+    border-color: var(--cf-tint, #5271ff) !important;
+    background: var(--cf-tint, #5271ff) !important;
     font-weight: 600 !important;
-    box-shadow: 0 1px 4px rgba(0, 153, 255, 0.3) !important;
+    box-shadow: 0 1px 3px rgba(82, 113, 255, 0.25) !important;
 }
 
 .cf-preset-link {
@@ -3728,10 +3829,213 @@ button.cf-btn-test-chime:hover {
     color: var(--cf-text-tertiary);
 }
 
+/* 18. Segmented Control Pattern (Framer design pattern matching user reference) */
+.cf-segmented-control-wrapper {
+    display: flex;
+    width: 100%;
+    margin-top: 4px;
+}
+
+.cf-segmented-control {
+    display: inline-flex;
+    align-items: center;
+    background: #ebebeb;
+    padding: 3px;
+    border-radius: 9px;
+    width: 100%;
+    box-sizing: border-box;
+    gap: 3px;
+}
+
+.app.dark .cf-segmented-control,
+[data-framer-theme="dark"] .cf-segmented-control {
+    background: #1c1c1f;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.app.light .cf-segmented-control {
+    background: #f0f0f2;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+button.cf-segment-item,
+.cf-segment-item {
+    all: unset !important;
+    flex: 1 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    padding: 7px 12px !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    line-height: 1.2 !important;
+    color: var(--cf-text-secondary) !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    text-align: center !important;
+    user-select: none !important;
+    box-sizing: border-box !important;
+    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.app.light button.cf-segment-item:not(.active):hover,
+[data-framer-theme="light"] button.cf-segment-item:not(.active):hover {
+    background: rgba(0, 0, 0, 0.05) !important;
+    color: #111111 !important;
+}
+
+.app.dark button.cf-segment-item:not(.active):hover,
+[data-framer-theme="dark"] button.cf-segment-item:not(.active):hover {
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: #ffffff !important;
+}
+
+.app.light button.cf-segment-item.active,
+[data-framer-theme="light"] button.cf-segment-item.active {
+    background: #ffffff !important;
+    color: #111111 !important;
+    font-weight: 600 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.06) !important;
+}
+
+.app.dark button.cf-segment-item.active,
+[data-framer-theme="dark"] button.cf-segment-item.active {
+    background: #2b2b2f !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* 19. Custom Header Gradient Color Picker */
+.cf-gradient-picker-box {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: var(--cf-bg-tertiary);
+    border: 1px solid var(--cf-border);
+    border-radius: var(--cf-radius);
+    padding: 12px;
+    margin-top: 4px;
+}
+
+.cf-gradient-preview-wrap {
+    position: relative;
+    width: 100%;
+    height: 40px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--cf-border);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.cf-gradient-preview-bar {
+    width: 100%;
+    height: 100%;
+    transition: background 0.15s ease;
+}
+
+.cf-gradient-angle-badge {
+    position: absolute;
+    bottom: 6px;
+    right: 8px;
+    padding: 2px 7px;
+    border-radius: 6px;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #ffffff;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    pointer-events: none;
+}
+
+.cf-gradient-presets-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--cf-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.cf-gradient-presets-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.cf-gradient-preset-pill {
+    all: unset;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 10px;
+    border-radius: 7px;
+    background: var(--cf-control);
+    border: 1px solid var(--cf-border);
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--cf-text);
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: all 0.15s ease;
+}
+
+.cf-gradient-preset-pill:hover {
+    background: var(--cf-control-hover);
+    border-color: var(--cf-border-hover);
+}
+
+.cf-gradient-preset-pill.active {
+    border-color: var(--cf-tint);
+    background: var(--cf-tint-subtle);
+    color: var(--cf-tint);
+    font-weight: 600;
+}
+
+.cf-gradient-preset-dot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 12px;
+    height: 12px;
+}
+
+.cf-angle-presets {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+}
+
+.cf-angle-preset-pill {
+    all: unset;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--cf-text-secondary);
+    background: var(--cf-control);
+    border: 1px solid var(--cf-border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-sizing: border-box;
+}
+
+.cf-angle-preset-pill:hover {
+    color: var(--cf-text);
+    border-color: var(--cf-border-hover);
+}
+
+.cf-angle-preset-pill.active {
+    background: var(--cf-tint);
+    color: #ffffff;
+    border-color: var(--cf-tint);
+    font-weight: 600;
+}
+
 #framer-environment-error {
     display: none !important;
 }
-
-
-
-

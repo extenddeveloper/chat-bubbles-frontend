@@ -2,6 +2,7 @@ import { framer } from "@framer/plugin"
 import type { ChatConfig } from "../types"
 import { ICONS } from "../widget/icons"
 import { MODAL_THEME_GRADIENTS } from "../core/config"
+import { SVG_AVATAR_PRESETS } from "../core/avatars"
 
 export function generateComponentCode(config: ChatConfig): string {
     const iconEntries = Object.entries(ICONS)
@@ -20,21 +21,21 @@ export function generateComponentCode(config: ChatConfig): string {
                       id: "agent-1",
                       name: "Alex",
                       role: "Support Manager",
-                      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80",
+                      avatar: SVG_AVATAR_PRESETS[0],
                       channelId: "whatsapp",
                   },
                   {
                       id: "agent-2",
                       name: "Sarah",
                       role: "Customer Support",
-                      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&auto=format&fit=crop&q=80",
+                      avatar: SVG_AVATAR_PRESETS[1],
                       channelId: "messenger",
                   },
                   {
                       id: "agent-3",
                       name: "David",
                       role: "Technical Team",
-                      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80",
+                      avatar: SVG_AVATAR_PRESETS[2],
                       channelId: "telegram",
                   },
               ]
@@ -142,6 +143,8 @@ interface ChatBubblesProps {
     targetingEnabled?: boolean
     targetingMode?: "show" | "hide"
     targetingRules?: string
+    agentsData?: string
+    scheduleDaysData?: string
 }
 
 // Web Audio Synthesizer singleton & gesture unlocker
@@ -280,6 +283,8 @@ export default function ChatBubbles(props: ChatBubblesProps) {
         targetingEnabled = ${Boolean(config.targetingEnabled)},
         targetingMode = ${JSON.stringify(config.targetingMode || "show")},
         targetingRules = ${JSON.stringify(config.targetingRules || "")},
+        agentsData = ${JSON.stringify(JSON.stringify(config.agents || []))},
+        scheduleDaysData = ${JSON.stringify(JSON.stringify(config.scheduleDays || [1, 2, 3, 4, 5]))},
         whatsapp = ${JSON.stringify(config.channels.find((c) => c.id === "whatsapp")?.value || "")},
         whatsappMessage = ${JSON.stringify(config.channels.find((c) => c.id === "whatsapp")?.message || "Hello! I would like to know more.")},
         messenger = ${JSON.stringify(config.channels.find((c) => c.id === "messenger")?.value || "")},
@@ -310,21 +315,54 @@ export default function ChatBubbles(props: ChatBubblesProps) {
     const [isOpen, setIsOpen] = React.useState(isCanvas ? canvasPreview !== "closed" : false)
     const [greetingDismissed, setGreetingDismissed] = React.useState(false)
     const [selectedAgent, setSelectedAgent] = React.useState<any | null>(null)
+    const [navDirection, setNavDirection] = React.useState<"forward" | "backward">("forward")
     const [customMessage, setCustomMessage] = React.useState("")
     const [mobileExpanded, setMobileExpanded] = React.useState(false)
+
+    // Single-instance duplicate protection: prevents duplicating via Ctrl+C / Ctrl+V or Alt+Drag
+    const instanceId = React.useMemo(() => Math.random().toString(36).slice(2, 9), [])
+    const [isDuplicate, setIsDuplicate] = React.useState(false)
+
+    React.useEffect(() => {
+        if (typeof window === "undefined") return
+        const w = window as any
+        w.__chat_bubbles_instances__ = w.__chat_bubbles_instances__ || []
+        const reg: string[] = w.__chat_bubbles_instances__
+        if (reg.indexOf(instanceId) === -1) {
+            reg.push(instanceId)
+        }
+        // If this instance is not the first registered instance, mark it as duplicate
+        setIsDuplicate(reg.indexOf(instanceId) > 0)
+
+        return () => {
+            const idx = reg.indexOf(instanceId)
+            if (idx >= 0) {
+                reg.splice(idx, 1)
+            }
+        }
+    }, [instanceId])
 
     // Delays normalization (supports milliseconds or seconds)
     const finalGreetingDelay = Number(greetingDelay ?? 2000) > 60 ? Number(greetingDelay ?? 2000) : Number(greetingDelay ?? 2) * 1000
     const finalAutoOpenDelay = Number(autoOpenDelay ?? 1200) > 60 ? Number(autoOpenDelay ?? 1200) : Number(autoOpenDelay ?? 1.2) * 1000
 
     // 1. Operating Hours & Days Schedule Calculation
+    const activeScheduleDays = React.useMemo(() => {
+        if (typeof scheduleDaysData === "string" && scheduleDaysData.trim()) {
+            try {
+                const parsed = JSON.parse(scheduleDaysData)
+                if (Array.isArray(parsed)) return parsed
+            } catch {}
+        }
+        return Array.isArray(scheduleDays) ? scheduleDays : [1, 2, 3, 4, 5]
+    }, [scheduleDaysData, scheduleDays])
+
     const isOffline = React.useMemo(() => {
         if (isCanvas || !scheduleEnabled) return false
         try {
             const now = new Date()
             const curDay = now.getDay()
-            const days = Array.isArray(scheduleDays) ? scheduleDays : [1, 2, 3, 4, 5]
-            if (!days.includes(curDay)) return true
+            if (!activeScheduleDays.includes(curDay)) return true
             const curMins = now.getHours() * 60 + now.getMinutes()
             const sParts = String(scheduleStart || "09:00").split(":")
             const eParts = String(scheduleEnd || "18:00").split(":")
@@ -338,29 +376,78 @@ export default function ChatBubbles(props: ChatBubblesProps) {
         } catch {
             return false
         }
-    }, [isCanvas, scheduleEnabled, scheduleDays, scheduleStart, scheduleEnd])
+    }, [isCanvas, scheduleEnabled, activeScheduleDays, scheduleStart, scheduleEnd])
 
-    // 2. Page / URL Targeting Filter (supports path wildcards and clean rule parsing)
+    // 2. Dynamic Location Tracker for Page Targeting & SPA Navigation in Framer
+    const [currentLocationPath, setCurrentLocationPath] = React.useState(() => {
+        return typeof window !== "undefined" && window.location && window.location.pathname ? window.location.pathname : "/"
+    })
+
+    React.useEffect(() => {
+        if (typeof window === "undefined") return
+        function syncLocationPath() {
+            const next = window.location && window.location.pathname ? window.location.pathname : "/"
+            setCurrentLocationPath((prev: string) => (prev !== next ? next : prev))
+        }
+        window.addEventListener("popstate", syncLocationPath)
+        const pathPollTimer = setInterval(syncLocationPath, 400)
+        return () => {
+            window.removeEventListener("popstate", syncLocationPath)
+            clearInterval(pathPollTimer)
+        }
+    }, [])
+
+    // Page / URL Targeting Filter (supports newlines, commas, subpaths, trailing slashes, and wildcards)
     const isTargetingAllowed = React.useMemo(() => {
         if (isCanvas || !targetingEnabled || !targetingRules) return true
         try {
-            const curPath = (typeof window !== "undefined" && window.location && window.location.pathname ? window.location.pathname : "/").toLowerCase()
-            const rawRules = String(targetingRules).split("\\\\n").join(",").split(";").join(",").split(",")
+            const curPath = (currentLocationPath || "/").toLowerCase().trim()
+            const curHref = (typeof window !== "undefined" && window.location && window.location.href ? window.location.href : "").toLowerCase()
+            const rawRules = String(targetingRules).split(/[\\r\\n,;]+/)
             const rules = rawRules.map((r: string) => r.trim().toLowerCase()).filter(Boolean)
             if (rules.length === 0) return true
-            const isMatch = rules.some((rule: string) => {
-                const normRule = rule.startsWith("/") ? rule : "/" + rule
-                if (normRule.endsWith("*")) {
-                    const prefix = normRule.slice(0, -1)
+
+            const isMatch = rules.some((ruleInput: string) => {
+                let rule = ruleInput
+                if (rule === "*" || rule === "/*") return true
+
+                // Full URL match if protocol or host provided
+                if (rule.includes("://") || rule.includes(".")) {
+                    if (curHref === rule || curHref === rule + "/") return true
+                    if (rule.endsWith("*") && curHref.startsWith(rule.slice(0, -1))) return true
+                    try {
+                        const parsed = new URL(rule.includes("://") ? rule : "https://" + rule)
+                        rule = parsed.pathname
+                    } catch {}
+                }
+
+                const cleanRule = rule.startsWith("/") ? rule : "/" + rule
+
+                // Homepage alias handling:
+                // Users commonly enter "/home", "home", "/index", "index", or "/" expecting it to match root homepage "/"!
+                const isHomeRule = cleanRule === "/" || cleanRule === "/home" || cleanRule === "/index"
+                const isHomePath = curPath === "/" || curPath === "" || curPath === "/home" || curPath === "/index"
+                if (isHomeRule && isHomePath) return true
+
+                if (cleanRule.endsWith("/*")) {
+                    const prefix = cleanRule.slice(0, -2)
+                    return curPath === prefix || curPath === prefix + "/" || curPath.startsWith(prefix + "/")
+                }
+                if (cleanRule.endsWith("*")) {
+                    const prefix = cleanRule.slice(0, -1)
                     return curPath.startsWith(prefix)
                 }
-                return curPath === normRule || curPath === normRule + "/" || (normRule.endsWith("/") && curPath + "/" === normRule)
+
+                const ruleNoSlash = cleanRule.replace(/\\/+$/, "")
+                const pathNoSlash = curPath.replace(/\\/+$/, "")
+                return curPath === cleanRule || pathNoSlash === ruleNoSlash
             })
+
             return targetingMode === "hide" ? !isMatch : isMatch
         } catch {
             return true
         }
-    }, [isCanvas, targetingEnabled, targetingRules, targetingMode])
+    }, [isCanvas, targetingEnabled, targetingRules, targetingMode, currentLocationPath])
 
     // Strict visibility guard: if hidden by targeting or operating schedule, widget returns null & suppresses sound
     const isWidgetHidden = (!isCanvas && !isTargetingAllowed) || (!isCanvas && scheduleEnabled && isOffline && scheduleOfflineAction === "hide")
@@ -581,6 +668,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
             if (closeOnEscape && e.key === "Escape") {
                 setIsOpen(false)
                 setSelectedAgent(null)
+                setNavDirection("forward")
             }
         }
         function handleClickOutside(e: MouseEvent) {
@@ -595,6 +683,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
             if (closeOnOutsideClick) {
                 setIsOpen(false)
                 setSelectedAgent(null)
+                setNavDirection("forward")
             }
         }
 
@@ -610,15 +699,25 @@ export default function ChatBubbles(props: ChatBubblesProps) {
         }
     }, [isOpen, closeOnEscape, closeOnOutsideClick])
 
-    const rawAgents = React.useMemo(() => ${defaultAgentsJson}, [])
+    const rawAgents = React.useMemo(() => {
+        if (typeof agentsData === "string" && agentsData.trim()) {
+            try {
+                const parsed = JSON.parse(agentsData)
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed
+            } catch {}
+        }
+        return ${defaultAgentsJson}
+    }, [agentsData])
 
     // Synchronize canvas preview state in Framer design canvas mode
     React.useEffect(() => {
         if (isCanvas) {
             setIsOpen(canvasPreview !== "closed")
             if (canvasPreview === "chat" && rawAgents.length > 0) {
+                setNavDirection("forward")
                 setSelectedAgent(rawAgents[0])
             } else if (canvasPreview !== "chat") {
+                setNavDirection("backward")
                 setSelectedAgent(null)
             }
         }
@@ -720,7 +819,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
             const rawAv = ag.avatar || ""
             const safeAvatar = (rawAv.startsWith("http://") || rawAv.startsWith("https://") || rawAv.startsWith("data:image/"))
                 ? rawAv
-                : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80"
+                : ${JSON.stringify(SVG_AVATAR_PRESETS[0])}
             const rawVal = ag.value || (ch ? ch.value : "")
             const rawMsg = ag.message || (ch ? ch.message : "")
             let directUrl = ch ? ch.url : "https://wa.me/"
@@ -907,14 +1006,112 @@ export default function ChatBubbles(props: ChatBubblesProps) {
 
     if (isWidgetHidden) return null
 
+    // Duplicate component blocker: renders warning and disables chat interaction if cloned or duplicated
+    const duplicateBoxStyle: React.CSSProperties = {
+        width: "100%",
+        minHeight: 140,
+        borderRadius: 16,
+        border: "2px dashed #EF4444",
+        background: "rgba(239, 68, 68, 0.08)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
+        boxSizing: "border-box",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "20px 16px",
+        textAlign: "center",
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+        color: "#ffffff",
+        userSelect: "none",
+    }
+    const duplicateIconStyle: React.CSSProperties = {
+        width: 42,
+        height: 42,
+        borderRadius: "50%",
+        background: "rgba(239, 68, 68, 0.2)",
+        border: "1px solid rgba(239, 68, 68, 0.4)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        marginBottom: 10,
+        color: "#EF4444",
+    }
+    const duplicateTitleStyle: React.CSSProperties = {
+        fontSize: 14,
+        fontWeight: 700,
+        color: "#EF4444",
+        marginBottom: 6,
+    }
+    const duplicateDescStyle: React.CSSProperties = {
+        fontSize: 12,
+        opacity: 0.85,
+        maxWidth: 260,
+        lineHeight: 1.45,
+        color: "#94a3b8",
+    }
+
+    if (isDuplicate) {
+        return (
+            <div
+                className="framefic-duplicate-limit-container"
+                style={duplicateBoxStyle}
+            >
+                <div style={duplicateIconStyle}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                    </svg>
+                </div>
+                <div style={duplicateTitleStyle}>
+                    Duplicate Component Detected
+                </div>
+                <div style={duplicateDescStyle}>
+                    Chat Bubbles cannot be copied or duplicated via Ctrl+C / Ctrl+V or Alt+Drag. Only 1 floating widget instance is supported.
+                </div>
+            </div>
+        )
+    }
+
     return (
-        <div ref={containerRef} style={containerStyle}>
+        <div
+            ref={containerRef}
+            style={containerStyle}
+            draggable={false}
+            onDragStart={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+            }}
+            onCopy={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+            }}
+        >
             <style>{\`
               @keyframes cfFadeIn { from { opacity: 0; transform: translateY(10px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
               @keyframes cfPopIn { 0% { transform: scale(0.7); opacity: 0; } 70% { transform: scale(1.06); } 100% { transform: scale(1); opacity: 1; } }
               @keyframes cfBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
               @keyframes cfPulse { 0%, 100% { transform: scale(1); box-shadow: 0 12px 30px rgba(0,0,0,0.25); } 50% { transform: scale(1.05); box-shadow: 0 16px 36px rgba(0,0,0,0.35); } }
               @keyframes cfSlideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+              @keyframes cfSlideInRight { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }
+              @keyframes cfSlideInLeft { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: translateX(0); } }
+              @keyframes cfFadeScale { from { opacity: 0; transform: scale(0.75); } to { opacity: 1; transform: scale(1); } }
+
+              .cf-view-slide-forward {
+                animation: cfSlideInRight 0.28s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+                will-change: transform, opacity !important;
+              }
+              .cf-view-slide-backward {
+                animation: cfSlideInLeft 0.28s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+                will-change: transform, opacity !important;
+              }
+              button.cf-header-btn.cf-header-back-btn {
+                animation: cfFadeScale 0.22s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+              }
+              button.cf-header-btn.cf-header-close-btn {
+                margin-left: auto !important;
+              }
 
               a.cf-channel-btn, .cf-channel-btn, a.cf-channel-btn:link, a.cf-channel-btn:visited, a.cf-channel-btn:hover, a.cf-channel-btn:active {
                 width: 44px !important;
@@ -1055,6 +1252,13 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                 display: flex !important;
                 align-items: center !important;
                 justify-content: space-between !important;
+                width: 100% !important;
+                margin-bottom: 12px !important;
+              }
+              .cf-canvas-header-info {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 6px !important;
               }
               .cf-canvas-modal-h3 {
                 margin: 0 !important;
@@ -1105,6 +1309,20 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                 background-color: #f9fafb !important;
                 border: 1px solid #f3f4f6 !important;
                 cursor: pointer !important;
+                transition: background-color 0.18s ease, transform 0.18s ease, border-color 0.18s ease !important;
+              }
+              .cf-canvas-agent-card:hover {
+                background-color: #f3f4f6 !important;
+                border-color: #e5e7eb !important;
+                transform: translateY(-1px) !important;
+              }
+              .cf-canvas-agent-arrow {
+                transition: transform 0.18s ease !important;
+                display: flex !important;
+                align-items: center !important;
+              }
+              .cf-canvas-agent-card:hover .cf-canvas-agent-arrow {
+                transform: translateX(2px) !important;
               }
               .cf-canvas-agent-av-wrap {
                 position: relative !important;
@@ -1283,7 +1501,10 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                     e.stopPropagation()
                     const nextOpen = !isOpen
                     setIsOpen(nextOpen)
-                    if (isOpen) setSelectedAgent(null)
+                    if (isOpen) {
+                        setSelectedAgent(null)
+                        setNavDirection("forward")
+                    }
                 }}
                 aria-label={ariaLabel}
                 aria-expanded={isOpen}
@@ -1337,9 +1558,10 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                             {selectedAgent ? (
                                 <button
                                     type="button"
-                                    className="cf-header-btn"
+                                    className="cf-header-btn cf-header-back-btn"
                                     onClick={(e) => {
                                         e.stopPropagation()
+                                        setNavDirection("backward")
                                         setSelectedAgent(null)
                                     }}
                                     aria-label="Back to agent list"
@@ -1360,11 +1582,12 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                             ) : null}
                             <button
                                 type="button"
-                                className="cf-header-btn"
+                                className="cf-header-btn cf-header-close-btn"
                                 onClick={(e) => {
                                     e.stopPropagation()
                                     setIsOpen(false)
                                     setSelectedAgent(null)
+                                    setNavDirection("forward")
                                 }}
                                 aria-label="Close chat"
                             >
@@ -1382,22 +1605,30 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                                 </svg>
                             </button>
                         </div>
-                        <h3 className="cf-canvas-modal-h3">
-                            {selectedAgent ? selectedAgent.name : modalTitle}
-                        </h3>
-                        <p className="cf-canvas-modal-p">
-                            {selectedAgent ? selectedAgent.role : modalSubtitle}
-                        </p>
-                        {!selectedAgent && (modalResponseTime || (scheduleEnabled && isOffline)) ? (
-                            <span className={"cf-canvas-response-badge" + (isOffline ? " offline" : "")}>
-                                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.2l2.2 1.3"/></svg>
-                                <span>{isOffline ? (scheduleOfflineText || "Back tomorrow at 9:00 AM") : modalResponseTime}</span>
-                            </span>
-                        ) : null}
+                        <div
+                            key={selectedAgent ? "header-agent-" + selectedAgent.id : "header-main"}
+                            className={"cf-canvas-header-info" + (selectedAgent ? " cf-view-slide-forward" : (navDirection === "backward" ? " cf-view-slide-backward" : ""))}
+                        >
+                            <h3 className="cf-canvas-modal-h3">
+                                {selectedAgent ? selectedAgent.name : modalTitle}
+                            </h3>
+                            <p className="cf-canvas-modal-p">
+                                {selectedAgent ? selectedAgent.role : modalSubtitle}
+                            </p>
+                            {!selectedAgent && (modalResponseTime || (scheduleEnabled && isOffline)) ? (
+                                <span className={"cf-canvas-response-badge" + (isOffline ? " offline" : "")}>
+                                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.2l2.2 1.3"/></svg>
+                                    <span>{isOffline ? (scheduleOfflineText || "Back tomorrow at 9:00 AM") : modalResponseTime}</span>
+                                </span>
+                            ) : null}
+                        </div>
                     </div>
 
                     {!selectedAgent ? (
-                        <div className="cf-canvas-agents-wrap">
+                        <div
+                            key="agents-list"
+                            className={"cf-canvas-agents-wrap" + (navDirection === "backward" ? " cf-view-slide-backward" : "")}
+                        >
                             {agents.map((agent: any) => {
                                 const agentBadgeBgStyle: React.CSSProperties = {
                                     background: agent.color,
@@ -1408,6 +1639,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                                         className="cf-canvas-agent-card"
                                         onClick={(e) => {
                                             e.stopPropagation()
+                                            setNavDirection("forward")
                                             setSelectedAgent(agent)
                                             setCustomMessage(agent.message || "")
                                         }}
@@ -1435,7 +1667,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                                                 {agent.role}{isOffline ? " • Offline" : ""}
                                             </div>
                                         </div>
-                                        <span>
+                                        <span className="cf-canvas-agent-arrow">
                                             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 3.5L10.5 8L6 12.5"/></svg>
                                         </span>
                                     </div>
@@ -1443,7 +1675,10 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                             })}
                         </div>
                     ) : (
-                        <div className="cf-canvas-chat-wrap">
+                        <div
+                            key={"chat-view-" + selectedAgent.id}
+                            className="cf-canvas-chat-wrap cf-view-slide-forward"
+                        >
                             <div className="cf-canvas-chat-bubble">
                                 {modalChatBubble || selectedAgent.message || "We typically reply within a few minutes. How can we help you today?"}
                             </div>
@@ -1482,6 +1717,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                                     if (closeAfterClick) {
                                         setIsOpen(false)
                                         setSelectedAgent(null)
+                                        setNavDirection("forward")
                                     }
                                 }}
                             >
@@ -2027,8 +2263,184 @@ addPropertyControls(ChatBubbles, {
         defaultValue: ${JSON.stringify(config.targetingRules || "")},
         hidden: (props: any) => !props.targetingEnabled,
     },
+    agentsData: {
+        type: ControlType.String,
+        title: "Agents Data",
+        defaultValue: ${JSON.stringify(JSON.stringify(config.agents || []))},
+        hidden: () => true,
+    },
+    scheduleDaysData: {
+        type: ControlType.String,
+        title: "Schedule Days Data",
+        defaultValue: ${JSON.stringify(JSON.stringify(config.scheduleDays || [1, 2, 3, 4, 5]))},
+        hidden: () => true,
+    },
 })
 `
+}
+
+export function buildControlPayload(config: ChatConfig) {
+    return {
+        canvasPreview: "modal",
+        widgetMode: config.widgetMode || "modal",
+        modalTheme: config.modalTheme || "whatsapp",
+        modalCustomGradient: config.modalCustomGradient || "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
+        modalTitle: config.modalTitle || "Hi there!",
+        modalSubtitle: config.modalSubtitle || "Welcome to our live chat! Feel free to ask any questions.",
+        modalResponseTime: config.modalResponseTime || "We typically reply within a few minutes",
+        modalChatBubble: config.modalChatBubble || "We typically reply within a few minutes. How can we help you today?",
+        modalStartChatText: config.modalStartChatText || "Start chat",
+        position: config.position || "bottom-right",
+        layout: config.layout || "stack",
+        animation: config.animation || "pop",
+        buttonColor: config.buttonColor || "#25D366",
+        buttonShape: config.buttonShape || "circle",
+        launcherText: "Chat",
+        launcherIcon: config.launcherIcon || "chat",
+        showLabels: Boolean(config.showLabels),
+        mobileShowLabels: Boolean(config.mobileShowLabels ?? false),
+        mobileOffsetX: Number(config.mobileOffsetX ?? 16),
+        mobileOffsetY: Number(config.mobileOffsetY ?? 16),
+        mobileCapChannels: Boolean(config.mobileCapChannels ?? true),
+        closeOnOutsideClick: Boolean(config.closeOnOutsideClick ?? true),
+        closeOnEscape: Boolean(config.closeOnEscape ?? true),
+        closeAfterClick: Boolean(config.closeAfterClick ?? true),
+        autoOpen: Boolean(config.autoOpen),
+        greetingEnabled: Boolean(config.greetingEnabled),
+        greetingText: config.greetingText || "Need help? Chat with us.",
+        enableSound: Boolean(config.enableSound),
+        showBadge: Boolean(config.showBadge),
+        badgeText: config.badgeText || "1",
+        scrollTriggerEnabled: Boolean(config.scrollTriggerEnabled),
+        scrollTriggerPercent: Number(config.scrollTriggerPercent ?? 25),
+        scrollTriggerTarget: config.scrollTriggerTarget || "launcher",
+        exitIntentEnabled: Boolean(config.exitIntentEnabled),
+        exitIntentAction: config.exitIntentAction || "modal",
+        scheduleEnabled: Boolean(config.scheduleEnabled),
+        scheduleStart: config.scheduleStart || "09:00",
+        scheduleEnd: config.scheduleEnd || "18:00",
+        scheduleOfflineAction: config.scheduleOfflineAction || "badge",
+        scheduleOfflineText: config.scheduleOfflineText || "Back tomorrow at 9:00 AM",
+        targetingEnabled: Boolean(config.targetingEnabled),
+        targetingMode: config.targetingMode || "show",
+        targetingRules: config.targetingRules || "",
+        whatsapp: config.channels.find((c) => c.id === "whatsapp")?.value || "",
+        whatsappMessage: config.channels.find((c) => c.id === "whatsapp")?.message || "Hello! I would like to know more.",
+        messenger: config.channels.find((c) => c.id === "messenger")?.value || "",
+        telegram: config.channels.find((c) => c.id === "telegram")?.value || "",
+        telegramMessage: config.channels.find((c) => c.id === "telegram")?.message || "Hello!",
+        instagram: config.channels.find((c) => c.id === "instagram")?.value || "",
+        tiktok: config.channels.find((c) => c.id === "tiktok")?.value || "",
+        wechat: config.channels.find((c) => c.id === "wechat")?.value || "",
+        viber: config.channels.find((c) => c.id === "viber")?.value || "",
+        line: config.channels.find((c) => c.id === "line")?.value || "",
+        signal: config.channels.find((c) => c.id === "signal")?.value || "",
+        phone: config.channels.find((c) => c.id === "phone")?.value || "",
+        sms: config.channels.find((c) => c.id === "sms")?.value || "",
+        smsMessage: config.channels.find((c) => c.id === "sms")?.message || "",
+        email: config.channels.find((c) => c.id === "email")?.value || "",
+        discord: config.channels.find((c) => c.id === "discord")?.value || "",
+        slack: config.channels.find((c) => c.id === "slack")?.value || "",
+        teams: config.channels.find((c) => c.id === "teams")?.value || "",
+        x: config.channels.find((c) => c.id === "x")?.value || "",
+        linkedin: config.channels.find((c) => c.id === "linkedin")?.value || "",
+        maps: config.channels.find((c) => c.id === "maps")?.value || "",
+        custom: config.channels.find((c) => c.id === "custom")?.value || "",
+        customLabel: config.channels.find((c) => c.id === "custom")?.label || "Custom",
+        agentsData: JSON.stringify(config.agents || []),
+        scheduleDaysData: JSON.stringify(config.scheduleDays || [1, 2, 3, 4, 5]),
+    }
+}
+
+let debouncedCodeFileTimer: any = null
+export function scheduleDebouncedCodeFileSync(config: ChatConfig) {
+    if (debouncedCodeFileTimer) clearTimeout(debouncedCodeFileTimer)
+    debouncedCodeFileTimer = setTimeout(async () => {
+        try {
+            if (typeof (framer as any).isAllowedTo === "function") {
+                const allowed = await (framer as any).isAllowedTo("setCodeFileContent", "CodeFile.setFileContent")
+                if (!allowed) return
+            }
+            const code = generateComponentCode(config)
+            const files = await framer.getCodeFiles()
+            const file = files.find((f) => f.name === "ChatBubbles.tsx" || f.name === "ChatBubbles" || f.name === "Chatfic")
+            if (file) {
+                await file.setFileContent(code)
+            }
+        } catch {}
+    }, 2000)
+}
+
+/**
+ * Live synchronizes changes made in the plugin shell immediately to existing canvas instances.
+ * Crucial: Updates property controls via node.setAttributes for instant zero-flash sync,
+ * and debounces code file update so published code is always in sync!
+ */
+export async function syncCanvasInstance(config: ChatConfig): Promise<boolean> {
+    try {
+        if (typeof (framer as any).isAllowedTo === "function") {
+            try {
+                await (framer as any).isAllowedTo("setAttributes", "getNodesWithType")
+            } catch {}
+        }
+        const instances = (await framer.getNodesWithType("ComponentInstanceNode")) as any[]
+        const chatBubblesNodes = instances?.filter(isChatBubblesInstance) || []
+        if (chatBubblesNodes.length === 0) return true
+
+        const controlPayload = buildControlPayload(config)
+
+        for (const node of chatBubblesNodes) {
+            if (typeof node.setAttributes === "function") {
+                await node.setAttributes({
+                    controls: controlPayload,
+                })
+            }
+        }
+        scheduleDebouncedCodeFileSync(config)
+        return true
+    } catch {
+        return false
+    }
+}
+
+/**
+ * Enforces single-instance policy on canvas.
+ * If user attempts to duplicate via Ctrl+C / Ctrl+V or Alt+Mouse Drag,
+ * duplicate nodes are immediately purged and the user is notified.
+ */
+export async function enforceSingleInstance(): Promise<{ removed: boolean; count: number }> {
+    try {
+        const instances = (await framer.getNodesWithType("ComponentInstanceNode")) as any[]
+        const chatBubblesNodes = instances?.filter(isChatBubblesInstance) || []
+
+        if (chatBubblesNodes.length > 1) {
+            const duplicates = chatBubblesNodes.slice(1)
+            let removedAny = false
+            for (const dup of duplicates) {
+                if (typeof dup.remove === "function") {
+                    await dup.remove()
+                    removedAny = true
+                }
+            }
+            if (removedAny) {
+                try {
+                    if (chatBubblesNodes[0]?.id) {
+                        await framer.setSelection([chatBubblesNodes[0].id])
+                    }
+                    if (typeof (framer as any).notify === "function") {
+                        await (framer as any).notify(
+                            "Chat Bubbles cannot be duplicated (Ctrl+C / Alt+Drag). Only 1 floating widget instance is allowed per site.",
+                            { variant: "error" }
+                        )
+                    }
+                } catch {}
+            }
+            return { removed: true, count: 1 }
+        }
+        return { removed: false, count: chatBubblesNodes.length }
+    } catch {
+        return { removed: false, count: 0 }
+    }
 }
 
 export async function insertCanvasComponent(config: ChatConfig): Promise<{ success: boolean; message: string }> {
@@ -2038,7 +2450,15 @@ export async function insertCanvasComponent(config: ChatConfig): Promise<{ succe
     try {
         if (typeof (framer as any).isAllowedTo === "function") {
             try {
-                await (framer as any).isAllowedTo("createCodeFile", "addComponentInstance", "setSelection")
+                await (framer as any).isAllowedTo(
+                    "CodeFile.setFileContent",
+                    "setCodeFileContent",
+                    "createCodeFile",
+                    "addComponentInstance",
+                    "setSelection",
+                    "setAttributes",
+                    "getNodesWithType"
+                )
             } catch {}
         }
         const files = await framer.getCodeFiles()
@@ -2050,26 +2470,37 @@ export async function insertCanvasComponent(config: ChatConfig): Promise<{ succe
             file = await framer.createCodeFile(fileName, code, { editViaPlugin: true })
         }
 
+        const controlPayload = buildControlPayload(config)
+
+        // If an instance already exists on the canvas, update it instead of inserting a duplicate!
+        const existingInstances = (await framer.getNodesWithType("ComponentInstanceNode")) as any[]
+        const existingNodes = existingInstances?.filter(isChatBubblesInstance) || []
+        if (existingNodes.length > 0) {
+            for (const node of existingNodes) {
+                if (typeof node.setAttributes === "function") {
+                    await node.setAttributes({
+                        controls: controlPayload,
+                    })
+                }
+            }
+            if (existingNodes[0]?.id) {
+                try {
+                    await framer.setSelection([existingNodes[0].id])
+                } catch {}
+            }
+            return {
+                success: true,
+                message: "Chat Bubbles component updated on canvas!",
+            }
+        }
+
         const componentExport = file.exports.find((exp) => exp.type === "component")
         if (componentExport && "insertURL" in componentExport) {
             // Insert component onto the canvas root using Framer's default insertion behavior with default Open Modal state
             const instance = (await framer.addComponentInstance({
                 url: componentExport.insertURL,
                 attributes: {
-                    controls: {
-                        canvasPreview: "modal",
-                        widgetMode: config.widgetMode || "modal",
-                        greetingEnabled: Boolean(config.greetingEnabled),
-                        greetingText: config.greetingText || "Need help? Chat with us.",
-                        enableSound: Boolean(config.enableSound),
-                        showBadge: Boolean(config.showBadge),
-                        badgeText: config.badgeText || "1",
-                        autoOpen: Boolean(config.autoOpen),
-                        scrollTriggerEnabled: Boolean(config.scrollTriggerEnabled),
-                        exitIntentEnabled: Boolean(config.exitIntentEnabled),
-                        scheduleEnabled: Boolean(config.scheduleEnabled),
-                        targetingEnabled: Boolean(config.targetingEnabled),
-                    },
+                    controls: controlPayload,
                 },
             })) as any
 
@@ -2141,3 +2572,4 @@ export async function removeAllCanvasInstances(): Promise<number> {
 }
 
 export { removeAllCanvasInstances as removeCanvasInstances }
+

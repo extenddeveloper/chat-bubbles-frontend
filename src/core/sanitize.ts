@@ -85,9 +85,22 @@ export function sanitizeAvatarUrl(value: unknown, fallback: string = AVATAR_PRES
         return trimmed
     }
 
-    // Allow safe data:image/ URIs for uploaded image previews/fallbacks
+    // Direct check if it matches one of our official SVG presets
+    if (AVATAR_PRESETS.includes(trimmed)) {
+        return trimmed
+    }
+
+    // Allow safe data:image/ URIs for uploaded image previews/fallbacks (base64)
     if (/^data:image\/(png|jpeg|jpg|webp|gif|svg\+xml);base64,[A-Za-z0-9+/=]+$/i.test(trimmed)) {
         return trimmed
+    }
+
+    // Allow safe data:image/svg+xml with utf8 / urlencoded data (zero scripts)
+    if (trimmed.startsWith("data:image/svg+xml")) {
+        const decoded = decodeURIComponent(trimmed)
+        if (!/<script|javascript:|on\w+\s*=/i.test(decoded)) {
+            return trimmed
+        }
     }
 
     const safeUrl = sanitizeUrl(trimmed, ["http:", "https:"], "")

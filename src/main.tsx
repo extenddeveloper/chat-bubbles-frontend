@@ -47,13 +47,25 @@ class ErrorBoundary extends React.Component<
     }
 }
 
-// Suppress Framer development unchecked permission warnings
+// Suppress Framer development unchecked permission warnings and pre-authorize permissions
 try {
     if ((framer as any).showUncheckedPermissionToasts !== undefined) {
         (framer as any).showUncheckedPermissionToasts = false
     }
     if (typeof (framer as any).isAllowedTo === "function") {
-        ;(framer as any).isAllowedTo("setPluginData", "getPluginData", "setCustomCode", "getCustomCode")
+        ;(framer as any).isAllowedTo(
+            "CodeFile.setFileContent",
+            "setCodeFileContent",
+            "createCodeFile",
+            "setAttributes",
+            "addComponentInstance",
+            "setSelection",
+            "getNodesWithType",
+            "setPluginData",
+            "getPluginData",
+            "setCustomCode",
+            "getCustomCode"
+        )
     }
 } catch {}
 

@@ -1,12 +1,8 @@
 import type { ChatAgent, ChatChannel, ChatConfig, ModalTheme } from "../types"
 import { sanitizeConfig } from "./sanitize"
+import { SVG_AVATAR_PRESETS } from "./avatars"
 
-export const AVATAR_PRESETS = [
-    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&auto=format&fit=crop&q=80",
-]
+export const AVATAR_PRESETS = SVG_AVATAR_PRESETS
 
 export const MODAL_THEME_GRADIENTS: Record<ModalTheme, string> = {
     whatsapp: "linear-gradient(135deg, #25D366 0%, #128C7E 100%)",
@@ -46,7 +42,7 @@ export const DEFAULT_AGENTS: ChatAgent[] = [
         id: "agent-1",
         name: "Alex",
         role: "Support Manager",
-        avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80",
+        avatar: SVG_AVATAR_PRESETS[0],
         channelId: "whatsapp",
         online: true,
     },
@@ -54,7 +50,7 @@ export const DEFAULT_AGENTS: ChatAgent[] = [
         id: "agent-2",
         name: "Sarah",
         role: "Customer Support",
-        avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&auto=format&fit=crop&q=80",
+        avatar: SVG_AVATAR_PRESETS[1],
         channelId: "messenger",
         online: true,
     },
@@ -62,7 +58,7 @@ export const DEFAULT_AGENTS: ChatAgent[] = [
         id: "agent-3",
         name: "David",
         role: "Technical Team",
-        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80",
+        avatar: SVG_AVATAR_PRESETS[2],
         channelId: "telegram",
         online: true,
     },
