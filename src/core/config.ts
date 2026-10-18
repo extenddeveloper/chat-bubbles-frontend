@@ -125,7 +125,7 @@ export const DEFAULT_CONFIG: ChatConfig = {
     scheduleEnd: "18:00",
     scheduleOfflineAction: "badge",
     scheduleOfflineText: "Back tomorrow at 9:00 AM",
-    targetingEnabled: false,
+    targetingEnabled: true,
     showOn: "Every page",
     targetingMode: "show",
     targetingRules: "",

@@ -521,7 +521,7 @@ export function sanitizeConfig(config: Partial<ChatConfig>): ChatConfig {
         scheduleEnd: sanitizeText(config.scheduleEnd, 10, "18:00"),
         scheduleOfflineAction,
         scheduleOfflineText: sanitizeText(config.scheduleOfflineText, 100, "Back tomorrow at 9:00 AM"),
-        targetingEnabled: Boolean(config.targetingEnabled ?? false),
+        targetingEnabled: Boolean(config.targetingEnabled ?? true),
         showOn: sanitizeText(config.showOn, 100, "Every page"),
         targetingMode,
         targetingRules: sanitizeMultilineText(config.targetingRules, 1000, ""),

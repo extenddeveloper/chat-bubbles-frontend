@@ -284,7 +284,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
         scheduleEnd = ${JSON.stringify(config.scheduleEnd || "18:00")},
         scheduleOfflineAction = ${JSON.stringify(config.scheduleOfflineAction || "badge")},
         scheduleOfflineText = ${JSON.stringify(config.scheduleOfflineText || "Back tomorrow at 9:00 AM")},
-        targetingEnabled = ${Boolean(config.targetingEnabled)},
+        targetingEnabled = true,
         showOn = ${JSON.stringify(config.showOn || "Every page")},
         canvasPagePath = "",
         targetingMode = ${JSON.stringify(config.targetingMode || "show")},
@@ -407,7 +407,6 @@ export default function ChatBubbles(props: ChatBubblesProps) {
 
     // Page / URL Targeting Filter (supports dropdown page selection, custom paths, subpaths, trailing slashes, and wildcards)
     const isTargetingAllowed = React.useMemo(() => {
-        if (!targetingEnabled) return true
         const effectiveShowOn = showOn || "Every page"
         if (effectiveShowOn === "Every page") return true
 
@@ -430,6 +429,45 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                 return canvasNorm === normPath(effectiveShowOn)
             }
             if (!targetingRules) return true
+            const curPath = (canvasPagePath.startsWith("/") ? canvasPagePath : "/" + canvasPagePath).toLowerCase().trim()
+            try {
+                const rawRules = String(targetingRules)
+                    .split(",")
+                    .flatMap((part: string) => part.split(String.fromCharCode(10)))
+                    .flatMap((part: string) => part.split(";"))
+                const rules = rawRules.map((r: string) => r.trim().toLowerCase()).filter(Boolean)
+                if (rules.length === 0) return true
+                const isMatch = rules.some((ruleInput: string) => {
+                    let rule = ruleInput
+                    if (rule === "*" || rule === "/*") return true
+                    if (rule.includes("://") || rule.includes(".")) {
+                        try {
+                            const parsed = new URL(rule.includes("://") ? rule : "https://" + rule)
+                            rule = parsed.pathname
+                        } catch {}
+                    }
+                    const cleanRule = rule.startsWith("/") ? rule : "/" + rule
+                    const isHomeRule = cleanRule === "/" || cleanRule === "/home" || cleanRule === "/index"
+                    const isHomePath = curPath === "/" || curPath === "" || curPath === "/home" || curPath === "/index"
+                    if (isHomeRule && isHomePath) return true
+                    if (cleanRule.endsWith("/*")) {
+                        const prefix = cleanRule.slice(0, -2)
+                        return curPath === prefix || curPath === prefix + "/" || curPath.startsWith(prefix + "/")
+                    }
+                    if (cleanRule.endsWith("*")) {
+                        const prefix = cleanRule.slice(0, -1)
+                        return curPath.startsWith(prefix)
+                    }
+                    let ruleNoSlash = cleanRule
+                    while (ruleNoSlash.endsWith("/")) ruleNoSlash = ruleNoSlash.slice(0, -1)
+                    let pathNoSlash = curPath
+                    while (pathNoSlash.endsWith("/")) pathNoSlash = pathNoSlash.slice(0, -1)
+                    return curPath === cleanRule || pathNoSlash === ruleNoSlash
+                })
+                return targetingMode === "hide" ? !isMatch : isMatch
+            } catch {
+                return true
+            }
         }
 
         // Live published site or preview mode
@@ -495,7 +533,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
         } catch {
             return true
         }
-    }, [isCanvas, targetingEnabled, showOn, canvasPagePath, targetingRules, targetingMode, currentLocationPath])
+    }, [isCanvas, showOn, canvasPagePath, targetingRules, targetingMode, currentLocationPath])
 
     // Strict visibility guard: if hidden by targeting or operating schedule, widget returns null & suppresses sound
     const isWidgetHidden = !isTargetingAllowed || (!isCanvas && scheduleEnabled && isOffline && scheduleOfflineAction === "hide")
@@ -2320,16 +2358,10 @@ addPropertyControls(ChatBubbles, {
         defaultValue: ${JSON.stringify(config.scheduleOfflineText || "Back tomorrow at 9:00 AM")},
         hidden: (props: any) => !props.scheduleEnabled || props.scheduleOfflineAction === "hide",
     },
-    targetingEnabled: {
-        type: ControlType.Boolean,
-        title: "Page Targeting",
-        defaultValue: ${Boolean(config.targetingEnabled)},
-    },
     showOn: {
         type: ControlType.String,
         title: "Where To Show",
         defaultValue: ${JSON.stringify(config.showOn || "Every page")},
-        hidden: (props: any) => !props.targetingEnabled,
     },
     canvasPagePath: {
         type: ControlType.String,
@@ -2343,14 +2375,14 @@ addPropertyControls(ChatBubbles, {
         options: ["show", "hide"],
         optionTitles: ["Show Only on Paths", "Hide on Paths"],
         defaultValue: ${JSON.stringify(config.targetingMode || "show")},
-        hidden: (props: any) => !props.targetingEnabled,
+        hidden: (props: any) => props.showOn !== "custom",
     },
     targetingRules: {
         type: ControlType.String,
         title: "Targeting Paths",
         placeholder: "/pricing, /checkout, /blog/*",
         defaultValue: ${JSON.stringify(config.targetingRules || "")},
-        hidden: (props: any) => !props.targetingEnabled,
+        hidden: (props: any) => props.showOn !== "custom",
     },
     agentsData: {
         type: ControlType.String,
@@ -2585,8 +2617,7 @@ export async function insertCanvasComponent(config: ChatConfig): Promise<{ succe
             }
         }
 
-        const isTargeting = Boolean(config.targetingEnabled)
-        const targetShowOn = isTargeting ? (config.showOn || "Every page") : "Every page"
+        const targetShowOn = config.showOn || "Every page"
 
         let targetPages: any[] = []
         if (targetShowOn === "Every page") {
@@ -2594,13 +2625,15 @@ export async function insertCanvasComponent(config: ChatConfig): Promise<{ succe
         } else if (targetShowOn === "Home page") {
             const homePage = allPages.find((p: any) => {
                 if ("path" in p && p.path) return p.path === "/" || p.path === ""
-                if ("name" in p && p.name) return p.name === "Home" || p.name === "index"
+                if ("name" in p && p.name) return p.name.toLowerCase() === "home" || p.name.toLowerCase() === "index"
                 return false
             }) || allPages[0]
             if (homePage) targetPages = [homePage]
         } else if (targetShowOn === "custom") {
             const rawRules = String(config.targetingRules || "")
-                .split(/[\r\n,;]+/)
+                .split(",")
+                .flatMap((part: string) => part.split(String.fromCharCode(10)))
+                .flatMap((part: string) => part.split(";"))
                 .map((r) => r.trim().toLowerCase())
                 .filter(Boolean)
             if (rawRules.length === 0) {
@@ -2619,11 +2652,15 @@ export async function insertCanvasComponent(config: ChatConfig): Promise<{ succe
                 })
             }
         } else {
+            const cleanTarget = targetShowOn.toLowerCase().replace(/^\/+/, "")
             const targetPage = allPages.find((p: any) => {
-                if ("path" in p && p.path) return p.path === targetShowOn
+                if ("path" in p && p.path) {
+                    const cleanP = String(p.path).toLowerCase().replace(/^\/+/, "")
+                    if (p.path === targetShowOn || cleanP === cleanTarget) return true
+                }
                 if ("name" in p && p.name) {
-                    const pagePath = "/" + p.name.replace(/^\/+/, "")
-                    return pagePath === targetShowOn || p.name === targetShowOn
+                    const cleanN = String(p.name).toLowerCase().replace(/^\/+/, "")
+                    if (p.name === targetShowOn || ("/" + cleanN) === targetShowOn || cleanN === cleanTarget) return true
                 }
                 return false
             })
@@ -2631,15 +2668,19 @@ export async function insertCanvasComponent(config: ChatConfig): Promise<{ succe
         }
 
         // Map which pages already contain a Chat Bubbles instance
+        const nodePageMap = new Map<any, { pageId: string | null; pagePath: string }>()
         const pagesWithThisWidget = new Set<string>()
+
         for (const inst of existingNodes) {
             let currentId = inst.id
             let pageId: string | null = null
+            let pagePath = "/"
             while (currentId) {
                 const node = (await framer.getNode(currentId)) as any
                 if (!node) break
                 if (node.type === "WebPageNode" || node.type === "DesignPageNode") {
                     pageId = node.id
+                    pagePath = ("path" in node && node.path) ? node.path : ("/" + (node.name || "").replace(/^\/+/, ""))
                     break
                 }
                 currentId = node.parentId
@@ -2647,6 +2688,28 @@ export async function insertCanvasComponent(config: ChatConfig): Promise<{ succe
             if (pageId) {
                 pagesWithThisWidget.add(pageId)
             }
+            nodePageMap.set(inst, { pageId, pagePath })
+        }
+
+        // When targeted to specific page(s), remove instances from non-targeted pages to keep canvas clean
+        const remainingNodes: any[] = []
+        if (targetShowOn !== "Every page" && targetShowOn !== "custom" && targetPages.length > 0) {
+            const targetPageIds = new Set(targetPages.map((p) => p.id))
+            for (const inst of existingNodes) {
+                const pageInfo = nodePageMap.get(inst)
+                if (pageInfo?.pageId && !targetPageIds.has(pageInfo.pageId)) {
+                    try {
+                        if (typeof inst.remove === "function") {
+                            await inst.remove()
+                            pagesWithThisWidget.delete(pageInfo.pageId)
+                            continue
+                        }
+                    } catch {}
+                }
+                remainingNodes.push(inst)
+            }
+        } else {
+            remainingNodes.push(...existingNodes)
         }
 
         // Insert instances on any target pages missing the widget
@@ -2666,7 +2729,8 @@ export async function insertCanvasComponent(config: ChatConfig): Promise<{ succe
                     },
                 } as any)) as any
                 if (instance?.id) {
-                    existingNodes.push(instance)
+                    remainingNodes.push(instance)
+                    nodePageMap.set(instance, { pageId: p.id, pagePath })
                     pagesWithThisWidget.add(p.id)
                     newlyInsertedCount++
                 }
@@ -2676,7 +2740,7 @@ export async function insertCanvasComponent(config: ChatConfig): Promise<{ succe
         }
 
         // Fallback: If no pages exist in project or couldn't insert into page, insert onto canvas root/selection
-        if (existingNodes.length === 0) {
+        if (remainingNodes.length === 0) {
             let fallbackParentId: string | undefined = undefined
             try {
                 const selection = await framer.getSelection()
@@ -2692,23 +2756,28 @@ export async function insertCanvasComponent(config: ChatConfig): Promise<{ succe
                 },
             } as any)) as any
             if (instance?.id) {
-                existingNodes.push(instance)
+                remainingNodes.push(instance)
                 newlyInsertedCount++
             }
         }
 
-        // Update control properties on all existing instances
-        for (const node of existingNodes) {
+        // Update control properties on all remaining instances, preserving their canvasPagePath!
+        for (const node of remainingNodes) {
+            const pageInfo = nodePageMap.get(node)
+            const pagePath = pageInfo?.pagePath || "/"
             if (typeof node.setAttributes === "function") {
                 await node.setAttributes({
-                    controls: controlPayload,
+                    controls: {
+                        ...controlPayload,
+                        canvasPagePath: pagePath,
+                    },
                 })
             }
         }
 
-        if (existingNodes[0]?.id) {
+        if (remainingNodes[0]?.id) {
             try {
-                await framer.setSelection([existingNodes[0].id])
+                await framer.setSelection([remainingNodes[0].id])
             } catch {}
         }
 
@@ -2719,7 +2788,7 @@ export async function insertCanvasComponent(config: ChatConfig): Promise<{ succe
             } else {
                 feedbackMsg = `Chat Bubbles component inserted on ${targetShowOn}!`
             }
-        } else if (existingNodes.length > 0) {
+        } else if (remainingNodes.length > 0) {
             feedbackMsg = targetShowOn === "Every page"
                 ? "Chat Bubbles component updated across your pages!"
                 : `Chat Bubbles component targeting updated to ${targetShowOn}!`

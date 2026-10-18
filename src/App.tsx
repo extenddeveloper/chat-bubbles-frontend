@@ -2183,7 +2183,7 @@ export function App() {
                                         </div>
 
                                         {/* 4. Page / URL Targeting Filter */}
-                                        <div className={`cf-trigger-card ${config.targetingEnabled ? "is-active" : ""}`}>
+                                        <div className="cf-trigger-card is-active">
                                             <div className="cf-trigger-card-header">
                                                 <div className="cf-trigger-info">
                                                     <div className="cf-trigger-title">Page / URL Targeting Filter</div>
@@ -2191,59 +2191,53 @@ export function App() {
                                                         Choose specific pages or URLs where the chat widget will appear on your published site.
                                                     </div>
                                                 </div>
-                                                <Switch
-                                                    checked={config.targetingEnabled || false}
-                                                    onChange={(targetingEnabled) => updateConfig({ targetingEnabled })}
-                                                />
                                             </div>
-                                            {config.targetingEnabled && (
-                                                <div className="cf-trigger-body">
-                                                    <Field
-                                                        label="Where the widget will be shown?"
-                                                        hint="Select which page of your Framer project should show the chat widget."
+                                            <div className="cf-trigger-body">
+                                                <Field
+                                                    label="Where the widget will be shown?"
+                                                    hint="Select which page of your Framer project should show the chat widget."
+                                                >
+                                                    <select
+                                                        className="cf-input"
+                                                        value={config.showOn || "Every page"}
+                                                        onChange={(e) => updateConfig({ showOn: e.target.value })}
                                                     >
-                                                        <select
-                                                            className="cf-input"
-                                                            value={config.showOn || "Every page"}
-                                                            onChange={(e) => updateConfig({ showOn: e.target.value })}
-                                                        >
-                                                            {projectPages.map((pageName) => (
-                                                                <option key={pageName} value={pageName}>
-                                                                    {pageName}
-                                                                </option>
-                                                            ))}
-                                                            <option value="custom">Custom URL Paths & Wildcards...</option>
-                                                        </select>
-                                                    </Field>
+                                                        {projectPages.map((pageName) => (
+                                                            <option key={pageName} value={pageName}>
+                                                                {pageName}
+                                                            </option>
+                                                        ))}
+                                                        <option value="custom">Custom URL Paths & Wildcards...</option>
+                                                    </select>
+                                                </Field>
 
-                                                    {config.showOn === "custom" && (
-                                                        <>
-                                                            <Field label="Targeting Mode" hint="Show only on listed paths, or hide on listed paths">
-                                                                <select
-                                                                    className="cf-input"
-                                                                    value={config.targetingMode || "show"}
-                                                                    onChange={(e) => updateConfig({ targetingMode: e.target.value as any })}
-                                                                >
-                                                                    <option value="show">Show Widget Only on Listed Paths</option>
-                                                                    <option value="hide">Hide Widget on Listed Paths (Show Everywhere Else)</option>
-                                                                </select>
-                                                            </Field>
-                                                            <Field
-                                                                label="URL Paths & Wildcards"
-                                                                hint="Enter paths separated by lines or commas. Use * for wildcards (e.g. /checkout, /blog/*)."
+                                                {config.showOn === "custom" && (
+                                                    <>
+                                                        <Field label="Targeting Mode" hint="Show only on listed paths, or hide on listed paths">
+                                                            <select
+                                                                className="cf-input"
+                                                                value={config.targetingMode || "show"}
+                                                                onChange={(e) => updateConfig({ targetingMode: e.target.value as any })}
                                                             >
-                                                                <textarea
-                                                                    className="cf-textarea"
-                                                                    rows={3}
-                                                                    value={config.targetingRules || ""}
-                                                                    onChange={(e) => updateConfig({ targetingRules: e.target.value })}
-                                                                    placeholder={"/pricing\n/checkout\n/products/*"}
-                                                                />
-                                                            </Field>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            )}
+                                                                <option value="show">Show Widget Only on Listed Paths</option>
+                                                                <option value="hide">Hide Widget on Listed Paths (Show Everywhere Else)</option>
+                                                            </select>
+                                                        </Field>
+                                                        <Field
+                                                            label="URL Paths & Wildcards"
+                                                            hint="Enter paths separated by lines or commas. Use * for wildcards (e.g. /checkout, /blog/*)."
+                                                        >
+                                                            <textarea
+                                                                className="cf-textarea"
+                                                                rows={3}
+                                                                value={config.targetingRules || ""}
+                                                                onChange={(e) => updateConfig({ targetingRules: e.target.value })}
+                                                                placeholder={"/pricing\n/checkout\n/products/*"}
+                                                            />
+                                                        </Field>
+                                                    </>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </Section>
