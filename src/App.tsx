@@ -40,7 +40,7 @@ import {
     IconChart,
 } from "./ui/icons"
 import { AnalyticsView } from "./ui/components/AnalyticsView"
-import { recordAnalyticsClick, recordAnalyticsView } from "./core/analytics"
+import { getStoredWidgetId, recordAnalyticsClick, recordAnalyticsView } from "./core/analytics"
 import { playNotificationChime } from "./core/sound"
 import "./ui/styles.css"
 
@@ -379,8 +379,18 @@ export function App() {
 
     useEffect(() => {
         loadConfig()
-            .then((saved) => {
-                setConfig(saved)
+            .then(async (saved) => {
+                let widgetId = saved.widgetId
+                if (!widgetId) {
+                    try {
+                        const proj = await (framer as any).getProjectInfo?.().catch(() => null)
+                        if (proj?.id) widgetId = "cb_" + proj.id
+                    } catch {}
+                }
+                if (!widgetId) {
+                    widgetId = getStoredWidgetId(saved)
+                }
+                setConfig({ ...saved, widgetId })
             })
             .catch(() => setMessage({ type: "error", text: "Unable to load plugin data." }))
     }, [])
@@ -1781,6 +1791,7 @@ export function App() {
                                     setIsProfileOpen(false)
                                     setTab("settings")
                                 }}
+                                widgetId={config.widgetId}
                             />
                         )}
 

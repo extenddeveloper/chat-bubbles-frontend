@@ -117,4 +117,5 @@ export interface ChatConfig {
     showOn?: string
     targetingMode?: "show" | "hide"
     targetingRules?: string
+    widgetId?: string
 }
