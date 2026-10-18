@@ -448,7 +448,10 @@ export default function ChatBubbles(props: ChatBubblesProps) {
         if (!targetingRules) return true
         try {
             const curHref = (typeof window !== "undefined" && window.location && window.location.href ? window.location.href : "").toLowerCase()
-            const rawRules = String(targetingRules).split(/[\r\n,;]+/)
+            const rawRules = String(targetingRules)
+                .split(",")
+                .flatMap((part: string) => part.split(String.fromCharCode(10)))
+                .flatMap((part: string) => part.split(";"))
             const rules = rawRules.map((r: string) => r.trim().toLowerCase()).filter(Boolean)
             if (rules.length === 0) return true
 
@@ -481,8 +484,10 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                     return curPath.startsWith(prefix)
                 }
 
-                const ruleNoSlash = cleanRule.replace(/\/+$/, "")
-                const pathNoSlash = curPath.replace(/\/+$/, "")
+                let ruleNoSlash = cleanRule
+                while (ruleNoSlash.endsWith("/")) ruleNoSlash = ruleNoSlash.slice(0, -1)
+                let pathNoSlash = curPath
+                while (pathNoSlash.endsWith("/")) pathNoSlash = pathNoSlash.slice(0, -1)
                 return curPath === cleanRule || pathNoSlash === ruleNoSlash
             })
 

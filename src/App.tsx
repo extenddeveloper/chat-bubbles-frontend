@@ -2186,7 +2186,7 @@ export function App() {
                                         <div className={`cf-trigger-card ${config.targetingEnabled ? "is-active" : ""}`}>
                                             <div className="cf-trigger-card-header">
                                                 <div className="cf-trigger-info">
-                                                    <div className="cf-trigger-title">Where the widget will be shown?</div>
+                                                    <div className="cf-trigger-title">Page / URL Targeting Filter</div>
                                                     <div className="cf-trigger-desc">
                                                         Choose specific pages or URLs where the chat widget will appear on your published site.
                                                     </div>
