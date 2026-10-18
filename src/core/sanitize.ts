@@ -213,9 +213,15 @@ export function safeJsonStringify(value: unknown): string {
 /**
  * Resolves a safe, validated destination URL for a given messaging channel.
  */
-export function resolveSafeChannelUrl(channelId: ChannelId, rawValue: string, rawMessage?: string): string {
+export function resolveSafeChannelUrl(
+    channelId: ChannelId,
+    rawValue: string,
+    rawMessage?: string,
+    rawSubject?: string
+): string {
     const value = String(rawValue || "").trim()
     const message = sanitizeText(rawMessage, 300, "")
+    const subject = sanitizeText(rawSubject, 150, "")
     const encode = (s: string) => encodeURIComponent(s)
 
     switch (channelId) {
@@ -277,7 +283,11 @@ export function resolveSafeChannelUrl(channelId: ChannelId, rawValue: string, ra
         }
         case "email": {
             const cleanEmail = sanitizeEmail(value)
-            return cleanEmail ? "mailto:" + cleanEmail : "mailto:"
+            if (!cleanEmail) return "mailto:"
+            const params: string[] = []
+            if (subject) params.push("subject=" + encode(subject))
+            if (message) params.push("body=" + encode(message))
+            return "mailto:" + cleanEmail + (params.length > 0 ? "?" + params.join("&") : "")
         }
         case "discord": {
             if (value.startsWith("http://") || value.startsWith("https://")) {
@@ -343,6 +353,7 @@ export function sanitizeChannel(channel: ChatChannel): ChatChannel {
         label: sanitizeText(channel.label ?? channel.id, 40, channel.id),
         value: sanitizeText(channel.value, 150, ""),
         message: channel.message ? sanitizeMultilineText(channel.message, 300, "") : undefined,
+        emailSubject: channel.emailSubject ? sanitizeText(channel.emailSubject, 150, "") : undefined,
         color: sanitizeColor(channel.color, "#25D366"),
         openInNewTab: channel.openInNewTab !== false,
     }
@@ -362,6 +373,7 @@ export function sanitizeAgent(agent: ChatAgent): ChatAgent {
         channelId: agent.channelId || "whatsapp",
         value: cleanValue || undefined,
         message: cleanMessage,
+        emailSubject: agent.emailSubject ? sanitizeText(agent.emailSubject, 150, "") : undefined,
         online: agent.online !== false,
     }
 }
@@ -510,6 +522,7 @@ export function sanitizeConfig(config: Partial<ChatConfig>): ChatConfig {
         scheduleOfflineAction,
         scheduleOfflineText: sanitizeText(config.scheduleOfflineText, 100, "Back tomorrow at 9:00 AM"),
         targetingEnabled: Boolean(config.targetingEnabled ?? false),
+        showOn: sanitizeText(config.showOn, 100, "Every page"),
         targetingMode,
         targetingRules: sanitizeMultilineText(config.targetingRules, 1000, ""),
     }

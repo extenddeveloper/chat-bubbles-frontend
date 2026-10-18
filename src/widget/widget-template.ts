@@ -14,7 +14,7 @@ function buildChannelMap(config: ChatConfig): string {
         .map((channel) => ({
             ...channel,
             icon: ICONS[channel.id] ?? ICONS.custom,
-            url: getUrl(channel.id, channel.value, channel.message),
+            url: getUrl(channel.id, channel.value, channel.message, channel.emailSubject),
         }))
 
     return safeJsonStringify(channels)
@@ -28,6 +28,7 @@ function buildAgentMap(config: ChatConfig): string {
             const channel = channelMap.get(agent.channelId)
             const rawVal = agent.value || channel?.value || ""
             const rawMsg = agent.message || channel?.message || config.modalChatBubble || ""
+            const rawSub = agent.emailSubject || channel?.emailSubject || ""
             return {
                 id: agent.id,
                 name: agent.name,
@@ -36,9 +37,10 @@ function buildAgentMap(config: ChatConfig): string {
                 channelId: agent.channelId,
                 color: channel?.color || "#25D366",
                 icon: ICONS[agent.channelId] ?? ICONS.custom,
-                url: getUrl(agent.channelId, rawVal, rawMsg),
+                url: getUrl(agent.channelId, rawVal, rawMsg, rawSub),
                 value: rawVal,
                 message: rawMsg,
+                emailSubject: rawSub,
                 online: agent.online !== false,
             }
         })
@@ -110,6 +112,7 @@ export function buildWidgetCode(config: ChatConfig): string {
         scheduleOfflineAction: config.scheduleOfflineAction || "badge",
         scheduleOfflineText: config.scheduleOfflineText || "Back tomorrow at 9:00 AM",
         targetingEnabled: Boolean(config.targetingEnabled),
+        showOn: config.showOn || "Every page",
         targetingMode: config.targetingMode || "show",
         targetingRules: config.targetingRules || "",
     })
@@ -126,47 +129,68 @@ export function buildWidgetCode(config: ChatConfig): string {
   if (!SETTINGS.enabled || (!CHANNELS.length && !AGENTS.length)) return;
 
   /* 1. Page / URL Targeting Filter */
-  if (SETTINGS.targetingEnabled && SETTINGS.targetingRules) {
+  if (SETTINGS.targetingEnabled) {
     try {
       var curPath = (window.location && window.location.pathname) ? window.location.pathname.toLowerCase().trim() : "/";
       var curHref = (window.location && window.location.href) ? window.location.href.toLowerCase() : "";
-      var rawRules = String(SETTINGS.targetingRules).split(/[\r\n,;]+/);
-      var rules = [];
-      for (var rIdx = 0; rIdx < rawRules.length; rIdx++) {
-        var rTrim = rawRules[rIdx].trim().toLowerCase();
-        if (rTrim) rules.push(rTrim);
-      }
-      if (rules.length > 0) {
-        var isMatch = rules.some(function(ruleInput) {
-          var rule = ruleInput;
-          if (rule === "*" || rule === "/*") return true;
-          if (rule.indexOf("://") !== -1 || rule.indexOf(".") !== -1) {
-            if (curHref === rule || curHref === rule + "/") return true;
-            if (rule.slice(-1) === "*" && curHref.indexOf(rule.slice(0, -1)) === 0) return true;
-            try {
-              var parsed = new URL(rule.indexOf("://") !== -1 ? rule : "https://" + rule);
-              rule = parsed.pathname;
-            } catch(e) {}
-          }
-          var cleanRule = rule.indexOf("/") === 0 ? rule : "/" + rule;
-          var isHomeRule = cleanRule === "/" || cleanRule === "/home" || cleanRule === "/index";
-          var isHomePath = curPath === "/" || curPath === "" || curPath === "/home" || curPath === "/index";
-          if (isHomeRule && isHomePath) return true;
+      var showOn = SETTINGS.showOn || "Every page";
 
-          if (cleanRule.slice(-2) === "/*") {
-            var prefix = cleanRule.slice(0, -2);
-            return curPath === prefix || curPath === prefix + "/" || curPath.indexOf(prefix + "/") === 0;
+      if (showOn !== "Every page") {
+        var normPath = function(p) {
+          var s = (p || "").trim().toLowerCase();
+          if (s === "home page") return "";
+          while (s.indexOf("/") === 0) s = s.substring(1);
+          while (s.length > 0 && s.lastIndexOf("/") === s.length - 1) s = s.slice(0, -1);
+          return s;
+        };
+        var currentNorm = normPath(curPath);
+
+        if (showOn === "Home page") {
+          var isHome = (currentNorm === "" || currentNorm === "index" || currentNorm === "index.html" || currentNorm === "home");
+          if (!isHome) return;
+        } else if (showOn !== "custom") {
+          var targetNorm = normPath(showOn);
+          if (currentNorm !== targetNorm) return;
+        } else if (SETTINGS.targetingRules) {
+          var rawRules = String(SETTINGS.targetingRules).split(/[\r\n,;]+/);
+          var rules = [];
+          for (var rIdx = 0; rIdx < rawRules.length; rIdx++) {
+            var rTrim = rawRules[rIdx].trim().toLowerCase();
+            if (rTrim) rules.push(rTrim);
           }
-          if (cleanRule.slice(-1) === "*") {
-            var prefix = cleanRule.slice(0, -1);
-            return curPath.indexOf(prefix) === 0;
+          if (rules.length > 0) {
+            var isMatch = rules.some(function(ruleInput) {
+              var rule = ruleInput;
+              if (rule === "*" || rule === "/*") return true;
+              if (rule.indexOf("://") !== -1 || rule.indexOf(".") !== -1) {
+                if (curHref === rule || curHref === rule + "/") return true;
+                if (rule.slice(-1) === "*" && curHref.indexOf(rule.slice(0, -1)) === 0) return true;
+                try {
+                  var parsed = new URL(rule.indexOf("://") !== -1 ? rule : "https://" + rule);
+                  rule = parsed.pathname;
+                } catch(e) {}
+              }
+              var cleanRule = rule.indexOf("/") === 0 ? rule : "/" + rule;
+              var isHomeRule = cleanRule === "/" || cleanRule === "/home" || cleanRule === "/index";
+              var isHomePath = curPath === "/" || curPath === "" || curPath === "/home" || curPath === "/index";
+              if (isHomeRule && isHomePath) return true;
+
+              if (cleanRule.slice(-2) === "/*") {
+                var prefix = cleanRule.slice(0, -2);
+                return curPath === prefix || curPath === prefix + "/" || curPath.indexOf(prefix + "/") === 0;
+              }
+              if (cleanRule.slice(-1) === "*") {
+                var prefix = cleanRule.slice(0, -1);
+                return curPath.indexOf(prefix) === 0;
+              }
+              var ruleNoSlash = cleanRule.replace(/\/+$/, "");
+              var pathNoSlash = curPath.replace(/\/+$/, "");
+              return curPath === cleanRule || pathNoSlash === ruleNoSlash;
+            });
+            if (SETTINGS.targetingMode === "hide" && isMatch) return;
+            if (SETTINGS.targetingMode === "show" && !isMatch) return;
           }
-          var ruleNoSlash = cleanRule.replace(/\/+$/, "");
-          var pathNoSlash = curPath.replace(/\/+$/, "");
-          return curPath === cleanRule || pathNoSlash === ruleNoSlash;
-        });
-        if (SETTINGS.targetingMode === "hide" && isMatch) return;
-        if (SETTINGS.targetingMode === "show" && !isMatch) return;
+        }
       }
     } catch(e) {}
   }
@@ -645,7 +669,11 @@ export function buildWidgetCode(config: ChatConfig): string {
           } else if(activeAgent.channelId === "sms"){
             startBtn.href = "sms:" + cleanVal.replace(/[^0-9+]/g,"") + (encMsg ? "?body=" + encMsg : "");
           } else if(activeAgent.channelId === "email"){
-            startBtn.href = "mailto:" + cleanVal.replace(/[^a-zA-Z0-9._%+\-@]/g,"") + (encMsg ? "?body=" + encMsg : "");
+            var emailParams = [];
+            var cleanSub = String(activeAgent.emailSubject || "").trim();
+            if (cleanSub) emailParams.push("subject=" + encodeURIComponent(cleanSub));
+            if (encMsg) emailParams.push("body=" + encMsg);
+            startBtn.href = "mailto:" + cleanVal.replace(/[^a-zA-Z0-9._%+\-@]/g,"") + (emailParams.length ? "?" + emailParams.join("&") : "");
           }
         };
 

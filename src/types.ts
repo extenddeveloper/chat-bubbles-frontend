@@ -34,6 +34,7 @@ export interface ChatChannel {
     label: string
     value: string
     message?: string
+    emailSubject?: string
     color: string
     openInNewTab: boolean
 }
@@ -46,6 +47,7 @@ export interface ChatAgent {
     channelId: ChannelId
     value?: string
     message?: string
+    emailSubject?: string
     online?: boolean
 }
 
@@ -112,6 +114,7 @@ export interface ChatConfig {
     scheduleOfflineAction?: "badge" | "hide"
     scheduleOfflineText?: string
     targetingEnabled?: boolean
+    showOn?: string
     targetingMode?: "show" | "hide"
     targetingRules?: string
 }

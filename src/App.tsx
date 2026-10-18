@@ -195,11 +195,54 @@ export function App() {
     const [newAgentChannel, setNewAgentChannel] = useState<ChannelId>("whatsapp")
     const [newAgentValue, setNewAgentValue] = useState("")
     const [newAgentMessage, setNewAgentMessage] = useState("")
+    const [newAgentEmailSubject, setNewAgentEmailSubject] = useState("")
     const [newAvatarMode, setNewAvatarMode] = useState<"upload" | "presets" | "url">("upload")
     const [isUploadingNewAvatar, setIsUploadingNewAvatar] = useState(false)
     const [expandedAgentId, setExpandedAgentId] = useState<string | null>(null)
     const [uploadingAgentId, setUploadingAgentId] = useState<string | null>(null)
     const [collapsedChannels, setCollapsedChannels] = useState<Record<string, boolean>>({})
+    const [projectPages, setProjectPages] = useState<string[]>(["Every page", "Home page"])
+
+    // Fetch dynamic project pages from Framer (polled every 3 seconds to stay synced)
+    useEffect(() => {
+        let isMounted = true
+        async function fetchPages() {
+            try {
+                const webPages = ((await framer.getNodesWithType("WebPageNode")) as any[]) || []
+                const designPages = ((await framer.getNodesWithType("DesignPageNode")) as any[]) || []
+                const allPages = [...webPages, ...designPages]
+                const pageNames = [
+                    "Every page",
+                    ...new Set(
+                        allPages
+                            .map((p: any) => {
+                                if ("path" in p && p.path) {
+                                    return p.path === "/" || p.path === "" ? "Home page" : p.path
+                                }
+                                if ("name" in p && p.name) {
+                                    return p.name === "Home" || p.name === "index"
+                                        ? "Home page"
+                                        : "/" + p.name.replace(/^\/+/, "")
+                                }
+                                return p.id
+                            })
+                            .filter((name): name is string => typeof name === "string" && name !== "Every page")
+                    ),
+                ]
+                if (isMounted && pageNames.length > 0) {
+                    setProjectPages(pageNames)
+                }
+            } catch {
+                // Ignore if framer nodes cannot be fetched
+            }
+        }
+        fetchPages()
+        const timer = setInterval(fetchPages, 3000)
+        return () => {
+            isMounted = false
+            clearInterval(timer)
+        }
+    }, [])
 
     function toggleChannelCollapse(channelId: ChannelId) {
         setCollapsedChannels((prev) => ({
@@ -459,6 +502,7 @@ export function App() {
             channelId: newAgentChannel,
             value: sanitizeText(newAgentValue, 150, "") || undefined,
             message: sanitizeMultilineText(newAgentMessage, 300, "") || undefined,
+            emailSubject: sanitizeText(newAgentEmailSubject, 150, "") || undefined,
             online: true,
         }
         setConfig((current) => ({
@@ -469,6 +513,7 @@ export function App() {
         setNewAgentRole("")
         setNewAgentValue("")
         setNewAgentMessage("")
+        setNewAgentEmailSubject("")
         setNewAgentAvatar(AVATAR_PRESETS[0])
         setShowAddAgent(false)
         setMessage({ type: "success", text: "Added " + newAgent.name + " to chat team." })
@@ -885,6 +930,35 @@ export function App() {
                                                                     />
                                                                 </Field>
                                                             )}
+                                                            {channel.id === "email" && (
+                                                                <>
+                                                                    <Field
+                                                                        label="Email Subject"
+                                                                        hint="Pre-fills the email subject line when visitors reach out."
+                                                                    >
+                                                                        <input
+                                                                            className="cf-input"
+                                                                            maxLength={150}
+                                                                            value={channel.emailSubject || ""}
+                                                                            onChange={(e) => updateChannel(channel.id, { emailSubject: e.target.value })}
+                                                                            placeholder="Inquiry from website"
+                                                                        />
+                                                                    </Field>
+                                                                    <Field
+                                                                        label="Pre-filled Email Message Body"
+                                                                        hint="Automatically fills visitor's email body. Supports {url} and {title} variables."
+                                                                    >
+                                                                        <textarea
+                                                                            className="cf-textarea"
+                                                                            rows={2}
+                                                                            maxLength={300}
+                                                                            value={channel.message || ""}
+                                                                            onChange={(e) => updateChannel(channel.id, { message: e.target.value })}
+                                                                            placeholder="Hello! I have a question about {title}."
+                                                                        />
+                                                                    </Field>
+                                                                </>
+                                                            )}
                                                         </div>
                                                     )}
                                                 </div>
@@ -1041,6 +1115,25 @@ export function App() {
                                                                         placeholder="e.g. Hi there! Emma here from billing. How can I help you today?"
                                                                     />
                                                                 </Field>
+
+                                                                {agent.channelId === "email" && (
+                                                                    <Field
+                                                                        label="Direct Email Subject (Optional)"
+                                                                        hint={
+                                                                            channel?.emailSubject
+                                                                                ? `Default: "${channel.emailSubject}". Leave blank to use default.`
+                                                                                : "Leave blank to use default subject."
+                                                                        }
+                                                                    >
+                                                                        <input
+                                                                            className="cf-input"
+                                                                            maxLength={150}
+                                                                            value={agent.emailSubject || ""}
+                                                                            onChange={(e) => updateAgent(agent.id, { emailSubject: e.target.value })}
+                                                                            placeholder="Inquiry from website"
+                                                                        />
+                                                                    </Field>
+                                                                )}
 
                                                                 <Field label="Avatar Photo">
                                                                     <div className="cf-avatar-edit-row">
@@ -1206,6 +1299,26 @@ export function App() {
                                                         placeholder="e.g. Hi there! Emma here from billing. How can I help you today?"
                                                     />
                                                 </Field>
+
+                                                {newAgentChannel === "email" && (
+                                                    <Field
+                                                        label="Direct Email Subject (Optional)"
+                                                        hint={(() => {
+                                                            const c = config.channels.find((c) => c.id === newAgentChannel)
+                                                            return c?.emailSubject
+                                                                ? `Default: "${c.emailSubject}". Leave blank to inherit.`
+                                                                : "Leave blank to use default subject."
+                                                        })()}
+                                                    >
+                                                        <input
+                                                            className="cf-input"
+                                                            maxLength={150}
+                                                            value={newAgentEmailSubject}
+                                                            onChange={(e) => setNewAgentEmailSubject(e.target.value)}
+                                                            placeholder="Inquiry from website"
+                                                        />
+                                                    </Field>
+                                                )}
 
                                                 <Field label="Avatar Photo">
                                                     <div className="cf-avatar-picker-tabs">
@@ -1859,7 +1972,7 @@ export function App() {
 
                                 <Section
                                     title="Behavioral Triggers & Smart Display"
-                                    description="Enterprise triggers: scroll depth, desktop exit-intent, and operating hours schedule."
+                                    description="Enterprise triggers: scroll depth, desktop exit-intent, operating hours schedule, and page targeting."
                                 >
                                     <div className="cf-flex-col-gap-14">
                                         {/* 1. Scroll Depth Trigger */}
@@ -2065,6 +2178,70 @@ export function App() {
                                                             </Field>
                                                         )}
                                                     </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* 4. Page / URL Targeting Filter */}
+                                        <div className={`cf-trigger-card ${config.targetingEnabled ? "is-active" : ""}`}>
+                                            <div className="cf-trigger-card-header">
+                                                <div className="cf-trigger-info">
+                                                    <div className="cf-trigger-title">Where the widget will be shown?</div>
+                                                    <div className="cf-trigger-desc">
+                                                        Choose specific pages or URLs where the chat widget will appear on your published site.
+                                                    </div>
+                                                </div>
+                                                <Switch
+                                                    checked={config.targetingEnabled || false}
+                                                    onChange={(targetingEnabled) => updateConfig({ targetingEnabled })}
+                                                />
+                                            </div>
+                                            {config.targetingEnabled && (
+                                                <div className="cf-trigger-body">
+                                                    <Field
+                                                        label="Where the widget will be shown?"
+                                                        hint="Select which page of your Framer project should show the chat widget."
+                                                    >
+                                                        <select
+                                                            className="cf-input"
+                                                            value={config.showOn || "Every page"}
+                                                            onChange={(e) => updateConfig({ showOn: e.target.value })}
+                                                        >
+                                                            {projectPages.map((pageName) => (
+                                                                <option key={pageName} value={pageName}>
+                                                                    {pageName}
+                                                                </option>
+                                                            ))}
+                                                            <option value="custom">Custom URL Paths & Wildcards...</option>
+                                                        </select>
+                                                    </Field>
+
+                                                    {config.showOn === "custom" && (
+                                                        <>
+                                                            <Field label="Targeting Mode" hint="Show only on listed paths, or hide on listed paths">
+                                                                <select
+                                                                    className="cf-input"
+                                                                    value={config.targetingMode || "show"}
+                                                                    onChange={(e) => updateConfig({ targetingMode: e.target.value as any })}
+                                                                >
+                                                                    <option value="show">Show Widget Only on Listed Paths</option>
+                                                                    <option value="hide">Hide Widget on Listed Paths (Show Everywhere Else)</option>
+                                                                </select>
+                                                            </Field>
+                                                            <Field
+                                                                label="URL Paths & Wildcards"
+                                                                hint="Enter paths separated by lines or commas. Use * for wildcards (e.g. /checkout, /blog/*)."
+                                                            >
+                                                                <textarea
+                                                                    className="cf-textarea"
+                                                                    rows={3}
+                                                                    value={config.targetingRules || ""}
+                                                                    onChange={(e) => updateConfig({ targetingRules: e.target.value })}
+                                                                    placeholder={"/pricing\n/checkout\n/products/*"}
+                                                                />
+                                                            </Field>
+                                                        </>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>

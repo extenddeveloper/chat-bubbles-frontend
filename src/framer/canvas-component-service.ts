@@ -120,6 +120,8 @@ interface ChatBubblesProps {
     sms?: string
     smsMessage?: string
     email?: string
+    emailSubject?: string
+    emailMessage?: string
     discord?: string
     slack?: string
     teams?: string
@@ -141,6 +143,8 @@ interface ChatBubblesProps {
     scheduleOfflineAction?: "badge" | "hide"
     scheduleOfflineText?: string
     targetingEnabled?: boolean
+    showOn?: string
+    canvasPagePath?: string
     targetingMode?: "show" | "hide"
     targetingRules?: string
     agentsData?: string
@@ -281,6 +285,8 @@ export default function ChatBubbles(props: ChatBubblesProps) {
         scheduleOfflineAction = ${JSON.stringify(config.scheduleOfflineAction || "badge")},
         scheduleOfflineText = ${JSON.stringify(config.scheduleOfflineText || "Back tomorrow at 9:00 AM")},
         targetingEnabled = ${Boolean(config.targetingEnabled)},
+        showOn = ${JSON.stringify(config.showOn || "Every page")},
+        canvasPagePath = "",
         targetingMode = ${JSON.stringify(config.targetingMode || "show")},
         targetingRules = ${JSON.stringify(config.targetingRules || "")},
         agentsData = ${JSON.stringify(JSON.stringify(config.agents || []))},
@@ -300,6 +306,8 @@ export default function ChatBubbles(props: ChatBubblesProps) {
         sms = ${JSON.stringify(config.channels.find((c) => c.id === "sms")?.value || "")},
         smsMessage = ${JSON.stringify(config.channels.find((c) => c.id === "sms")?.message || "")},
         email = ${JSON.stringify(config.channels.find((c) => c.id === "email")?.value || "")},
+        emailSubject = ${JSON.stringify(config.channels.find((c) => c.id === "email")?.emailSubject || "")},
+        emailMessage = ${JSON.stringify(config.channels.find((c) => c.id === "email")?.message || "")},
         discord = ${JSON.stringify(config.channels.find((c) => c.id === "discord")?.value || "")},
         slack = ${JSON.stringify(config.channels.find((c) => c.id === "slack")?.value || "")},
         teams = ${JSON.stringify(config.channels.find((c) => c.id === "teams")?.value || "")},
@@ -397,13 +405,50 @@ export default function ChatBubbles(props: ChatBubblesProps) {
         }
     }, [])
 
-    // Page / URL Targeting Filter (supports newlines, commas, subpaths, trailing slashes, and wildcards)
+    // Page / URL Targeting Filter (supports dropdown page selection, custom paths, subpaths, trailing slashes, and wildcards)
     const isTargetingAllowed = React.useMemo(() => {
-        if (isCanvas || !targetingEnabled || !targetingRules) return true
+        if (!targetingEnabled) return true
+        const effectiveShowOn = showOn || "Every page"
+        if (effectiveShowOn === "Every page") return true
+
+        const normPath = (p: string) => {
+            let s = (p || "").trim().toLowerCase()
+            if (s === "home page") return ""
+            while (s.startsWith("/")) s = s.substring(1)
+            while (s.endsWith("/")) s = s.slice(0, -1)
+            return s
+        }
+
+        // On Canvas Studio
+        if (isCanvas) {
+            if (!canvasPagePath) return true
+            const canvasNorm = normPath(canvasPagePath)
+            if (effectiveShowOn === "Home page") {
+                return canvasNorm === "" || canvasNorm === "index" || canvasNorm === "home"
+            }
+            if (effectiveShowOn !== "custom") {
+                return canvasNorm === normPath(effectiveShowOn)
+            }
+            if (!targetingRules) return true
+        }
+
+        // Live published site or preview mode
+        const curPath = (currentLocationPath || "/").toLowerCase().trim()
+        const currentNorm = normPath(curPath)
+
+        if (effectiveShowOn === "Home page") {
+            return currentNorm === "" || currentNorm === "index" || currentNorm === "index.html" || currentNorm === "home"
+        }
+        if (effectiveShowOn !== "custom") {
+            const targetNorm = normPath(effectiveShowOn)
+            return currentNorm === targetNorm
+        }
+
+        // Custom URL rules & wildcards
+        if (!targetingRules) return true
         try {
-            const curPath = (currentLocationPath || "/").toLowerCase().trim()
             const curHref = (typeof window !== "undefined" && window.location && window.location.href ? window.location.href : "").toLowerCase()
-            const rawRules = String(targetingRules).split(/[\\r\\n,;]+/)
+            const rawRules = String(targetingRules).split(/[\r\n,;]+/)
             const rules = rawRules.map((r: string) => r.trim().toLowerCase()).filter(Boolean)
             if (rules.length === 0) return true
 
@@ -423,8 +468,6 @@ export default function ChatBubbles(props: ChatBubblesProps) {
 
                 const cleanRule = rule.startsWith("/") ? rule : "/" + rule
 
-                // Homepage alias handling:
-                // Users commonly enter "/home", "home", "/index", "index", or "/" expecting it to match root homepage "/"!
                 const isHomeRule = cleanRule === "/" || cleanRule === "/home" || cleanRule === "/index"
                 const isHomePath = curPath === "/" || curPath === "" || curPath === "/home" || curPath === "/index"
                 if (isHomeRule && isHomePath) return true
@@ -438,8 +481,8 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                     return curPath.startsWith(prefix)
                 }
 
-                const ruleNoSlash = cleanRule.replace(/\\/+$/, "")
-                const pathNoSlash = curPath.replace(/\\/+$/, "")
+                const ruleNoSlash = cleanRule.replace(/\/+$/, "")
+                const pathNoSlash = curPath.replace(/\/+$/, "")
                 return curPath === cleanRule || pathNoSlash === ruleNoSlash
             })
 
@@ -447,10 +490,10 @@ export default function ChatBubbles(props: ChatBubblesProps) {
         } catch {
             return true
         }
-    }, [isCanvas, targetingEnabled, targetingRules, targetingMode, currentLocationPath])
+    }, [isCanvas, targetingEnabled, showOn, canvasPagePath, targetingRules, targetingMode, currentLocationPath])
 
     // Strict visibility guard: if hidden by targeting or operating schedule, widget returns null & suppresses sound
-    const isWidgetHidden = (!isCanvas && !isTargetingAllowed) || (!isCanvas && scheduleEnabled && isOffline && scheduleOfflineAction === "hide")
+    const isWidgetHidden = !isTargetingAllowed || (!isCanvas && scheduleEnabled && isOffline && scheduleOfflineAction === "hide")
 
     // Web Audio Synthesizer chime for notifications (never plays on Canvas design preview or when hidden)
     const playNotificationChime = React.useCallback((force: boolean = false) => {
@@ -773,7 +816,19 @@ export default function ChatBubbles(props: ChatBubblesProps) {
         }
         if (email && email.trim()) {
             const cleanEmail = email.replace(/[^a-zA-Z0-9._%+\-@]/g, "")
-            list.push({ id: "email", label: "Email", url: "mailto:" + cleanEmail, color: "#EA4335", value: email, message: "" })
+            const emailParams: string[] = []
+            if (emailSubject && emailSubject.trim()) emailParams.push("subject=" + encodeURIComponent(emailSubject.trim()))
+            if (emailMessage && emailMessage.trim()) emailParams.push("body=" + encodeURIComponent(emailMessage.trim()))
+            const emailQuery = emailParams.length > 0 ? "?" + emailParams.join("&") : ""
+            list.push({
+                id: "email",
+                label: "Email",
+                url: cleanEmail ? "mailto:" + cleanEmail + emailQuery : "mailto:",
+                color: "#EA4335",
+                value: email,
+                message: emailMessage || "",
+                emailSubject: emailSubject || ""
+            })
         }
         if (discord && discord.trim()) {
             const url = (discord.startsWith("http://") || discord.startsWith("https://")) ? discord : "https://discord.gg/" + discord.replace(/[^a-zA-Z0-9._-]/g, "")
@@ -811,7 +866,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
             list.push({ id: "whatsapp", label: "WhatsApp", url: "https://wa.me/", color: "#25D366", value: "", message: "Hello!" })
         }
         return list
-    }, [whatsapp, whatsappMessage, messenger, telegram, telegramMessage, instagram, tiktok, wechat, viber, line, signal, phone, sms, smsMessage, email, discord, slack, teams, x, linkedin, maps, custom, customLabel])
+    }, [whatsapp, whatsappMessage, messenger, telegram, telegramMessage, instagram, tiktok, wechat, viber, line, signal, phone, sms, smsMessage, email, emailSubject, emailMessage, discord, slack, teams, x, linkedin, maps, custom, customLabel])
 
     const agents = React.useMemo(() => {
         return rawAgents.map((ag: any) => {
@@ -1704,7 +1759,12 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                                     }
                                     if (selectedAgent.channelId === "email") {
                                         const cleanEmail = rawVal.replace(/[^a-zA-Z0-9._%+\-@]/g, "")
-                                        return cleanEmail ? "mailto:" + cleanEmail + (msg ? "?body=" + encodeURIComponent(msg) : "") : "mailto:"
+                                        const emailParams: string[] = []
+                                        const activeSub = (selectedAgent as any).emailSubject || emailSubject || ""
+                                        if (activeSub && activeSub.trim()) emailParams.push("subject=" + encodeURIComponent(activeSub.trim()))
+                                        if (msg) emailParams.push("body=" + encodeURIComponent(msg))
+                                        const emailQuery = emailParams.length > 0 ? "?" + emailParams.join("&") : ""
+                                        return cleanEmail ? "mailto:" + cleanEmail + emailQuery : "mailto:"
                                     }
                                     return selectedAgent.url || "#"
                                 })()}
@@ -2129,6 +2189,18 @@ addPropertyControls(ChatBubbles, {
         placeholder: "hello@example.com",
         defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "email")?.value || "")},
     },
+    emailSubject: {
+        type: ControlType.String,
+        title: "Email Subject",
+        placeholder: "Inquiry from website",
+        defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "email")?.emailSubject || "")},
+    },
+    emailMessage: {
+        type: ControlType.String,
+        title: "Email Message",
+        placeholder: "Hello! I have a question...",
+        defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "email")?.message || "")},
+    },
     discord: {
         type: ControlType.String,
         title: "Discord",
@@ -2248,6 +2320,18 @@ addPropertyControls(ChatBubbles, {
         title: "Page Targeting",
         defaultValue: ${Boolean(config.targetingEnabled)},
     },
+    showOn: {
+        type: ControlType.String,
+        title: "Where To Show",
+        defaultValue: ${JSON.stringify(config.showOn || "Every page")},
+        hidden: (props: any) => !props.targetingEnabled,
+    },
+    canvasPagePath: {
+        type: ControlType.String,
+        title: "Canvas Page Path",
+        defaultValue: "",
+        hidden: () => true,
+    },
     targetingMode: {
         type: ControlType.Enum,
         title: "Targeting Mode",
@@ -2322,6 +2406,7 @@ export function buildControlPayload(config: ChatConfig) {
         scheduleOfflineAction: config.scheduleOfflineAction || "badge",
         scheduleOfflineText: config.scheduleOfflineText || "Back tomorrow at 9:00 AM",
         targetingEnabled: Boolean(config.targetingEnabled),
+        showOn: config.showOn || "Every page",
         targetingMode: config.targetingMode || "show",
         targetingRules: config.targetingRules || "",
         whatsapp: config.channels.find((c) => c.id === "whatsapp")?.value || "",
@@ -2339,6 +2424,8 @@ export function buildControlPayload(config: ChatConfig) {
         sms: config.channels.find((c) => c.id === "sms")?.value || "",
         smsMessage: config.channels.find((c) => c.id === "sms")?.message || "",
         email: config.channels.find((c) => c.id === "email")?.value || "",
+        emailSubject: config.channels.find((c) => c.id === "email")?.emailSubject || "",
+        emailMessage: config.channels.find((c) => c.id === "email")?.message || "",
         discord: config.channels.find((c) => c.id === "discord")?.value || "",
         slack: config.channels.find((c) => c.id === "slack")?.value || "",
         teams: config.channels.find((c) => c.id === "teams")?.value || "",
@@ -2457,7 +2544,11 @@ export async function insertCanvasComponent(config: ChatConfig): Promise<{ succe
                     "addComponentInstance",
                     "setSelection",
                     "setAttributes",
-                    "getNodesWithType"
+                    "getNodesWithType",
+                    "setPluginData",
+                    "getPluginData",
+                    "setParent",
+                    "Node.remove"
                 )
             } catch {}
         }
@@ -2472,55 +2563,166 @@ export async function insertCanvasComponent(config: ChatConfig): Promise<{ succe
 
         const controlPayload = buildControlPayload(config)
 
-        // If an instance already exists on the canvas, update it instead of inserting a duplicate!
-        const existingInstances = (await framer.getNodesWithType("ComponentInstanceNode")) as any[]
-        const existingNodes = existingInstances?.filter(isChatBubblesInstance) || []
-        if (existingNodes.length > 0) {
-            for (const node of existingNodes) {
-                if (typeof node.setAttributes === "function") {
-                    await node.setAttributes({
-                        controls: controlPayload,
-                    })
-                }
-            }
-            if (existingNodes[0]?.id) {
-                try {
-                    await framer.setSelection([existingNodes[0].id])
-                } catch {}
-            }
+        // Find all web pages and design pages in the project
+        const webPages = ((await framer.getNodesWithType("WebPageNode")) as any[]) || []
+        const designPages = ((await framer.getNodesWithType("DesignPageNode")) as any[]) || []
+        const allPages = [...webPages, ...designPages]
+
+        // Find all existing Chat Bubbles instances in the project
+        const existingInstances = ((await framer.getNodesWithType("ComponentInstanceNode")) as any[]) || []
+        const existingNodes = existingInstances.filter(isChatBubblesInstance)
+
+        const componentExport = file.exports.find((exp) => exp.type === "component")
+        if (!componentExport || !("insertURL" in componentExport)) {
             return {
                 success: true,
-                message: "Chat Bubbles component updated on canvas!",
+                message: "Chat Bubbles component created in your Code Assets! You can drag it onto any page.",
             }
         }
 
-        const componentExport = file.exports.find((exp) => exp.type === "component")
-        if (componentExport && "insertURL" in componentExport) {
-            // Insert component onto the canvas root using Framer's default insertion behavior with default Open Modal state
+        const isTargeting = Boolean(config.targetingEnabled)
+        const targetShowOn = isTargeting ? (config.showOn || "Every page") : "Every page"
+
+        let targetPages: any[] = []
+        if (targetShowOn === "Every page") {
+            targetPages = allPages
+        } else if (targetShowOn === "Home page") {
+            const homePage = allPages.find((p: any) => {
+                if ("path" in p && p.path) return p.path === "/" || p.path === ""
+                if ("name" in p && p.name) return p.name === "Home" || p.name === "index"
+                return false
+            }) || allPages[0]
+            if (homePage) targetPages = [homePage]
+        } else if (targetShowOn === "custom") {
+            const rawRules = String(config.targetingRules || "")
+                .split(/[\r\n,;]+/)
+                .map((r) => r.trim().toLowerCase())
+                .filter(Boolean)
+            if (rawRules.length === 0) {
+                targetPages = allPages
+            } else {
+                targetPages = allPages.filter((p: any) => {
+                    const path = (("path" in p && p.path) ? p.path : ("/" + (p.name || ""))).toLowerCase()
+                    return rawRules.some((rule) => {
+                        if (rule === "*" || rule === "/*") return true
+                        const clean = rule.startsWith("/") ? rule : "/" + rule
+                        if (clean === path) return true
+                        if (clean.endsWith("/*") && path.startsWith(clean.slice(0, -2) + "/")) return true
+                        if (clean.endsWith("*") && path.startsWith(clean.slice(0, -1))) return true
+                        return false
+                    })
+                })
+            }
+        } else {
+            const targetPage = allPages.find((p: any) => {
+                if ("path" in p && p.path) return p.path === targetShowOn
+                if ("name" in p && p.name) {
+                    const pagePath = "/" + p.name.replace(/^\/+/, "")
+                    return pagePath === targetShowOn || p.name === targetShowOn
+                }
+                return false
+            })
+            if (targetPage) targetPages = [targetPage]
+        }
+
+        // Map which pages already contain a Chat Bubbles instance
+        const pagesWithThisWidget = new Set<string>()
+        for (const inst of existingNodes) {
+            let currentId = inst.id
+            let pageId: string | null = null
+            while (currentId) {
+                const node = (await framer.getNode(currentId)) as any
+                if (!node) break
+                if (node.type === "WebPageNode" || node.type === "DesignPageNode") {
+                    pageId = node.id
+                    break
+                }
+                currentId = node.parentId
+            }
+            if (pageId) {
+                pagesWithThisWidget.add(pageId)
+            }
+        }
+
+        // Insert instances on any target pages missing the widget
+        const missingPages = targetPages.filter((p) => !pagesWithThisWidget.has(p.id))
+        let newlyInsertedCount = 0
+        for (const p of missingPages) {
+            const pagePath = ("path" in p && p.path) ? p.path : ("/" + (p.name || "").replace(/^\/+/, ""))
+            try {
+                const instance = (await framer.addComponentInstance({
+                    url: componentExport.insertURL,
+                    parentId: p.id,
+                    attributes: {
+                        controls: {
+                            ...controlPayload,
+                            canvasPagePath: pagePath,
+                        },
+                    },
+                } as any)) as any
+                if (instance?.id) {
+                    existingNodes.push(instance)
+                    pagesWithThisWidget.add(p.id)
+                    newlyInsertedCount++
+                }
+            } catch (err) {
+                console.warn("[ChatBubbles] Failed to insert component onto page:", p.name || p.id, err)
+            }
+        }
+
+        // Fallback: If no pages exist in project or couldn't insert into page, insert onto canvas root/selection
+        if (existingNodes.length === 0) {
+            let fallbackParentId: string | undefined = undefined
+            try {
+                const selection = await framer.getSelection()
+                if (selection && selection.length > 0) {
+                    fallbackParentId = selection[0].id
+                }
+            } catch {}
             const instance = (await framer.addComponentInstance({
                 url: componentExport.insertURL,
+                parentId: fallbackParentId,
                 attributes: {
                     controls: controlPayload,
                 },
-            })) as any
-
+            } as any)) as any
             if (instance?.id) {
-                try {
-                    await framer.setSelection([instance.id])
-                } catch {
-                    // Ignore selection error
-                }
+                existingNodes.push(instance)
+                newlyInsertedCount++
             }
+        }
 
-            return {
-                success: true,
-                message: "Chat Bubbles component inserted onto the canvas! Customize it in the property panel and drag it into your frame as needed.",
+        // Update control properties on all existing instances
+        for (const node of existingNodes) {
+            if (typeof node.setAttributes === "function") {
+                await node.setAttributes({
+                    controls: controlPayload,
+                })
             }
+        }
+
+        if (existingNodes[0]?.id) {
+            try {
+                await framer.setSelection([existingNodes[0].id])
+            } catch {}
+        }
+
+        let feedbackMsg = "Chat Bubbles component updated on canvas!"
+        if (newlyInsertedCount > 0) {
+            if (targetShowOn === "Every page") {
+                feedbackMsg = `Chat Bubbles component inserted onto ${newlyInsertedCount} page(s)!`
+            } else {
+                feedbackMsg = `Chat Bubbles component inserted on ${targetShowOn}!`
+            }
+        } else if (existingNodes.length > 0) {
+            feedbackMsg = targetShowOn === "Every page"
+                ? "Chat Bubbles component updated across your pages!"
+                : `Chat Bubbles component targeting updated to ${targetShowOn}!`
         }
 
         return {
             success: true,
-            message: "Chat Bubbles component created in your Code Assets! You can drag it onto any page.",
+            message: feedbackMsg,
         }
     } catch (error) {
         return {

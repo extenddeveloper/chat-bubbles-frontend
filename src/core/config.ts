@@ -27,7 +27,7 @@ export const DEFAULT_CHANNELS: ChatChannel[] = [
     { id: "signal", enabled: false, label: "Signal", value: "", color: "#3A76F0", openInNewTab: true },
     { id: "phone", enabled: false, label: "Phone", value: "", color: "#111827", openInNewTab: false },
     { id: "sms", enabled: false, label: "SMS", value: "", message: "Hello! I have a question about {title}.", color: "#10B981", openInNewTab: false },
-    { id: "email", enabled: false, label: "Email", value: "", color: "#EA4335", openInNewTab: false },
+    { id: "email", enabled: false, label: "Email", value: "", emailSubject: "", message: "", color: "#EA4335", openInNewTab: false },
     { id: "discord", enabled: false, label: "Discord", value: "", color: "#5865F2", openInNewTab: true },
     { id: "slack", enabled: false, label: "Slack", value: "", color: "#4A154B", openInNewTab: true },
     { id: "teams", enabled: false, label: "Microsoft Teams", value: "", color: "#6264A7", openInNewTab: true },
@@ -126,6 +126,7 @@ export const DEFAULT_CONFIG: ChatConfig = {
     scheduleOfflineAction: "badge",
     scheduleOfflineText: "Back tomorrow at 9:00 AM",
     targetingEnabled: false,
+    showOn: "Every page",
     targetingMode: "show",
     targetingRules: "",
 }
