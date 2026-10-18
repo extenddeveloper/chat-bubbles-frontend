@@ -3,20 +3,15 @@ import type { ChatChannel } from "../../types"
 import { ICONS } from "../../widget/icons"
 import {
     type AnalyticsPeriod,
-    clearAnalyticsData,
     formatNumber,
     formatViews,
     generateAnalytics,
-    recordAnalyticsClick,
-    recordAnalyticsView,
 } from "../../core/analytics"
 import {
     IconAnalyticsOff,
     IconChevronDown,
     IconEye,
     IconMousePointer,
-    IconNoticeInfo,
-    IconRefresh,
     IconSparkles,
     IconTrendingUp,
 } from "../icons"
@@ -77,20 +72,6 @@ export function AnalyticsView({
         [period, channels, refreshKey]
     )
 
-    function handleResetStats() {
-        if (window.confirm("Reset all recorded analytics metrics back to 0?")) {
-            clearAnalyticsData()
-            setRefreshKey((k) => k + 1)
-        }
-    }
-
-    function handleTestInteraction() {
-        const targetChannel = channels.find((c) => c.enabled)?.id || channels[0]?.id || "whatsapp"
-        recordAnalyticsView()
-        recordAnalyticsClick(targetChannel)
-        setRefreshKey((k) => k + 1)
-    }
-
     if (!enabled) {
         return (
             <div className="cf-analytics-page">
@@ -124,8 +105,6 @@ export function AnalyticsView({
         )
     }
 
-    const hasAnyActivity = data.views > 0 || data.clicks > 0
-
     return (
         <div className="cf-analytics-page">
             {/* Header & Filter */}
@@ -137,74 +116,39 @@ export function AnalyticsView({
                     </span>
                 </div>
 
-                <div className="cf-analytics-header-controls">
-                    <div className="cf-analytics-filter" ref={dropdownRef}>
-                        <button
-                            type="button"
-                            className="cf-analytics-dropdown-btn"
-                            onClick={() => setPeriodOpen(!periodOpen)}
-                            aria-expanded={periodOpen}
-                            aria-label="Select analytics reporting period"
-                        >
-                            <span>{period}</span>
-                            <IconChevronDown
-                                size={14}
-                                className={"cf-analytics-dropdown-chevron" + (periodOpen ? " is-open" : "")}
-                            />
-                        </button>
+                <div className="cf-analytics-filter" ref={dropdownRef}>
+                    <button
+                        type="button"
+                        className="cf-analytics-dropdown-btn"
+                        onClick={() => setPeriodOpen(!periodOpen)}
+                        aria-expanded={periodOpen}
+                        aria-label="Select analytics reporting period"
+                    >
+                        <span>{period}</span>
+                        <IconChevronDown
+                            size={14}
+                            className={"cf-analytics-dropdown-chevron" + (periodOpen ? " is-open" : "")}
+                        />
+                    </button>
 
-                        {periodOpen && (
-                            <ul className="cf-analytics-dropdown-menu">
-                                {PERIODS.map((p) => (
-                                    <li
-                                        key={p}
-                                        className={"cf-analytics-dropdown-item" + (p === period ? " is-active" : "")}
-                                        onClick={() => {
-                                            setPeriod(p)
-                                            setPeriodOpen(false)
-                                        }}
-                                    >
-                                        {p}
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </div>
-
-                    {hasAnyActivity && (
-                        <button
-                            type="button"
-                            className="cf-analytics-reset-btn"
-                            onClick={handleResetStats}
-                            title="Reset all recorded counts back to 0"
-                        >
-                            <IconRefresh size={12} />
-                            <span>Reset</span>
-                        </button>
+                    {periodOpen && (
+                        <ul className="cf-analytics-dropdown-menu">
+                            {PERIODS.map((p) => (
+                                <li
+                                    key={p}
+                                    className={"cf-analytics-dropdown-item" + (p === period ? " is-active" : "")}
+                                    onClick={() => {
+                                        setPeriod(p)
+                                        setPeriodOpen(false)
+                                    }}
+                                >
+                                    {p}
+                                </li>
+                            ))}
+                        </ul>
                     )}
                 </div>
             </div>
-
-            {/* Zero interaction notice */}
-            {!hasAnyActivity && (
-                <div className="cf-analytics-empty-hint">
-                    <div className="cf-analytics-empty-hint-left">
-                        <IconNoticeInfo size={14} />
-                        <span>
-                            No interactions recorded yet for {period.toLowerCase()}. Interactions from your preview and published site will count here in real time.
-                        </span>
-                    </div>
-                    <button
-                        type="button"
-                        className="cf-analytics-test-click-btn"
-                        onClick={handleTestInteraction}
-                        title="Simulate a live test click on your chat widget"
-                    >
-                        <IconSparkles size={11} />
-                        <span>Test Click</span>
-                    </button>
-                </div>
-            )}
 
             {/* 3 KPI Summary Cards */}
             <div className="cf-analytics-kpi-grid">

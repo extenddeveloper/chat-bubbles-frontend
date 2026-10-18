@@ -704,20 +704,6 @@ export function App() {
                                             <span className="cf-hero-config-label">Team</span>
                                             <span className="cf-hero-config-val">{config.agents.length} Agents</span>
                                         </button>
-                                        <button
-                                            type="button"
-                                            className="cf-hero-config-item"
-                                            onClick={() => {
-                                                setIsProfileOpen(false)
-                                                setTab("analytics")
-                                            }}
-                                            title="View widget analytics and statistics"
-                                        >
-                                            <span className="cf-hero-config-label">Analytics</span>
-                                            <span className="cf-hero-config-val">
-                                                {config.enableAnalytics !== false ? "Active" : "Disabled"}
-                                            </span>
-                                        </button>
                                     </div>
                                 </HeroCard>
 
@@ -1834,20 +1820,14 @@ export function App() {
                                     description="Track views, clicks, and conversion rates for your chat bubbles."
                                 >
                                     <div className="cf-flex-between">
-                                        <div className="cf-setting-info">
-                                            <div className="cf-text-xs-secondary">
-                                                {config.enableAnalytics !== false
-                                                    ? "Analytics tracking is enabled. Disable to stop all tracking."
-                                                    : "Analytics tracking is disabled. Enable to start tracking again."}
-                                            </div>
-                                        </div>
+                                        <span className="cf-text-sm-semibold">Enable Analytics</span>
                                         <Switch
                                             checked={config.enableAnalytics !== false}
                                             onChange={(enableAnalytics) => updateConfig({ enableAnalytics })}
                                         />
                                     </div>
 
-                                    {config.enableAnalytics !== false ? (
+                                    {config.enableAnalytics !== false && (
                                         <div className="cf-analytics-settings-action">
                                             <button
                                                 type="button"
@@ -1861,13 +1841,6 @@ export function App() {
                                                 <span>View Analytics Dashboard</span>
                                                 <IconArrowRight size={13} />
                                             </button>
-                                        </div>
-                                    ) : (
-                                        <div className="cf-analytics-notice">
-                                            <IconNoticeWarning size={15} />
-                                            <span>
-                                                Analytics tracking is disabled. The Analytics tab will show no data.
-                                            </span>
                                         </div>
                                     )}
                                 </Section>
