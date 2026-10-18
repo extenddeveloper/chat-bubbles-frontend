@@ -190,6 +190,13 @@ export function App() {
         return () => clearTimeout(timer)
     }, [message])
 
+    // Fall back to home tab if analytics is disabled while on the analytics tab
+    useEffect(() => {
+        if (tab === "analytics" && config.enableAnalytics === false) {
+            setTab("home")
+        }
+    }, [tab, config.enableAnalytics])
+
     // Agent creation & configuration state
     const [showAddAgent, setShowAddAgent] = useState(false)
     const [newAgentName, setNewAgentName] = useState("")
@@ -585,16 +592,18 @@ export function App() {
                     >
                         Design
                     </button>
-                    <button
-                        type="button"
-                        className={"cf-tab " + (!isProfileOpen && tab === "analytics" ? "active" : "")}
-                        onClick={() => {
-                            setIsProfileOpen(false)
-                            setTab("analytics")
-                        }}
-                    >
-                        Analytics
-                    </button>
+                    {config.enableAnalytics !== false && (
+                        <button
+                            type="button"
+                            className={"cf-tab " + (!isProfileOpen && tab === "analytics" ? "active" : "")}
+                            onClick={() => {
+                                setIsProfileOpen(false)
+                                setTab("analytics")
+                            }}
+                        >
+                            Analytics
+                        </button>
+                    )}
                     <button
                         type="button"
                         className={"cf-tab " + (!isProfileOpen && tab === "settings" ? "active" : "")}
@@ -1763,9 +1772,9 @@ export function App() {
                         )}
 
                         {/* ANALYTICS TAB */}
-                        {tab === "analytics" && (
+                        {tab === "analytics" && config.enableAnalytics !== false && (
                             <AnalyticsView
-                                enabled={config.enableAnalytics !== false}
+                                enabled={true}
                                 onToggleEnabled={(enableAnalytics) => updateConfig({ enableAnalytics })}
                                 channels={config.channels}
                                 onNavigateToSettings={() => {
@@ -1816,17 +1825,15 @@ export function App() {
                                 </Section>
 
                                 <Section
-                                    title="Widget Analytics"
+                                    title="Enable Analytics"
                                     description="Track views, clicks, and conversion rates for your chat bubbles."
-                                >
-                                    <div className="cf-flex-between">
-                                        <span className="cf-text-sm-semibold">Enable Analytics</span>
+                                    action={
                                         <Switch
                                             checked={config.enableAnalytics !== false}
                                             onChange={(enableAnalytics) => updateConfig({ enableAnalytics })}
                                         />
-                                    </div>
-
+                                    }
+                                >
                                     {config.enableAnalytics !== false && (
                                         <div className="cf-analytics-settings-action">
                                             <button

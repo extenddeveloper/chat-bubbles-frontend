@@ -1,4 +1,4 @@
-﻿import type { ReactNode } from "react"
+import type { ReactNode } from "react"
 
 export function Section({
     title,
@@ -11,12 +11,12 @@ export function Section({
     description?: string
     badge?: ReactNode
     action?: ReactNode
-    children: ReactNode
+    children?: ReactNode
 }) {
     return (
         <section className="cf-section">
-            <div className="cf-section-header">
-                <div>
+            <div className={`cf-section-header${action ? " has-action" : ""}`}>
+                <div className="cf-section-header-info">
                     <div className="cf-section-title-row">
                         <h2 className="cf-section-title">{title}</h2>
                         {badge}
@@ -25,9 +25,7 @@ export function Section({
                 </div>
                 {action ? <div className="cf-section-action">{action}</div> : null}
             </div>
-            <div className="cf-section-body">
-                {children}
-            </div>
+            {children ? <div className="cf-section-body">{children}</div> : null}
         </section>
     )
 }

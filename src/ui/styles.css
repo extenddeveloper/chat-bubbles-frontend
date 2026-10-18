@@ -503,6 +503,27 @@ button.cf-tab-profile.active {
     gap: 2px;
 }
 
+.cf-section-header.has-action {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.cf-section-header-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+}
+
+.cf-section-action {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
 .cf-section-title,
 h2.cf-section-title {
     font-size: 12px;
