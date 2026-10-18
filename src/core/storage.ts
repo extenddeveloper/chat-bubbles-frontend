@@ -98,7 +98,6 @@ function compactConfig(config: ChatConfig): any {
         targetingEnabled: config.targetingEnabled,
         targetingMode: config.targetingMode,
         targetingRules: config.targetingRules,
-        ...(config.widgetId ? { widgetId: config.widgetId } : {}),
         agents,
         channels,
     }

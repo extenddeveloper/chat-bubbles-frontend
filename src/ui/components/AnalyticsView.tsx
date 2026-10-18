@@ -1,13 +1,11 @@
-import React, { useEffect, useRef, useState } from "react"
+import React, { useEffect, useMemo, useRef, useState } from "react"
 import type { ChatChannel } from "../../types"
 import { ICONS } from "../../widget/icons"
 import {
-    type AnalyticsData,
     type AnalyticsPeriod,
-    fetchAnalyticsData,
     formatNumber,
     formatViews,
-    getStoredOrFallbackAnalytics,
+    generateAnalytics,
 } from "../../core/analytics"
 import {
     IconAnalyticsOff,
@@ -23,7 +21,6 @@ interface AnalyticsViewProps {
     onToggleEnabled: (enabled: boolean) => void
     channels: ChatChannel[]
     onNavigateToSettings: () => void
-    widgetId?: string
 }
 
 const PERIODS: AnalyticsPeriod[] = ["Last 7 days", "Last 30 days", "Last 6 months"]
@@ -33,12 +30,10 @@ export function AnalyticsView({
     onToggleEnabled,
     channels,
     onNavigateToSettings,
-    widgetId,
 }: AnalyticsViewProps) {
     const [period, setPeriod] = useState<AnalyticsPeriod>("Last 7 days")
     const [periodOpen, setPeriodOpen] = useState(false)
     const [refreshKey, setRefreshKey] = useState(0)
-    const [data, setData] = useState<AnalyticsData>(() => getStoredOrFallbackAnalytics("Last 7 days", channels))
     const dropdownRef = useRef<HTMLDivElement>(null)
 
     // Listen to real interaction updates from widget and live site
@@ -71,32 +66,11 @@ export function AnalyticsView({
         }
     }, [periodOpen])
 
-    // Fetch dynamic analytics from Framefic backend
-    useEffect(() => {
-        if (!enabled) return
-        let active = true
-
-        fetchAnalyticsData(widgetId || "", period, channels)
-            .then((result) => {
-                if (active) {
-                    setData(result)
-                }
-            })
-            .catch(() => {})
-
-        return () => {
-            active = false
-        }
-    }, [enabled, widgetId, period, channels, refreshKey])
-
-    // Periodic live auto-poll every 12 seconds when the view is active
-    useEffect(() => {
-        if (!enabled) return
-        const interval = setInterval(() => {
-            setRefreshKey((k) => k + 1)
-        }, 12000)
-        return () => clearInterval(interval)
-    }, [enabled])
+    const data = useMemo(
+        () => generateAnalytics(period, channels),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [period, channels, refreshKey]
+    )
 
     if (!enabled) {
         return (

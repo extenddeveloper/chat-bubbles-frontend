@@ -5,7 +5,6 @@ import { MODAL_THEME_GRADIENTS } from "../core/config"
 import { SVG_AVATAR_PRESETS } from "../core/avatars"
 
 export function generateComponentCode(config: ChatConfig): string {
-    const widgetAnalyticsId = (config.widgetId && config.widgetId.trim()) || "cb_default"
     const iconEntries = Object.entries(ICONS)
         .map(([key, svg]) => `  ${JSON.stringify(key)}: ${JSON.stringify(svg)},`)
         .join("\n")
@@ -615,20 +614,13 @@ export default function ChatBubbles(props: ChatBubblesProps) {
     // Strict visibility guard: if hidden by targeting or operating schedule, widget returns null & suppresses sound
     const isWidgetHidden = !isTargetingAllowed || (!isCanvas && scheduleEnabled && isOffline && scheduleOfflineAction === "hide")
 
-    // Real site visitor aggregate view tracking via Framefic Cloud API
+    // Anonymous aggregate view tracking for site visitors (using temporary sessionStorage)
     React.useEffect(() => {
         if (isCanvas || !enableAnalytics || isWidgetHidden) return
         try {
-            const sessionKey = "chat_bubbles_viewed_" + "${widgetAnalyticsId}"
+            const sessionKey = "chat_bubbles_viewed"
             if (!sessionStorage.getItem(sessionKey)) {
                 sessionStorage.setItem(sessionKey, "true")
-                try {
-                    fetch("https://app.framefic.com/crestbar/api/analytics/track", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ widgetId: "${widgetAnalyticsId}", eventType: "view" }),
-                    }).catch(() => {})
-                } catch {}
                 try {
                     const storageKey = "chat_bubbles_analytics_data_v1"
                     const raw = localStorage.getItem(storageKey)
@@ -652,57 +644,6 @@ export default function ChatBubbles(props: ChatBubblesProps) {
             }
         } catch {}
     }, [isCanvas, enableAnalytics, isWidgetHidden])
-
-    // Real-time click tracking helper for Framefic Cloud API & local interaction
-    const recordTrackClick = React.useCallback((channelId: string, channelLabel?: string, agentName?: string) => {
-        if (isCanvas || !enableAnalytics) return
-        try {
-            fetch("https://app.framefic.com/crestbar/api/analytics/track", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ widgetId: "${widgetAnalyticsId}", eventType: "click", channel: channelId }),
-            }).catch(() => {})
-        } catch {}
-        try {
-            const storageKey = "chat_bubbles_analytics_data_v1"
-            const raw = localStorage.getItem(storageKey)
-            const store = raw ? JSON.parse(raw) : { days: {}, totalViews: 0, totalClicks: 0 }
-            const now = new Date()
-            const dateKey = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0")
-            if (!store.days) store.days = {}
-            if (!store.days[dateKey]) store.days[dateKey] = { views: 0, clicks: 0, channels: {} }
-            store.days[dateKey].clicks = (store.days[dateKey].clicks || 0) + 1
-            if (!store.days[dateKey].channels) store.days[dateKey].channels = {}
-            store.days[dateKey].channels[channelId] = (store.days[dateKey].channels[channelId] || 0) + 1
-            store.totalClicks = (store.totalClicks || 0) + 1
-            localStorage.setItem(storageKey, JSON.stringify(store))
-            window.dispatchEvent(new CustomEvent("chat_bubbles_analytics_updated", { detail: store }))
-        } catch {}
-        try {
-            if (Array.isArray((window as any).dataLayer)) {
-                (window as any).dataLayer.push({
-                    event: "chat_bubbles_click",
-                    channel: channelId,
-                    channel_label: channelLabel || channelId,
-                    agent_name: agentName,
-                })
-            }
-            if (typeof (window as any).gtag === "function") {
-                (window as any).gtag("event", "chat_bubbles_click", {
-                    channel: channelId,
-                    channel_label: channelLabel || channelId,
-                    agent_name: agentName,
-                })
-            }
-            window.dispatchEvent(new CustomEvent("chat_bubbles_interaction", {
-                detail: {
-                    channel: channelId,
-                    channelLabel: channelLabel || channelId,
-                    agentName,
-                },
-            }))
-        } catch {}
-    }, [isCanvas, enableAnalytics])
 
     // Web Audio Synthesizer chime for notifications (never plays on Canvas design preview or when hidden)
     const playNotificationChime = React.useCallback((force: boolean = false) => {
@@ -1970,7 +1911,48 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                                 style={headerWrapStyle}
                                 onClick={(e) => {
                                     e.stopPropagation()
-                                    recordTrackClick(selectedAgent.channelId, selectedAgent.channelLabel, selectedAgent.name)
+                                    if (enableAnalytics && typeof window !== "undefined") {
+                                        try {
+                                            const storageKey = "chat_bubbles_analytics_data_v1"
+                                            const raw = localStorage.getItem(storageKey)
+                                            const store = raw ? JSON.parse(raw) : { days: {}, totalViews: 0, totalClicks: 0 }
+                                            const now = new Date()
+                                            const dateKey = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0")
+                                            if (!store.days) store.days = {}
+                                            if (!store.days[dateKey]) store.days[dateKey] = { views: 0, clicks: 0, channels: {} }
+                                            store.days[dateKey].clicks = (store.days[dateKey].clicks || 0) + 1
+                                            if (!store.days[dateKey].channels) store.days[dateKey].channels = {}
+                                            const chId = selectedAgent.channelId
+                                            store.days[dateKey].channels[chId] = (store.days[dateKey].channels[chId] || 0) + 1
+                                            store.totalClicks = (store.totalClicks || 0) + 1
+                                            localStorage.setItem(storageKey, JSON.stringify(store))
+                                            window.dispatchEvent(new CustomEvent("chat_bubbles_analytics_updated", { detail: store }))
+                                        } catch {}
+                                        try {
+                                            if (Array.isArray((window as any).dataLayer)) {
+                                                (window as any).dataLayer.push({
+                                                    event: "chat_bubbles_click",
+                                                    channel: selectedAgent.channelId,
+                                                    channel_label: selectedAgent.channelLabel || selectedAgent.channelId,
+                                                    agent_name: selectedAgent.name,
+                                                })
+                                            }
+                                            if (typeof (window as any).gtag === "function") {
+                                                (window as any).gtag("event", "chat_bubbles_click", {
+                                                    channel: selectedAgent.channelId,
+                                                    channel_label: selectedAgent.channelLabel || selectedAgent.channelId,
+                                                    agent_name: selectedAgent.name,
+                                                })
+                                            }
+                                            window.dispatchEvent(new CustomEvent("chat_bubbles_interaction", {
+                                                detail: {
+                                                    channel: selectedAgent.channelId,
+                                                    channelLabel: selectedAgent.channelLabel || selectedAgent.channelId,
+                                                    agentName: selectedAgent.name,
+                                                }
+                                            }))
+                                        } catch {}
+                                    }
                                     if (closeAfterClick) {
                                         setIsOpen(false)
                                         setSelectedAgent(null)
@@ -2008,7 +1990,32 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     onClick={() => {
-                                        recordTrackClick(channel.id, channel.label)
+                                        if (enableAnalytics && typeof window !== "undefined") {
+                                            try {
+                                                const storageKey = "chat_bubbles_analytics_data_v1"
+                                                const raw = localStorage.getItem(storageKey)
+                                                const store = raw ? JSON.parse(raw) : { days: {}, totalViews: 0, totalClicks: 0 }
+                                                const now = new Date()
+                                                const dateKey = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0")
+                                                if (!store.days) store.days = {}
+                                                if (!store.days[dateKey]) store.days[dateKey] = { views: 0, clicks: 0, channels: {} }
+                                                store.days[dateKey].clicks = (store.days[dateKey].clicks || 0) + 1
+                                                if (!store.days[dateKey].channels) store.days[dateKey].channels = {}
+                                                store.days[dateKey].channels[channel.id] = (store.days[dateKey].channels[channel.id] || 0) + 1
+                                                store.totalClicks = (store.totalClicks || 0) + 1
+                                                localStorage.setItem(storageKey, JSON.stringify(store))
+                                                window.dispatchEvent(new CustomEvent("chat_bubbles_analytics_updated", { detail: store }))
+                                            } catch {}
+                                            try {
+                                                if (Array.isArray((window as any).dataLayer)) {
+                                                    (window as any).dataLayer.push({ event: "chat_bubbles_click", channel: channel.id, channel_label: channel.label })
+                                                }
+                                                if (typeof (window as any).gtag === "function") {
+                                                    (window as any).gtag("event", "chat_bubbles_click", { channel: channel.id, channel_label: channel.label })
+                                                }
+                                                window.dispatchEvent(new CustomEvent("chat_bubbles_interaction", { detail: { channel: channel.id, channelLabel: channel.label } }))
+                                            } catch {}
+                                        }
                                         if (closeAfterClick) setIsOpen(false)
                                     }}
                                     className="cf-channel-btn"

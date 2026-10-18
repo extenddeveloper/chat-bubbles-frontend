@@ -525,6 +525,5 @@ export function sanitizeConfig(config: Partial<ChatConfig>): ChatConfig {
         showOn: sanitizeText(config.showOn, 100, "Every page"),
         targetingMode,
         targetingRules: sanitizeMultilineText(config.targetingRules, 1000, ""),
-        widgetId: sanitizeText(config.widgetId, 60, ""),
     }
 }
