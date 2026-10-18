@@ -225,6 +225,28 @@ export function buildWidgetCode(config: ChatConfig): string {
     }
   }
 
+  /* 3. Deduplicated anonymous view tracking for site visitors (using temporary sessionStorage) */
+  if (SETTINGS.enableAnalytics && typeof window !== "undefined") {
+    try {
+      var sessionKey = "chat_bubbles_viewed";
+      if (!sessionStorage.getItem(sessionKey)) {
+        sessionStorage.setItem(sessionKey, "true");
+        if (typeof window.gtag === "function") {
+          window.gtag("event", "chat_bubbles_view", {
+            event_category: "Chat Bubbles",
+            event_label: "widget_view"
+          });
+        }
+        if (Array.isArray(window.dataLayer)) {
+          window.dataLayer.push({
+            event: "chat_bubbles_view",
+            event_category: "Chat Bubbles"
+          });
+        }
+      }
+    } catch(e) {}
+  }
+
   var existing = document.getElementById(ROOT_ID);
   if (existing) existing.remove();
   var oldStyle = document.getElementById(STYLE_ID);

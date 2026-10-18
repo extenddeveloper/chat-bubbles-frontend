@@ -614,6 +614,24 @@ export default function ChatBubbles(props: ChatBubblesProps) {
     // Strict visibility guard: if hidden by targeting or operating schedule, widget returns null & suppresses sound
     const isWidgetHidden = !isTargetingAllowed || (!isCanvas && scheduleEnabled && isOffline && scheduleOfflineAction === "hide")
 
+    // Anonymous aggregate view tracking for site visitors (using temporary sessionStorage)
+    React.useEffect(() => {
+        if (isCanvas || !enableAnalytics || isWidgetHidden) return
+        try {
+            const sessionKey = "chat_bubbles_viewed"
+            if (!sessionStorage.getItem(sessionKey)) {
+                sessionStorage.setItem(sessionKey, "true")
+                if (Array.isArray((window as any).dataLayer)) {
+                    (window as any).dataLayer.push({ event: "chat_bubbles_view", event_category: "Chat Bubbles" })
+                }
+                if (typeof (window as any).gtag === "function") {
+                    (window as any).gtag("event", "chat_bubbles_view", { event_category: "Chat Bubbles", event_label: "widget_view" })
+                }
+                window.dispatchEvent(new CustomEvent("chat_bubbles_view", { detail: { timestamp: Date.now() } }))
+            }
+        } catch {}
+    }, [isCanvas, enableAnalytics, isWidgetHidden])
+
     // Web Audio Synthesizer chime for notifications (never plays on Canvas design preview or when hidden)
     const playNotificationChime = React.useCallback((force: boolean = false) => {
         if (isCanvas || !enableSound || isWidgetHidden) return
@@ -1880,6 +1898,32 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                                 style={headerWrapStyle}
                                 onClick={(e) => {
                                     e.stopPropagation()
+                                    if (enableAnalytics && typeof window !== "undefined") {
+                                        try {
+                                            if (Array.isArray((window as any).dataLayer)) {
+                                                (window as any).dataLayer.push({
+                                                    event: "chat_bubbles_click",
+                                                    channel: selectedAgent.channelId,
+                                                    channel_label: selectedAgent.channelLabel || selectedAgent.channelId,
+                                                    agent_name: selectedAgent.name,
+                                                })
+                                            }
+                                            if (typeof (window as any).gtag === "function") {
+                                                (window as any).gtag("event", "chat_bubbles_click", {
+                                                    channel: selectedAgent.channelId,
+                                                    channel_label: selectedAgent.channelLabel || selectedAgent.channelId,
+                                                    agent_name: selectedAgent.name,
+                                                })
+                                            }
+                                            window.dispatchEvent(new CustomEvent("chat_bubbles_interaction", {
+                                                detail: {
+                                                    channel: selectedAgent.channelId,
+                                                    channelLabel: selectedAgent.channelLabel || selectedAgent.channelId,
+                                                    agentName: selectedAgent.name,
+                                                }
+                                            }))
+                                        } catch {}
+                                    }
                                     if (closeAfterClick) {
                                         setIsOpen(false)
                                         setSelectedAgent(null)
@@ -2459,6 +2503,11 @@ addPropertyControls(ChatBubbles, {
         defaultValue: ${JSON.stringify(JSON.stringify(config.scheduleDays || [1, 2, 3, 4, 5]))},
         hidden: () => true,
     },
+    enableAnalytics: {
+        type: ControlType.Boolean,
+        title: "Widget Analytics",
+        defaultValue: ${Boolean(config.enableAnalytics !== false)},
+    },
 })
 `
 }
@@ -2495,6 +2544,7 @@ export function buildControlPayload(config: ChatConfig) {
         enableSound: Boolean(config.enableSound),
         showBadge: Boolean(config.showBadge),
         badgeText: config.badgeText || "1",
+        enableAnalytics: Boolean(config.enableAnalytics !== false),
         scrollTriggerEnabled: Boolean(config.scrollTriggerEnabled),
         scrollTriggerPercent: Number(config.scrollTriggerPercent ?? 25),
         scrollTriggerTarget: config.scrollTriggerTarget || "launcher",

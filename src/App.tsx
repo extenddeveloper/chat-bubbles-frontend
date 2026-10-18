@@ -37,11 +37,13 @@ import {
     IconNoticeSuccess,
     IconNoticeWarning,
     IconNoticeError,
+    IconChart,
 } from "./ui/icons"
+import { AnalyticsView } from "./ui/components/AnalyticsView"
 import { playNotificationChime } from "./core/sound"
 import "./ui/styles.css"
 
-type Tab = "home" | "builder" | "design" | "settings"
+type Tab = "home" | "builder" | "design" | "analytics" | "settings"
 type BuilderSubTab = "channels" | "agents"
 
 const AVATAR_PRESETS = SVG_AVATAR_PRESETS
@@ -565,6 +567,16 @@ export function App() {
                     </button>
                     <button
                         type="button"
+                        className={"cf-tab " + (!isProfileOpen && tab === "analytics" ? "active" : "")}
+                        onClick={() => {
+                            setIsProfileOpen(false)
+                            setTab("analytics")
+                        }}
+                    >
+                        Analytics
+                    </button>
+                    <button
+                        type="button"
                         className={"cf-tab " + (!isProfileOpen && tab === "settings" ? "active" : "")}
                         onClick={() => {
                             setIsProfileOpen(false)
@@ -671,6 +683,20 @@ export function App() {
                                         >
                                             <span className="cf-hero-config-label">Team</span>
                                             <span className="cf-hero-config-val">{config.agents.length} Agents</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="cf-hero-config-item"
+                                            onClick={() => {
+                                                setIsProfileOpen(false)
+                                                setTab("analytics")
+                                            }}
+                                            title="View widget analytics and statistics"
+                                        >
+                                            <span className="cf-hero-config-label">Analytics</span>
+                                            <span className="cf-hero-config-val">
+                                                {config.enableAnalytics !== false ? "Active" : "Disabled"}
+                                            </span>
                                         </button>
                                     </div>
                                 </HeroCard>
@@ -1730,6 +1756,19 @@ export function App() {
                             </>
                         )}
 
+                        {/* ANALYTICS TAB */}
+                        {tab === "analytics" && (
+                            <AnalyticsView
+                                enabled={config.enableAnalytics !== false}
+                                onToggleEnabled={(enableAnalytics) => updateConfig({ enableAnalytics })}
+                                channels={config.channels}
+                                onNavigateToSettings={() => {
+                                    setIsProfileOpen(false)
+                                    setTab("settings")
+                                }}
+                            />
+                        )}
+
                         {/* SETTINGS TAB */}
                         {tab === "settings" && (
                             <>
@@ -1768,6 +1807,53 @@ export function App() {
                                             </button>
                                         </div>
                                     </div>
+                                </Section>
+
+                                <Section
+                                    title="Widget Analytics"
+                                    description="Track views, clicks, and conversion rates for your chat bubbles."
+                                >
+                                    <div className="cf-flex-between">
+                                        <div className="cf-setting-info">
+                                            <div className="cf-text-sm-semibold">
+                                                Widget Analytics
+                                            </div>
+                                            <div className="cf-text-xs-secondary">
+                                                Track views and clicks for your chat bubbles.{" "}
+                                                {config.enableAnalytics !== false
+                                                    ? "Disable to stop all tracking."
+                                                    : "Enable to start tracking again."}
+                                            </div>
+                                        </div>
+                                        <Switch
+                                            checked={config.enableAnalytics !== false}
+                                            onChange={(enableAnalytics) => updateConfig({ enableAnalytics })}
+                                        />
+                                    </div>
+
+                                    {config.enableAnalytics !== false ? (
+                                        <div className="cf-analytics-settings-action">
+                                            <button
+                                                type="button"
+                                                className="cf-btn-view-analytics"
+                                                onClick={() => {
+                                                    setIsProfileOpen(false)
+                                                    setTab("analytics")
+                                                }}
+                                            >
+                                                <IconChart size={14} />
+                                                <span>View Analytics Dashboard</span>
+                                                <IconArrowRight size={13} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="cf-analytics-notice">
+                                            <IconNoticeWarning size={15} />
+                                            <span>
+                                                Analytics tracking is disabled. The Analytics tab will show no data.
+                                            </span>
+                                        </div>
+                                    )}
                                 </Section>
 
                                 <Section
