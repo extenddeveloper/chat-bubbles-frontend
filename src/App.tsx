@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { framer } from "@framer/plugin"
 import { cloneDefaultConfig, normalizeConfig } from "./core/config"
 import { loadConfig, saveConfig } from "./core/storage"
-import { enforceSingleInstance, insertCanvasComponent, syncCanvasInstance } from "./framer/canvas-component-service"
+import { insertCanvasComponent, syncCanvasInstance } from "./framer/canvas-component-service"
 import type { ChannelId, ChatAgent, ChatChannel, ChatConfig, ModalTheme } from "./types"
 import { Field } from "./ui/components/Field"
 import { Section } from "./ui/components/Section"
@@ -356,25 +356,6 @@ export function App() {
             .catch(() => setMessage({ type: "error", text: "Unable to load plugin data." }))
     }, [])
 
-    // Enforce single-instance policy on mount & selection changes
-    useEffect(() => {
-        void enforceSingleInstance()
-
-        let unsubscribe: (() => void) | undefined
-        try {
-            if (typeof (framer as any).subscribeToSelection === "function") {
-                unsubscribe = (framer as any).subscribeToSelection(() => {
-                    void enforceSingleInstance()
-                })
-            }
-        } catch {}
-
-        return () => {
-            if (typeof unsubscribe === "function") {
-                unsubscribe()
-            }
-        }
-    }, [])
 
     const isFirstLoad = useRef(true)
     // Synchronize changes made in Shell directly to canvas component & local storage

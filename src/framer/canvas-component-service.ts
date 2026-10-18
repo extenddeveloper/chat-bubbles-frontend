@@ -2504,7 +2504,7 @@ export async function syncCanvasInstance(config: ChatConfig): Promise<boolean> {
     try {
         if (typeof (framer as any).isAllowedTo === "function") {
             try {
-                await (framer as any).isAllowedTo("setAttributes", "getNodesWithType")
+                await (framer as any).isAllowedTo("setAttributes", "getNodesWithType", "getNode")
             } catch {}
         }
         const instances = (await framer.getNodesWithType("ComponentInstanceNode")) as any[]
@@ -2515,8 +2515,23 @@ export async function syncCanvasInstance(config: ChatConfig): Promise<boolean> {
 
         for (const node of chatBubblesNodes) {
             if (typeof node.setAttributes === "function") {
+                let currentId = node.id
+                let pagePath = "/"
+                while (currentId) {
+                    const parentNode = (await framer.getNode(currentId)) as any
+                    if (!parentNode) break
+                    if (parentNode.type === "WebPageNode" || parentNode.type === "DesignPageNode") {
+                        pagePath = ("path" in parentNode && parentNode.path) ? parentNode.path : ("/" + (parentNode.name || "").replace(/^\/+/, ""))
+                        break
+                    }
+                    currentId = parentNode.parentId
+                }
+
                 await node.setAttributes({
-                    controls: controlPayload,
+                    controls: {
+                        ...controlPayload,
+                        canvasPagePath: pagePath,
+                    },
                 })
             }
         }
@@ -2524,46 +2539,6 @@ export async function syncCanvasInstance(config: ChatConfig): Promise<boolean> {
         return true
     } catch {
         return false
-    }
-}
-
-/**
- * Enforces single-instance policy on canvas.
- * If user attempts to duplicate via Ctrl+C / Ctrl+V or Alt+Mouse Drag,
- * duplicate nodes are immediately purged and the user is notified.
- */
-export async function enforceSingleInstance(): Promise<{ removed: boolean; count: number }> {
-    try {
-        const instances = (await framer.getNodesWithType("ComponentInstanceNode")) as any[]
-        const chatBubblesNodes = instances?.filter(isChatBubblesInstance) || []
-
-        if (chatBubblesNodes.length > 1) {
-            const duplicates = chatBubblesNodes.slice(1)
-            let removedAny = false
-            for (const dup of duplicates) {
-                if (typeof dup.remove === "function") {
-                    await dup.remove()
-                    removedAny = true
-                }
-            }
-            if (removedAny) {
-                try {
-                    if (chatBubblesNodes[0]?.id) {
-                        await framer.setSelection([chatBubblesNodes[0].id])
-                    }
-                    if (typeof (framer as any).notify === "function") {
-                        await (framer as any).notify(
-                            "Chat Bubbles cannot be duplicated (Ctrl+C / Alt+Drag). Only 1 floating widget instance is allowed per site.",
-                            { variant: "error" }
-                        )
-                    }
-                } catch {}
-            }
-            return { removed: true, count: 1 }
-        }
-        return { removed: false, count: chatBubblesNodes.length }
-    } catch {
-        return { removed: false, count: 0 }
     }
 }
 
@@ -2582,9 +2557,11 @@ export async function insertCanvasComponent(config: ChatConfig): Promise<{ succe
                     "setSelection",
                     "setAttributes",
                     "getNodesWithType",
+                    "getNode",
                     "setPluginData",
                     "getPluginData",
                     "setParent",
+                    "removeNodes2",
                     "Node.remove"
                 )
             } catch {}
@@ -2662,9 +2639,28 @@ export async function insertCanvasComponent(config: ChatConfig): Promise<{ succe
                     const cleanN = String(p.name).toLowerCase().replace(/^\/+/, "")
                     if (p.name === targetShowOn || ("/" + cleanN) === targetShowOn || cleanN === cleanTarget) return true
                 }
+                if ("id" in p && p.id === targetShowOn) return true
                 return false
             })
-            if (targetPage) targetPages = [targetPage]
+            if (targetPage) {
+                targetPages = [targetPage]
+            } else {
+                try {
+                    const selection = await framer.getSelection()
+                    if (selection && selection.length > 0) {
+                        let currentId = selection[0].id
+                        while (currentId) {
+                            const node = (await framer.getNode(currentId)) as any
+                            if (!node) break
+                            if (node.type === "WebPageNode" || node.type === "DesignPageNode") {
+                                targetPages = [node]
+                                break
+                            }
+                            currentId = node.parentId
+                        }
+                    }
+                } catch {}
+            }
         }
 
         // Map which pages already contain a Chat Bubbles instance
@@ -2691,26 +2687,8 @@ export async function insertCanvasComponent(config: ChatConfig): Promise<{ succe
             nodePageMap.set(inst, { pageId, pagePath })
         }
 
-        // When targeted to specific page(s), remove instances from non-targeted pages to keep canvas clean
-        const remainingNodes: any[] = []
-        if (targetShowOn !== "Every page" && targetShowOn !== "custom" && targetPages.length > 0) {
-            const targetPageIds = new Set(targetPages.map((p) => p.id))
-            for (const inst of existingNodes) {
-                const pageInfo = nodePageMap.get(inst)
-                if (pageInfo?.pageId && !targetPageIds.has(pageInfo.pageId)) {
-                    try {
-                        if (typeof inst.remove === "function") {
-                            await inst.remove()
-                            pagesWithThisWidget.delete(pageInfo.pageId)
-                            continue
-                        }
-                    } catch {}
-                }
-                remainingNodes.push(inst)
-            }
-        } else {
-            remainingNodes.push(...existingNodes)
-        }
+        // Keep all existing instances; their runtime targeting hides them on non-matching pages
+        const remainingNodes: any[] = [...existingNodes]
 
         // Insert instances on any target pages missing the widget
         const missingPages = targetPages.filter((p) => !pagesWithThisWidget.has(p.id))
