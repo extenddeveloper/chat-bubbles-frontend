@@ -40,6 +40,7 @@ import {
     IconChart,
 } from "./ui/icons"
 import { AnalyticsView } from "./ui/components/AnalyticsView"
+import { recordAnalyticsClick, recordAnalyticsView } from "./core/analytics"
 import { playNotificationChime } from "./core/sound"
 import "./ui/styles.css"
 
@@ -243,6 +244,25 @@ export function App() {
         return () => {
             isMounted = false
             clearInterval(timer)
+        }
+    }, [])
+
+    // Real interaction listeners for analytics tracking
+    useEffect(() => {
+        function handleInteraction(e: any) {
+            const chId = e?.detail?.channel
+            if (chId) {
+                recordAnalyticsClick(chId)
+            }
+        }
+        function handleView() {
+            recordAnalyticsView()
+        }
+        window.addEventListener("chat_bubbles_interaction", handleInteraction)
+        window.addEventListener("chat_bubbles_view", handleView)
+        return () => {
+            window.removeEventListener("chat_bubbles_interaction", handleInteraction)
+            window.removeEventListener("chat_bubbles_view", handleView)
         }
     }, [])
 
@@ -1815,14 +1835,10 @@ export function App() {
                                 >
                                     <div className="cf-flex-between">
                                         <div className="cf-setting-info">
-                                            <div className="cf-text-sm-semibold">
-                                                Widget Analytics
-                                            </div>
                                             <div className="cf-text-xs-secondary">
-                                                Track views and clicks for your chat bubbles.{" "}
                                                 {config.enableAnalytics !== false
-                                                    ? "Disable to stop all tracking."
-                                                    : "Enable to start tracking again."}
+                                                    ? "Analytics tracking is enabled. Disable to stop all tracking."
+                                                    : "Analytics tracking is disabled. Enable to start tracking again."}
                                             </div>
                                         </div>
                                         <Switch

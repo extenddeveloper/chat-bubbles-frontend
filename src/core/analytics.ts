@@ -25,12 +25,86 @@ export interface AnalyticsData {
     channelStats: ChannelStat[]
     maxY: number
     midY: number
+    isRealData: boolean
 }
 
-// Seed-based pseudo-random generator to make analytics deterministic but look realistic
-function getDeterministicRandom(seed: number): number {
-    const x = Math.sin(seed) * 10000
-    return x - Math.floor(x)
+export interface DailyInteractionRecord {
+    views: number
+    clicks: number
+    channels: Record<string, number>
+}
+
+export interface StoredAnalytics {
+    days: Record<string, DailyInteractionRecord>
+    totalViews: number
+    totalClicks: number
+}
+
+const STORAGE_KEY = "chat_bubbles_analytics_data_v1"
+
+export function getTodayKey(d: Date = new Date()): string {
+    const year = d.getFullYear()
+    const month = String(d.getMonth() + 1).padStart(2, "0")
+    const day = String(d.getDate()).padStart(2, "0")
+    return `${year}-${month}-${day}`
+}
+
+export function getStoredAnalytics(): StoredAnalytics {
+    if (typeof window === "undefined") {
+        return { days: {}, totalViews: 0, totalClicks: 0 }
+    }
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY)
+        if (!raw) return { days: {}, totalViews: 0, totalClicks: 0 }
+        const parsed = JSON.parse(raw)
+        return {
+            days: parsed.days && typeof parsed.days === "object" ? parsed.days : {},
+            totalViews: Number(parsed.totalViews) || 0,
+            totalClicks: Number(parsed.totalClicks) || 0,
+        }
+    } catch {
+        return { days: {}, totalViews: 0, totalClicks: 0 }
+    }
+}
+
+export function saveStoredAnalytics(store: StoredAnalytics): void {
+    if (typeof window === "undefined") return
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(store))
+        window.dispatchEvent(new CustomEvent("chat_bubbles_analytics_updated", { detail: store }))
+    } catch {}
+}
+
+export function recordAnalyticsView(): void {
+    const store = getStoredAnalytics()
+    const today = getTodayKey()
+    if (!store.days[today]) {
+        store.days[today] = { views: 0, clicks: 0, channels: {} }
+    }
+    store.days[today].views = (store.days[today].views || 0) + 1
+    store.totalViews = (store.totalViews || 0) + 1
+    saveStoredAnalytics(store)
+}
+
+export function recordAnalyticsClick(channelId: ChannelId | string): void {
+    if (!channelId) return
+    const store = getStoredAnalytics()
+    const today = getTodayKey()
+    if (!store.days[today]) {
+        store.days[today] = { views: 0, clicks: 0, channels: {} }
+    }
+    store.days[today].clicks = (store.days[today].clicks || 0) + 1
+    if (!store.days[today].channels) {
+        store.days[today].channels = {}
+    }
+    store.days[today].channels[channelId] = (store.days[today].channels[channelId] || 0) + 1
+    store.totalClicks = (store.totalClicks || 0) + 1
+    saveStoredAnalytics(store)
+}
+
+export function clearAnalyticsData(): void {
+    const fresh: StoredAnalytics = { days: {}, totalViews: 0, totalClicks: 0 }
+    saveStoredAnalytics(fresh)
 }
 
 export function formatViews(num: number): string {
@@ -38,7 +112,7 @@ export function formatViews(num: number): string {
         return (num / 1000000).toFixed(1).replace(/\.0$/, "") + "M"
     }
     if (num >= 1000) {
-        return (num / 1000).toFixed(0) + "k"
+        return (num / 1000).toFixed(1).replace(/\.0$/, "") + "k"
     }
     return num.toString()
 }
@@ -47,126 +121,155 @@ export function formatNumber(num: number): string {
     return num.toLocaleString()
 }
 
-export function getXAxisLabels(period: AnalyticsPeriod): string[] {
+export function generateAnalytics(period: AnalyticsPeriod, channels: ChatChannel[]): AnalyticsData {
+    const store = getStoredAnalytics()
     const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
+    let totalPeriodViews = 0
+    let totalPeriodClicks = 0
+    const periodChannelClicks: Record<string, number> = {}
+    const bars: AnalyticsBar[] = []
+
     if (period === "Last 7 days") {
-        const labels: string[] = []
         const today = new Date()
         for (let i = 6; i >= 0; i--) {
             const d = new Date()
             d.setDate(today.getDate() - i)
-            labels.push(daysOfWeek[d.getDay()])
-        }
-        return labels
-    }
+            const dateKey = getTodayKey(d)
+            const dayRecord = store.days[dateKey]
+            const dayClicks = dayRecord?.clicks || 0
+            const dayViews = dayRecord?.views || 0
 
-    if (period === "Last 30 days") {
-        const labels: string[] = []
+            totalPeriodViews += dayViews
+            totalPeriodClicks += dayClicks
+
+            if (dayRecord?.channels) {
+                for (const [chId, count] of Object.entries(dayRecord.channels)) {
+                    periodChannelClicks[chId] = (periodChannelClicks[chId] || 0) + count
+                }
+            }
+
+            bars.push({
+                label: daysOfWeek[d.getDay()],
+                value: dayClicks,
+                percentage: 0,
+                highlight: false,
+            })
+        }
+    } else if (period === "Last 30 days") {
+        // 10 3-day blocks across the 30 days
         const today = new Date()
-        // 12 bars across 30 days means each bar represents ~2.5 days
-        for (let i = 11; i >= 0; i--) {
-            const d = new Date()
-            d.setDate(today.getDate() - Math.round(i * 2.5))
-            labels.push(String(d.getDate()))
-        }
-        return labels
-    }
+        for (let i = 9; i >= 0; i--) {
+            let intervalClicks = 0
+            let intervalViews = 0
+            let blockLabel = ""
 
-    if (period === "Last 6 months") {
-        const labels: string[] = []
+            for (let sub = 2; sub >= 0; sub--) {
+                const dayOffset = i * 3 + sub
+                const d = new Date()
+                d.setDate(today.getDate() - dayOffset)
+                const dateKey = getTodayKey(d)
+                const dayRecord = store.days[dateKey]
+
+                intervalClicks += dayRecord?.clicks || 0
+                intervalViews += dayRecord?.views || 0
+
+                if (dayRecord?.channels) {
+                    for (const [chId, count] of Object.entries(dayRecord.channels)) {
+                        periodChannelClicks[chId] = (periodChannelClicks[chId] || 0) + count
+                    }
+                }
+
+                if (sub === 1) {
+                    blockLabel = `${months[d.getMonth()]} ${d.getDate()}`
+                }
+            }
+
+            totalPeriodViews += intervalViews
+            totalPeriodClicks += intervalClicks
+
+            bars.push({
+                label: blockLabel,
+                value: intervalClicks,
+                percentage: 0,
+                highlight: false,
+            })
+        }
+    } else if (period === "Last 6 months") {
         const today = new Date()
         for (let i = 5; i >= 0; i--) {
-            const d = new Date()
-            d.setMonth(today.getMonth() - i)
-            labels.push(months[d.getMonth()].substring(0, 3))
+            const target = new Date(today.getFullYear(), today.getMonth() - i, 1)
+            const targetYear = target.getFullYear()
+            const targetMonth = target.getMonth()
+            const monthLabel = months[targetMonth]
+
+            let monthClicks = 0
+            let monthViews = 0
+
+            for (const [dateKey, dayRecord] of Object.entries(store.days)) {
+                const [y, m] = dateKey.split("-").map(Number)
+                if (y === targetYear && m === targetMonth + 1) {
+                    monthClicks += dayRecord.clicks || 0
+                    monthViews += dayRecord.views || 0
+                    if (dayRecord.channels) {
+                        for (const [chId, count] of Object.entries(dayRecord.channels)) {
+                            periodChannelClicks[chId] = (periodChannelClicks[chId] || 0) + count
+                        }
+                    }
+                }
+            }
+
+            totalPeriodViews += monthViews
+            totalPeriodClicks += monthClicks
+
+            bars.push({
+                label: monthLabel,
+                value: monthClicks,
+                percentage: 0,
+                highlight: false,
+            })
         }
-        return labels
     }
 
-    return []
-}
-
-export function generateAnalytics(period: AnalyticsPeriod, channels: ChatChannel[]): AnalyticsData {
-    const seed = 51239
-
-    // Base views and conversion rate based on seed
-    const baseViews = Math.floor(40000 + getDeterministicRandom(seed) * 110000) // 40k to 150k
-    const baseConvRate = 0.05 + getDeterministicRandom(seed + 1) * 0.12 // 5% to 17%
-
-    let multiplier = 1
-    let numBars = 7
-
-    if (period === "Last 30 days") {
-        multiplier = 4.2
-        numBars = 12
-    } else if (period === "Last 6 months") {
-        multiplier = 24.5
-        numBars = 6
-    }
-
-    const views = Math.floor(baseViews * multiplier)
-    const clicks = Math.floor(views * baseConvRate)
-    const convRate = (baseConvRate * 100).toFixed(1) + "%"
-
-    const xLabels = getXAxisLabels(period)
-    const bars: AnalyticsBar[] = []
-    const maxBarValue = (clicks / numBars) * 1.6
-
-    for (let i = 0; i < numBars; i++) {
-        const barFactor = 0.5 + getDeterministicRandom(seed + i + 5) * 1.1
-        const barValue = Math.floor((clicks / numBars) * barFactor)
-        const percentage = Math.min(100, Math.max(15, Math.round((barValue / maxBarValue) * 100)))
-
-        let highlight = false
-        if (numBars === 7) {
-            highlight = i === 3 || i === 4 || i === 5
-        } else if (numBars === 6) {
-            highlight = i === 2 || i === 3 || i === 4
-        } else {
-            highlight = i >= 4 && i <= 7
-        }
-
-        bars.push({
-            label: xLabels[i] || "",
-            value: barValue,
-            percentage,
-            highlight,
-        })
-    }
-
-    const maxY = Math.max(...bars.map((b) => b.value)) || 10
+    // Determine scale: if 0 clicks, default maxY to 10 for clean baseline
+    const maxBarValue = Math.max(...bars.map((b) => b.value), 0)
+    const maxY = maxBarValue > 0 ? Math.max(10, Math.ceil(maxBarValue * 1.25)) : 10
     const midY = Math.round(maxY / 2)
 
-    // Calculate Channel Engagement Breakdown
-    const activeChannels = channels.filter((c) => c.enabled && c.value.trim() !== "")
-    const displayChannels = activeChannels.length > 0
-        ? activeChannels
-        : channels.slice(0, 3)
-
-    let distributedSum = 0
-    const rawWeights = displayChannels.map((_channel, idx) => {
-        const w = 0.4 + getDeterministicRandom(seed + idx + 10) * 0.6
-        return w
-    })
-    const totalWeight = rawWeights.reduce((a, b) => a + b, 0) || 1
-
-    const channelStats: ChannelStat[] = displayChannels.map((channel, idx) => {
-        const share = rawWeights[idx] / totalWeight
-        let channelClicks = Math.floor(clicks * share)
-        if (idx === displayChannels.length - 1) {
-            channelClicks = Math.max(0, clicks - distributedSum)
+    // Calculate percentage heights and highlight the peak day
+    for (const bar of bars) {
+        if (maxY > 0 && bar.value > 0) {
+            bar.percentage = Math.min(100, Math.max(8, Math.round((bar.value / maxY) * 100)))
+            if (bar.value === maxBarValue && maxBarValue > 0) {
+                bar.highlight = true
+            }
         } else {
-            distributedSum += channelClicks
+            bar.percentage = 0
+            bar.highlight = false
         }
-        const percentage = clicks > 0 ? Math.min(100, Math.round((channelClicks / clicks) * 100)) : 0
+    }
+
+    // Conversion rate
+    const convRate = totalPeriodViews > 0
+        ? ((totalPeriodClicks / totalPeriodViews) * 100).toFixed(1) + "%"
+        : "0.0%"
+
+    // Channels breakdown based on real clicks
+    const activeChannels = channels.filter((c) => c.enabled && c.value.trim() !== "")
+    const displayChannels = activeChannels.length > 0 ? activeChannels : channels.slice(0, 4)
+
+    const channelStats: ChannelStat[] = displayChannels.map((channel) => {
+        const chClicks = periodChannelClicks[channel.id] || 0
+        const percentage = totalPeriodClicks > 0
+            ? Math.min(100, Math.round((chClicks / totalPeriodClicks) * 100))
+            : 0
 
         return {
             id: channel.id,
             label: channel.label,
             color: channel.color,
-            clicks: channelClicks,
+            clicks: chClicks,
             percentage,
         }
     })
@@ -175,12 +278,13 @@ export function generateAnalytics(period: AnalyticsPeriod, channels: ChatChannel
     channelStats.sort((a, b) => b.clicks - a.clicks)
 
     return {
-        views,
-        clicks,
+        views: totalPeriodViews,
+        clicks: totalPeriodClicks,
         convRate,
         bars,
         channelStats,
         maxY,
         midY,
+        isRealData: true,
     }
 }

@@ -3,15 +3,20 @@ import type { ChatChannel } from "../../types"
 import { ICONS } from "../../widget/icons"
 import {
     type AnalyticsPeriod,
+    clearAnalyticsData,
     formatNumber,
     formatViews,
     generateAnalytics,
+    recordAnalyticsClick,
+    recordAnalyticsView,
 } from "../../core/analytics"
 import {
     IconAnalyticsOff,
     IconChevronDown,
     IconEye,
     IconMousePointer,
+    IconNoticeInfo,
+    IconRefresh,
     IconSparkles,
     IconTrendingUp,
 } from "../icons"
@@ -33,7 +38,25 @@ export function AnalyticsView({
 }: AnalyticsViewProps) {
     const [period, setPeriod] = useState<AnalyticsPeriod>("Last 7 days")
     const [periodOpen, setPeriodOpen] = useState(false)
+    const [refreshKey, setRefreshKey] = useState(0)
     const dropdownRef = useRef<HTMLDivElement>(null)
+
+    // Listen to real interaction updates from widget and live site
+    useEffect(() => {
+        function handleUpdate() {
+            setRefreshKey((k) => k + 1)
+        }
+        window.addEventListener("chat_bubbles_analytics_updated", handleUpdate)
+        window.addEventListener("chat_bubbles_interaction", handleUpdate)
+        window.addEventListener("chat_bubbles_view", handleUpdate)
+        window.addEventListener("storage", handleUpdate)
+        return () => {
+            window.removeEventListener("chat_bubbles_analytics_updated", handleUpdate)
+            window.removeEventListener("chat_bubbles_interaction", handleUpdate)
+            window.removeEventListener("chat_bubbles_view", handleUpdate)
+            window.removeEventListener("storage", handleUpdate)
+        }
+    }, [])
 
     // Close period dropdown when clicking outside
     useEffect(() => {
@@ -48,7 +71,25 @@ export function AnalyticsView({
         }
     }, [periodOpen])
 
-    const data = useMemo(() => generateAnalytics(period, channels), [period, channels])
+    const data = useMemo(
+        () => generateAnalytics(period, channels),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [period, channels, refreshKey]
+    )
+
+    function handleResetStats() {
+        if (window.confirm("Reset all recorded analytics metrics back to 0?")) {
+            clearAnalyticsData()
+            setRefreshKey((k) => k + 1)
+        }
+    }
+
+    function handleTestInteraction() {
+        const targetChannel = channels.find((c) => c.enabled)?.id || channels[0]?.id || "whatsapp"
+        recordAnalyticsView()
+        recordAnalyticsClick(targetChannel)
+        setRefreshKey((k) => k + 1)
+    }
 
     if (!enabled) {
         return (
@@ -83,6 +124,8 @@ export function AnalyticsView({
         )
     }
 
+    const hasAnyActivity = data.views > 0 || data.clicks > 0
+
     return (
         <div className="cf-analytics-page">
             {/* Header & Filter */}
@@ -90,43 +133,78 @@ export function AnalyticsView({
                 <div className="cf-analytics-title-group">
                     <h3 className="cf-analytics-title">Widget Analytics</h3>
                     <span className="cf-analytics-subtitle">
-                        Visitor engagement & conversion metrics
+                        Real-time visitor interactions & conversion counts
                     </span>
                 </div>
 
-                <div className="cf-analytics-filter" ref={dropdownRef}>
-                    <button
-                        type="button"
-                        className="cf-analytics-dropdown-btn"
-                        onClick={() => setPeriodOpen(!periodOpen)}
-                        aria-expanded={periodOpen}
-                        aria-label="Select analytics reporting period"
-                    >
-                        <span>{period}</span>
-                        <IconChevronDown
-                            size={14}
-                            className={"cf-analytics-dropdown-chevron" + (periodOpen ? " is-open" : "")}
-                        />
-                    </button>
+                <div className="cf-analytics-header-controls">
+                    <div className="cf-analytics-filter" ref={dropdownRef}>
+                        <button
+                            type="button"
+                            className="cf-analytics-dropdown-btn"
+                            onClick={() => setPeriodOpen(!periodOpen)}
+                            aria-expanded={periodOpen}
+                            aria-label="Select analytics reporting period"
+                        >
+                            <span>{period}</span>
+                            <IconChevronDown
+                                size={14}
+                                className={"cf-analytics-dropdown-chevron" + (periodOpen ? " is-open" : "")}
+                            />
+                        </button>
 
-                    {periodOpen && (
-                        <ul className="cf-analytics-dropdown-menu">
-                            {PERIODS.map((p) => (
-                                <li
-                                    key={p}
-                                    className={"cf-analytics-dropdown-item" + (p === period ? " is-active" : "")}
-                                    onClick={() => {
-                                        setPeriod(p)
-                                        setPeriodOpen(false)
-                                    }}
-                                >
-                                    {p}
-                                </li>
-                            ))}
-                        </ul>
+                        {periodOpen && (
+                            <ul className="cf-analytics-dropdown-menu">
+                                {PERIODS.map((p) => (
+                                    <li
+                                        key={p}
+                                        className={"cf-analytics-dropdown-item" + (p === period ? " is-active" : "")}
+                                        onClick={() => {
+                                            setPeriod(p)
+                                            setPeriodOpen(false)
+                                        }}
+                                    >
+                                        {p}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+
+                    {hasAnyActivity && (
+                        <button
+                            type="button"
+                            className="cf-analytics-reset-btn"
+                            onClick={handleResetStats}
+                            title="Reset all recorded counts back to 0"
+                        >
+                            <IconRefresh size={12} />
+                            <span>Reset</span>
+                        </button>
                     )}
                 </div>
             </div>
+
+            {/* Zero interaction notice */}
+            {!hasAnyActivity && (
+                <div className="cf-analytics-empty-hint">
+                    <div className="cf-analytics-empty-hint-left">
+                        <IconNoticeInfo size={14} />
+                        <span>
+                            No interactions recorded yet for {period.toLowerCase()}. Interactions from your preview and published site will count here in real time.
+                        </span>
+                    </div>
+                    <button
+                        type="button"
+                        className="cf-analytics-test-click-btn"
+                        onClick={handleTestInteraction}
+                        title="Simulate a live test click on your chat widget"
+                    >
+                        <IconSparkles size={11} />
+                        <span>Test Click</span>
+                    </button>
+                </div>
+            )}
 
             {/* 3 KPI Summary Cards */}
             <div className="cf-analytics-kpi-grid">

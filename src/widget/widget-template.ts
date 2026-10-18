@@ -231,6 +231,18 @@ export function buildWidgetCode(config: ChatConfig): string {
       var sessionKey = "chat_bubbles_viewed";
       if (!sessionStorage.getItem(sessionKey)) {
         sessionStorage.setItem(sessionKey, "true");
+        try {
+          var storageKey = "chat_bubbles_analytics_data_v1";
+          var raw = localStorage.getItem(storageKey);
+          var store = raw ? JSON.parse(raw) : { days: {}, totalViews: 0, totalClicks: 0 };
+          var now = new Date();
+          var dateKey = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
+          if (!store.days) store.days = {};
+          if (!store.days[dateKey]) store.days[dateKey] = { views: 0, clicks: 0, channels: {} };
+          store.days[dateKey].views = (store.days[dateKey].views || 0) + 1;
+          store.totalViews = (store.totalViews || 0) + 1;
+          localStorage.setItem(storageKey, JSON.stringify(store));
+        } catch(e){}
         if (typeof window.gtag === "function") {
           window.gtag("event", "chat_bubbles_view", {
             event_category: "Chat Bubbles",
@@ -465,6 +477,20 @@ export function buildWidgetCode(config: ChatConfig): string {
 
   function trackClick(channelId, channelLabel, agentName, targetUrl){
     if(!SETTINGS.enableAnalytics) return;
+    try {
+      var storageKey = "chat_bubbles_analytics_data_v1";
+      var raw = localStorage.getItem(storageKey);
+      var store = raw ? JSON.parse(raw) : { days: {}, totalViews: 0, totalClicks: 0 };
+      var now = new Date();
+      var dateKey = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
+      if (!store.days) store.days = {};
+      if (!store.days[dateKey]) store.days[dateKey] = { views: 0, clicks: 0, channels: {} };
+      store.days[dateKey].clicks = (store.days[dateKey].clicks || 0) + 1;
+      if (!store.days[dateKey].channels) store.days[dateKey].channels = {};
+      store.days[dateKey].channels[channelId] = (store.days[dateKey].channels[channelId] || 0) + 1;
+      store.totalClicks = (store.totalClicks || 0) + 1;
+      localStorage.setItem(storageKey, JSON.stringify(store));
+    } catch(e){}
     try {
       if(typeof window.gtag === "function"){
         window.gtag("event", "chat_bubbles_click", {
