@@ -40,7 +40,6 @@ import {
     IconChart,
 } from "./ui/icons"
 import { AnalyticsView } from "./ui/components/AnalyticsView"
-import { recordAnalyticsClick, recordAnalyticsView } from "./core/analytics"
 import { playNotificationChime } from "./core/sound"
 import "./ui/styles.css"
 
@@ -254,24 +253,6 @@ export function App() {
         }
     }, [])
 
-    // Real interaction listeners for analytics tracking
-    useEffect(() => {
-        function handleInteraction(e: any) {
-            const chId = e?.detail?.channel
-            if (chId) {
-                recordAnalyticsClick(chId)
-            }
-        }
-        function handleView() {
-            recordAnalyticsView()
-        }
-        window.addEventListener("chat_bubbles_interaction", handleInteraction)
-        window.addEventListener("chat_bubbles_view", handleView)
-        return () => {
-            window.removeEventListener("chat_bubbles_interaction", handleInteraction)
-            window.removeEventListener("chat_bubbles_view", handleView)
-        }
-    }, [])
 
     function toggleChannelCollapse(channelId: ChannelId) {
         setCollapsedChannels((prev) => ({

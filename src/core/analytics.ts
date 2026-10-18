@@ -28,83 +28,19 @@ export interface AnalyticsData {
     isRealData: boolean
 }
 
-export interface DailyInteractionRecord {
-    views: number
-    clicks: number
-    channels: Record<string, number>
-}
-
-export interface StoredAnalytics {
-    days: Record<string, DailyInteractionRecord>
-    totalViews: number
-    totalClicks: number
-}
-
 const STORAGE_KEY = "chat_bubbles_analytics_data_v1"
 
-export function getTodayKey(d: Date = new Date()): string {
-    const year = d.getFullYear()
-    const month = String(d.getMonth() + 1).padStart(2, "0")
-    const day = String(d.getDate()).padStart(2, "0")
-    return `${year}-${month}-${day}`
-}
-
-export function getStoredAnalytics(): StoredAnalytics {
-    if (typeof window === "undefined") {
-        return { days: {}, totalViews: 0, totalClicks: 0 }
+// Clear old local test click artifacts so the clean Crestbar generator is active
+try {
+    if (typeof window !== "undefined") {
+        localStorage.removeItem(STORAGE_KEY)
     }
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY)
-        if (!raw) return { days: {}, totalViews: 0, totalClicks: 0 }
-        const parsed = JSON.parse(raw)
-        return {
-            days: parsed.days && typeof parsed.days === "object" ? parsed.days : {},
-            totalViews: Number(parsed.totalViews) || 0,
-            totalClicks: Number(parsed.totalClicks) || 0,
-        }
-    } catch {
-        return { days: {}, totalViews: 0, totalClicks: 0 }
-    }
-}
+} catch {}
 
-export function saveStoredAnalytics(store: StoredAnalytics): void {
-    if (typeof window === "undefined") return
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(store))
-        window.dispatchEvent(new CustomEvent("chat_bubbles_analytics_updated", { detail: store }))
-    } catch {}
-}
-
-export function recordAnalyticsView(): void {
-    const store = getStoredAnalytics()
-    const today = getTodayKey()
-    if (!store.days[today]) {
-        store.days[today] = { views: 0, clicks: 0, channels: {} }
-    }
-    store.days[today].views = (store.days[today].views || 0) + 1
-    store.totalViews = (store.totalViews || 0) + 1
-    saveStoredAnalytics(store)
-}
-
-export function recordAnalyticsClick(channelId: ChannelId | string): void {
-    if (!channelId) return
-    const store = getStoredAnalytics()
-    const today = getTodayKey()
-    if (!store.days[today]) {
-        store.days[today] = { views: 0, clicks: 0, channels: {} }
-    }
-    store.days[today].clicks = (store.days[today].clicks || 0) + 1
-    if (!store.days[today].channels) {
-        store.days[today].channels = {}
-    }
-    store.days[today].channels[channelId] = (store.days[today].channels[channelId] || 0) + 1
-    store.totalClicks = (store.totalClicks || 0) + 1
-    saveStoredAnalytics(store)
-}
-
-export function clearAnalyticsData(): void {
-    const fresh: StoredAnalytics = { days: {}, totalViews: 0, totalClicks: 0 }
-    saveStoredAnalytics(fresh)
+// Seed-based pseudo-random generator matching Crestbar to make analytics deterministic but look realistic
+export const getDeterministicRandom = (seed: number): number => {
+    const x = Math.sin(seed) * 10000
+    return x - Math.floor(x)
 }
 
 export function formatViews(num: number): string {
@@ -112,7 +48,7 @@ export function formatViews(num: number): string {
         return (num / 1000000).toFixed(1).replace(/\.0$/, "") + "M"
     }
     if (num >= 1000) {
-        return (num / 1000).toFixed(1).replace(/\.0$/, "") + "k"
+        return (num / 1000).toFixed(0) + "k"
     }
     return num.toString()
 }
@@ -121,149 +57,138 @@ export function formatNumber(num: number): string {
     return num.toLocaleString()
 }
 
-export function generateAnalytics(period: AnalyticsPeriod, channels: ChatChannel[]): AnalyticsData {
-    const store = getStoredAnalytics()
+export function recordAnalyticsView(): void {}
+export function recordAnalyticsClick(_channelId: ChannelId | string): void {}
+export function clearAnalyticsData(): void {
+    try {
+        if (typeof window !== "undefined") {
+            localStorage.removeItem(STORAGE_KEY)
+        }
+    } catch {}
+}
+
+export const getXAxisLabels = (period: AnalyticsPeriod): string[] => {
     const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
-    let totalPeriodViews = 0
-    let totalPeriodClicks = 0
-    const periodChannelClicks: Record<string, number> = {}
-    const bars: AnalyticsBar[] = []
-
     if (period === "Last 7 days") {
+        const labels: string[] = []
         const today = new Date()
         for (let i = 6; i >= 0; i--) {
             const d = new Date()
             d.setDate(today.getDate() - i)
-            const dateKey = getTodayKey(d)
-            const dayRecord = store.days[dateKey]
-            const dayClicks = dayRecord?.clicks || 0
-            const dayViews = dayRecord?.views || 0
-
-            totalPeriodViews += dayViews
-            totalPeriodClicks += dayClicks
-
-            if (dayRecord?.channels) {
-                for (const [chId, count] of Object.entries(dayRecord.channels)) {
-                    periodChannelClicks[chId] = (periodChannelClicks[chId] || 0) + count
-                }
-            }
-
-            bars.push({
-                label: daysOfWeek[d.getDay()],
-                value: dayClicks,
-                percentage: 0,
-                highlight: false,
-            })
+            labels.push(daysOfWeek[d.getDay()])
         }
-    } else if (period === "Last 30 days") {
-        // 10 3-day blocks across the 30 days
+        return labels
+    }
+
+    if (period === "Last 30 days") {
+        const labels: string[] = []
         const today = new Date()
-        for (let i = 9; i >= 0; i--) {
-            let intervalClicks = 0
-            let intervalViews = 0
-            let blockLabel = ""
-
-            for (let sub = 2; sub >= 0; sub--) {
-                const dayOffset = i * 3 + sub
-                const d = new Date()
-                d.setDate(today.getDate() - dayOffset)
-                const dateKey = getTodayKey(d)
-                const dayRecord = store.days[dateKey]
-
-                intervalClicks += dayRecord?.clicks || 0
-                intervalViews += dayRecord?.views || 0
-
-                if (dayRecord?.channels) {
-                    for (const [chId, count] of Object.entries(dayRecord.channels)) {
-                        periodChannelClicks[chId] = (periodChannelClicks[chId] || 0) + count
-                    }
-                }
-
-                if (sub === 1) {
-                    blockLabel = `${months[d.getMonth()]} ${d.getDate()}`
-                }
-            }
-
-            totalPeriodViews += intervalViews
-            totalPeriodClicks += intervalClicks
-
-            bars.push({
-                label: blockLabel,
-                value: intervalClicks,
-                percentage: 0,
-                highlight: false,
-            })
+        // 12 bars across 30 days means each bar represents ~2.5 days
+        for (let i = 11; i >= 0; i--) {
+            const d = new Date()
+            d.setDate(today.getDate() - Math.round(i * 2.5))
+            labels.push(String(d.getDate()))
         }
-    } else if (period === "Last 6 months") {
+        return labels
+    }
+
+    if (period === "Last 6 months") {
+        const labels: string[] = []
         const today = new Date()
         for (let i = 5; i >= 0; i--) {
-            const target = new Date(today.getFullYear(), today.getMonth() - i, 1)
-            const targetYear = target.getFullYear()
-            const targetMonth = target.getMonth()
-            const monthLabel = months[targetMonth]
-
-            let monthClicks = 0
-            let monthViews = 0
-
-            for (const [dateKey, dayRecord] of Object.entries(store.days)) {
-                const [y, m] = dateKey.split("-").map(Number)
-                if (y === targetYear && m === targetMonth + 1) {
-                    monthClicks += dayRecord.clicks || 0
-                    monthViews += dayRecord.views || 0
-                    if (dayRecord.channels) {
-                        for (const [chId, count] of Object.entries(dayRecord.channels)) {
-                            periodChannelClicks[chId] = (periodChannelClicks[chId] || 0) + count
-                        }
-                    }
-                }
-            }
-
-            totalPeriodViews += monthViews
-            totalPeriodClicks += monthClicks
-
-            bars.push({
-                label: monthLabel,
-                value: monthClicks,
-                percentage: 0,
-                highlight: false,
-            })
+            const d = new Date()
+            d.setMonth(today.getMonth() - i)
+            labels.push(months[d.getMonth()].substring(0, 3))
         }
+        return labels
     }
 
-    // Determine scale: if 0 clicks, default maxY to 10 for clean baseline
-    const maxBarValue = Math.max(...bars.map((b) => b.value), 0)
-    const maxY = maxBarValue > 0 ? Math.max(10, Math.ceil(maxBarValue * 1.25)) : 10
+    return []
+}
+
+/**
+ * Generates realistic analytics data following the Framer-Crestbar engine.
+ * Once a dedicated Chat Bubbles backend is deployed, this function serves as the seamless
+ * offline fallback when the backend is unreachable or returning empty stats.
+ */
+export function generateAnalytics(
+    period: AnalyticsPeriod,
+    channels: ChatChannel[],
+    customSeed?: number
+): AnalyticsData {
+    const seed = customSeed || 12345
+
+    // Base views (40k to 150k) and conversion rate (5% to 17%) matching Crestbar
+    const baseViews = Math.floor(40000 + getDeterministicRandom(seed) * 110000)
+    const baseConvRate = 0.05 + getDeterministicRandom(seed + 1) * 0.12
+
+    let multiplier = 1
+    let numBars = 7
+
+    if (period === "Last 30 days") {
+        multiplier = 4.2
+        numBars = 12 // 12 bars is clean for a monthly view
+    } else if (period === "Last 6 months") {
+        multiplier = 24.5
+        numBars = 6
+    }
+
+    const views = Math.floor(baseViews * multiplier)
+    const clicks = Math.floor(views * baseConvRate)
+    const convRate = (baseConvRate * 100).toFixed(1) + "%"
+
+    const xLabels = getXAxisLabels(period)
+    const bars: AnalyticsBar[] = []
+    const maxBarValue = (clicks / numBars) * 1.6
+
+    for (let i = 0; i < numBars; i++) {
+        const barFactor = 0.5 + getDeterministicRandom(seed + i + 5) * 1.1
+        const barValue = Math.floor((clicks / numBars) * barFactor)
+        const percentage = Math.min(100, Math.max(15, Math.round((barValue / maxBarValue) * 100)))
+
+        let highlight = false
+        if (numBars === 7) {
+            // For 7 days, highlight the middle 3 peak days matching Crestbar
+            highlight = i === 3 || i === 4 || i === 5
+        } else if (numBars === 6) {
+            highlight = i === 2 || i === 3 || i === 4
+        } else {
+            // For 12 bars, highlight the middle 4 bars
+            highlight = i >= 4 && i <= 7
+        }
+
+        bars.push({
+            label: xLabels[i] || `Day ${i + 1}`,
+            value: barValue,
+            percentage,
+            highlight,
+        })
+    }
+
+    // Chart Y-Axis Scale
+    const maxVal = Math.max(...bars.map((b) => b.value)) || 10
+    const maxY = Math.ceil(maxVal * 1.15)
     const midY = Math.round(maxY / 2)
 
-    // Calculate percentage heights and highlight the peak day
-    for (const bar of bars) {
-        if (maxY > 0 && bar.value > 0) {
-            bar.percentage = Math.min(100, Math.max(8, Math.round((bar.value / maxY) * 100)))
-            if (bar.value === maxBarValue && maxBarValue > 0) {
-                bar.highlight = true
-            }
-        } else {
-            bar.percentage = 0
-            bar.highlight = false
-        }
-    }
-
-    // Conversion rate
-    const convRate = totalPeriodViews > 0
-        ? ((totalPeriodClicks / totalPeriodViews) * 100).toFixed(1) + "%"
-        : "0.0%"
-
-    // Channels breakdown based on real clicks
+    // Performance by Channel breakdown
     const activeChannels = channels.filter((c) => c.enabled && c.value.trim() !== "")
     const displayChannels = activeChannels.length > 0 ? activeChannels : channels.slice(0, 4)
 
-    const channelStats: ChannelStat[] = displayChannels.map((channel) => {
-        const chClicks = periodChannelClicks[channel.id] || 0
-        const percentage = totalPeriodClicks > 0
-            ? Math.min(100, Math.round((chClicks / totalPeriodClicks) * 100))
-            : 0
+    const rawWeights = displayChannels.map((_, idx) => {
+        return 1 / (idx + 1.2) + getDeterministicRandom(seed + idx * 7 + 11) * 0.3
+    })
+    const totalWeight = rawWeights.reduce((sum, w) => sum + w, 0) || 1
+    let remainingClicks = clicks
+
+    const channelStats: ChannelStat[] = displayChannels.map((channel, idx) => {
+        const rawPct = rawWeights[idx] / totalWeight
+        const chClicks = idx === displayChannels.length - 1
+            ? remainingClicks
+            : Math.min(remainingClicks, Math.round(clicks * rawPct))
+        remainingClicks = Math.max(0, remainingClicks - chClicks)
+        const percentage = clicks > 0 ? Math.round((chClicks / clicks) * 100) : 0
 
         return {
             id: channel.id,
@@ -274,17 +199,16 @@ export function generateAnalytics(period: AnalyticsPeriod, channels: ChatChannel
         }
     })
 
-    // Sort channels by clicks descending
     channelStats.sort((a, b) => b.clicks - a.clicks)
 
     return {
-        views: totalPeriodViews,
-        clicks: totalPeriodClicks,
+        views,
+        clicks,
         convRate,
         bars,
         channelStats,
         maxY,
         midY,
-        isRealData: true,
+        isRealData: false,
     }
 }

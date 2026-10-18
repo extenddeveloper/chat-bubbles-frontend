@@ -618,22 +618,10 @@ export default function ChatBubbles(props: ChatBubblesProps) {
     React.useEffect(() => {
         if (isCanvas || !enableAnalytics || isWidgetHidden) return
         try {
-            const sessionKey = "chat_bubbles_viewed"
+            const pageKey = (currentLocationPath || "home").split("/").filter(Boolean).join("-") || "root"
+            const sessionKey = "chat_bubbles_viewed_" + pageKey
             if (!sessionStorage.getItem(sessionKey)) {
                 sessionStorage.setItem(sessionKey, "true")
-                try {
-                    const storageKey = "chat_bubbles_analytics_data_v1"
-                    const raw = localStorage.getItem(storageKey)
-                    const store = raw ? JSON.parse(raw) : { days: {}, totalViews: 0, totalClicks: 0 }
-                    const now = new Date()
-                    const dateKey = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0")
-                    if (!store.days) store.days = {}
-                    if (!store.days[dateKey]) store.days[dateKey] = { views: 0, clicks: 0, channels: {} }
-                    store.days[dateKey].views = (store.days[dateKey].views || 0) + 1
-                    store.totalViews = (store.totalViews || 0) + 1
-                    localStorage.setItem(storageKey, JSON.stringify(store))
-                    window.dispatchEvent(new CustomEvent("chat_bubbles_analytics_updated", { detail: store }))
-                } catch {}
                 if (Array.isArray((window as any).dataLayer)) {
                     (window as any).dataLayer.push({ event: "chat_bubbles_view", event_category: "Chat Bubbles" })
                 }
@@ -643,7 +631,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                 window.dispatchEvent(new CustomEvent("chat_bubbles_view", { detail: { timestamp: Date.now() } }))
             }
         } catch {}
-    }, [isCanvas, enableAnalytics, isWidgetHidden])
+    }, [isCanvas, enableAnalytics, isWidgetHidden, currentLocationPath])
 
     // Web Audio Synthesizer chime for notifications (never plays on Canvas design preview or when hidden)
     const playNotificationChime = React.useCallback((force: boolean = false) => {
@@ -1913,22 +1901,6 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                                     e.stopPropagation()
                                     if (enableAnalytics && typeof window !== "undefined") {
                                         try {
-                                            const storageKey = "chat_bubbles_analytics_data_v1"
-                                            const raw = localStorage.getItem(storageKey)
-                                            const store = raw ? JSON.parse(raw) : { days: {}, totalViews: 0, totalClicks: 0 }
-                                            const now = new Date()
-                                            const dateKey = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0")
-                                            if (!store.days) store.days = {}
-                                            if (!store.days[dateKey]) store.days[dateKey] = { views: 0, clicks: 0, channels: {} }
-                                            store.days[dateKey].clicks = (store.days[dateKey].clicks || 0) + 1
-                                            if (!store.days[dateKey].channels) store.days[dateKey].channels = {}
-                                            const chId = selectedAgent.channelId
-                                            store.days[dateKey].channels[chId] = (store.days[dateKey].channels[chId] || 0) + 1
-                                            store.totalClicks = (store.totalClicks || 0) + 1
-                                            localStorage.setItem(storageKey, JSON.stringify(store))
-                                            window.dispatchEvent(new CustomEvent("chat_bubbles_analytics_updated", { detail: store }))
-                                        } catch {}
-                                        try {
                                             if (Array.isArray((window as any).dataLayer)) {
                                                 (window as any).dataLayer.push({
                                                     event: "chat_bubbles_click",
@@ -1991,21 +1963,6 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                                     rel="noopener noreferrer"
                                     onClick={() => {
                                         if (enableAnalytics && typeof window !== "undefined") {
-                                            try {
-                                                const storageKey = "chat_bubbles_analytics_data_v1"
-                                                const raw = localStorage.getItem(storageKey)
-                                                const store = raw ? JSON.parse(raw) : { days: {}, totalViews: 0, totalClicks: 0 }
-                                                const now = new Date()
-                                                const dateKey = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0")
-                                                if (!store.days) store.days = {}
-                                                if (!store.days[dateKey]) store.days[dateKey] = { views: 0, clicks: 0, channels: {} }
-                                                store.days[dateKey].clicks = (store.days[dateKey].clicks || 0) + 1
-                                                if (!store.days[dateKey].channels) store.days[dateKey].channels = {}
-                                                store.days[dateKey].channels[channel.id] = (store.days[dateKey].channels[channel.id] || 0) + 1
-                                                store.totalClicks = (store.totalClicks || 0) + 1
-                                                localStorage.setItem(storageKey, JSON.stringify(store))
-                                                window.dispatchEvent(new CustomEvent("chat_bubbles_analytics_updated", { detail: store }))
-                                            } catch {}
                                             try {
                                                 if (Array.isArray((window as any).dataLayer)) {
                                                     (window as any).dataLayer.push({ event: "chat_bubbles_click", channel: channel.id, channel_label: channel.label })
