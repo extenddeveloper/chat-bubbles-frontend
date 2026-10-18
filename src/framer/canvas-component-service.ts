@@ -154,6 +154,7 @@ interface ChatBubblesProps {
 // Web Audio Synthesizer singleton & gesture unlocker
 let sharedChatAudioCtx: AudioContext | null = null
 let pendingChimeQueued = false
+let pendingChimeExpireTime = 0
 let globalLastChimeTime = 0
 
 function isFramerStudioCanvas(): boolean {
@@ -180,21 +181,49 @@ function getSharedAudioContext(): AudioContext | null {
     return sharedChatAudioCtx
 }
 
+function unlockSharedAudioContext(ctx: AudioContext | null) {
+    if (!ctx) return
+    if (ctx.state === "suspended") {
+        ctx.resume().catch(() => {})
+    }
+    // iOS Safari silent buffer unlock to ensure hardware audio routing is activated
+    try {
+        const buffer = ctx.createBuffer(1, 1, 22050)
+        const source = ctx.createBufferSource()
+        source.buffer = buffer
+        source.connect(ctx.destination)
+        source.start(0)
+    } catch {}
+}
+
 function playSynthesizedTone(ctx: AudioContext) {
     try {
         const now = ctx.currentTime
-        const osc = ctx.createOscillator()
-        const gain = ctx.createGain()
-        osc.type = "sine"
-        osc.connect(gain)
-        gain.connect(ctx.destination)
-        // Friendly, crisp 2-tone melodic chime: D5 (587.33 Hz) -> A5 (880 Hz)
-        osc.frequency.setValueAtTime(587.33, now)
-        osc.frequency.setValueAtTime(880, now + 0.08)
-        gain.gain.setValueAtTime(0.22, now)
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.38)
-        osc.start(now)
-        osc.stop(now + 0.38)
+
+        // Crisp 2-tone melodic chime: Note 1 D5 (587.33 Hz) -> Note 2 A5 (880 Hz)
+        const osc1 = ctx.createOscillator()
+        const gain1 = ctx.createGain()
+        osc1.type = "sine"
+        osc1.frequency.setValueAtTime(587.33, now)
+        gain1.gain.setValueAtTime(0.0001, now)
+        gain1.gain.linearRampToValueAtTime(0.24, now + 0.015)
+        gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.22)
+        osc1.connect(gain1)
+        gain1.connect(ctx.destination)
+        osc1.start(now)
+        osc1.stop(now + 0.22)
+
+        const osc2 = ctx.createOscillator()
+        const gain2 = ctx.createGain()
+        osc2.type = "sine"
+        osc2.frequency.setValueAtTime(880, now + 0.08)
+        gain2.gain.setValueAtTime(0.0001, now + 0.08)
+        gain2.gain.linearRampToValueAtTime(0.28, now + 0.095)
+        gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.40)
+        osc2.connect(gain2)
+        gain2.connect(ctx.destination)
+        osc2.start(now + 0.08)
+        osc2.stop(now + 0.40)
     } catch {}
 }
 
@@ -205,28 +234,36 @@ function playNotificationChimeDirect(force: boolean = false) {
         if (isFramerStudioCanvas()) return
 
         const now = Date.now()
-        // Cross-instance throttle:
-        // Framer mounts Desktop, Tablet, and Mobile variants in the DOM simultaneously.
-        // We enforce an 8-second debounce so multiple breakpoint instances never double- or triple-fire!
-        if (!force && now - globalLastChimeTime < 8000) {
+        // Framer mounts multiple variant breakpoints (Desktop, Tablet, Mobile) in the DOM simultaneously.
+        // A 1200ms debounce prevents simultaneous breakpoint mounts from echoing without silencing real notifications.
+        if (!force && now - globalLastChimeTime < 1200) {
             return
         }
 
         const ctx = getSharedAudioContext()
         if (!ctx) return
+
         if (ctx.state === "running") {
             playSynthesizedTone(ctx)
             globalLastChimeTime = now
             pendingChimeQueued = false
+            pendingChimeExpireTime = 0
         } else {
+            // AudioContext is suspended (browser autoplay policy on live sites)
+            // Mark pending so the first user interaction immediately flushes the chime
+            pendingChimeQueued = true
+            pendingChimeExpireTime = now + 15000 // Valid for 15s while greeting is active
             ctx.resume().then(() => {
-                const currentNow = Date.now()
-                if (!force && currentNow - globalLastChimeTime < 8000) {
-                    return
+                if (ctx.state === "running") {
+                    const currentNow = Date.now()
+                    if (!force && currentNow - globalLastChimeTime < 1200) {
+                        return
+                    }
+                    playSynthesizedTone(ctx)
+                    globalLastChimeTime = currentNow
+                    pendingChimeQueued = false
+                    pendingChimeExpireTime = 0
                 }
-                playSynthesizedTone(ctx)
-                globalLastChimeTime = currentNow
-                pendingChimeQueued = false
             }).catch(() => {
                 pendingChimeQueued = true
             })
@@ -234,6 +271,45 @@ function playNotificationChimeDirect(force: boolean = false) {
     } catch {
         pendingChimeQueued = true
     }
+}
+
+function flushPendingChimeIfQueued() {
+    if (!pendingChimeQueued) return
+    const now = Date.now()
+    if (pendingChimeExpireTime && now > pendingChimeExpireTime) {
+        pendingChimeQueued = false
+        pendingChimeExpireTime = 0
+        return
+    }
+    if (now - globalLastChimeTime < 1200) return
+
+    const ctx = getSharedAudioContext()
+    if (!ctx) return
+
+    unlockSharedAudioContext(ctx)
+
+    if (ctx.state === "running") {
+        playSynthesizedTone(ctx)
+        globalLastChimeTime = now
+        pendingChimeQueued = false
+        pendingChimeExpireTime = 0
+    } else {
+        ctx.resume().then(() => {
+            if (ctx.state === "running") {
+                const currentNow = Date.now()
+                if (currentNow - globalLastChimeTime < 1200) return
+                playSynthesizedTone(ctx)
+                globalLastChimeTime = currentNow
+                pendingChimeQueued = false
+                pendingChimeExpireTime = 0
+            }
+        }).catch(() => {})
+    }
+}
+
+function cancelPendingChime() {
+    pendingChimeQueued = false
+    pendingChimeExpireTime = 0
 }
 
 export default function ChatBubbles(props: ChatBubblesProps) {
@@ -544,43 +620,27 @@ export default function ChatBubbles(props: ChatBubblesProps) {
         playNotificationChimeDirect(force)
     }, [isCanvas, enableSound, isWidgetHidden])
 
-    // Unlock audio on real user gesture (click/tap) and immediately flush pending chime
+    // Unlock audio on real user gesture (click/tap/scroll/key) and immediately flush pending chime
     React.useEffect(() => {
         if (isCanvas || isWidgetHidden || !enableSound) return
 
-        function handleUserGesture() {
+        function handleUserInteraction() {
             if (isCanvas || isWidgetHidden || !enableSound) return
-            if (!pendingChimeQueued) return
-
-            const now = Date.now()
-            if (now - globalLastChimeTime < 8000) return
-
             const ctx = getSharedAudioContext()
-            if (ctx && ctx.state === "suspended") {
-                ctx.resume().then(() => {
-                    if (pendingChimeQueued && enableSound && !isCanvas && !isWidgetHidden) {
-                        playSynthesizedTone(ctx)
-                        pendingChimeQueued = false
-                        globalLastChimeTime = Date.now()
-                    }
-                }).catch(() => {})
-            } else if (ctx && ctx.state === "running") {
-                if (pendingChimeQueued && enableSound && !isCanvas && !isWidgetHidden) {
-                    playSynthesizedTone(ctx)
-                    pendingChimeQueued = false
-                    globalLastChimeTime = Date.now()
-                }
+            if (ctx) {
+                unlockSharedAudioContext(ctx)
             }
+            flushPendingChimeIfQueued()
         }
 
-        const gestureEvents = ["pointerdown", "mousedown", "touchstart", "click"]
+        const gestureEvents = ["pointerdown", "mousedown", "touchstart", "click", "keydown", "scroll", "wheel"]
         gestureEvents.forEach((evt) => {
-            window.addEventListener(evt, handleUserGesture, { passive: true, capture: true })
+            window.addEventListener(evt, handleUserInteraction, { passive: true, capture: true })
         })
 
         return () => {
             gestureEvents.forEach((evt) => {
-                window.removeEventListener(evt, handleUserGesture, { capture: true })
+                window.removeEventListener(evt, handleUserInteraction, { capture: true })
             })
         }
     }, [isCanvas, isWidgetHidden, enableSound])
@@ -1597,6 +1657,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                 style={mainBtnStyle}
                 onClick={(e) => {
                     e.stopPropagation()
+                    flushPendingChimeIfQueued()
                     const nextOpen = !isOpen
                     setIsOpen(nextOpen)
                     if (isOpen) {
@@ -1632,6 +1693,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                     className="cf-canvas-greeting"
                     style={greetingPosStyle}
                     onClick={() => {
+                        flushPendingChimeIfQueued()
                         setIsOpen(true)
                     }}
                 >
@@ -1641,6 +1703,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                         className="cf-canvas-greeting-close"
                         onClick={(e) => {
                             e.stopPropagation()
+                            cancelPendingChime()
                             setGreetingDismissed(true)
                         }}
                     >

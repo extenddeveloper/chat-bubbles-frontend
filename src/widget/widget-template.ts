@@ -776,13 +776,140 @@ export function buildWidgetCode(config: ChatConfig): string {
       mainButton.appendChild(badgeEl);
     }
 
-    mainButton.onclick = toggleMenu;
+    mainButton.onclick = function(){
+      onUserGestureAudio();
+      toggleMenu();
+    };
     main.appendChild(mainButton);
     root.appendChild(main);
   }
 
   document.body.appendChild(root);
   render();
+
+  var audioCtx = null;
+  var pendingChime = false;
+  var pendingChimeExpires = 0;
+  var lastChimePlayed = 0;
+
+  function getAudioCtx(){
+    if(!audioCtx || audioCtx.state === "closed"){
+      var AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if(AudioCtx) {
+        try { audioCtx = new AudioCtx(); } catch(e){}
+      }
+    }
+    return audioCtx;
+  }
+
+  function unlockAudio(ctx){
+    if(!ctx) return;
+    if(ctx.state === "suspended"){
+      ctx.resume().catch(function(){});
+    }
+    try {
+      var buf = ctx.createBuffer(1, 1, 22050);
+      var src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(ctx.destination);
+      src.start(0);
+    } catch(e){}
+  }
+
+  function playChimeTone(ctx){
+    try {
+      var t = ctx.currentTime;
+      var osc1 = ctx.createOscillator();
+      var gain1 = ctx.createGain();
+      osc1.type = "sine";
+      osc1.frequency.setValueAtTime(587.33, t);
+      gain1.gain.setValueAtTime(0.0001, t);
+      gain1.gain.linearRampToValueAtTime(0.24, t + 0.015);
+      gain1.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(t);
+      osc1.stop(t + 0.22);
+
+      var osc2 = ctx.createOscillator();
+      var gain2 = ctx.createGain();
+      osc2.type = "sine";
+      osc2.frequency.setValueAtTime(880, t + 0.08);
+      gain2.gain.setValueAtTime(0.0001, t + 0.08);
+      gain2.gain.linearRampToValueAtTime(0.28, t + 0.095);
+      gain2.gain.exponentialRampToValueAtTime(0.0001, t + 0.40);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(t + 0.08);
+      osc2.stop(t + 0.40);
+    } catch(e){}
+  }
+
+  function triggerNotificationSound(){
+    if(!SETTINGS.enableSound) return;
+    var now = Date.now();
+    if(now - lastChimePlayed < 1200) return;
+    var ctx = getAudioCtx();
+    if(!ctx) return;
+    if(ctx.state === "running"){
+      playChimeTone(ctx);
+      lastChimePlayed = now;
+      pendingChime = false;
+      pendingChimeExpires = 0;
+    } else {
+      pendingChime = true;
+      pendingChimeExpires = now + 15000;
+      ctx.resume().then(function(){
+        if(ctx.state === "running"){
+          var cNow = Date.now();
+          if(cNow - lastChimePlayed < 1200) return;
+          playChimeTone(ctx);
+          lastChimePlayed = cNow;
+          pendingChime = false;
+          pendingChimeExpires = 0;
+        }
+      }).catch(function(){
+        pendingChime = true;
+      });
+    }
+  }
+
+  function onUserGestureAudio(){
+    var ctx = getAudioCtx();
+    if(ctx) unlockAudio(ctx);
+    if(pendingChime){
+      var now = Date.now();
+      if(pendingChimeExpires && now > pendingChimeExpires){
+        pendingChime = false;
+        pendingChimeExpires = 0;
+        return;
+      }
+      if(now - lastChimePlayed < 1200) return;
+      if(ctx && ctx.state === "running"){
+        playChimeTone(ctx);
+        lastChimePlayed = now;
+        pendingChime = false;
+        pendingChimeExpires = 0;
+      } else if(ctx){
+        ctx.resume().then(function(){
+          if(ctx.state === "running"){
+            var cNow = Date.now();
+            if(cNow - lastChimePlayed < 1200) return;
+            playChimeTone(ctx);
+            lastChimePlayed = cNow;
+            pendingChime = false;
+            pendingChimeExpires = 0;
+          }
+        }).catch(function(){});
+      }
+    }
+  }
+
+  if(SETTINGS.enableSound){
+    ["pointerdown", "mousedown", "touchstart", "click", "keydown", "scroll", "wheel"].forEach(function(evt){
+      window.addEventListener(evt, onUserGestureAudio, { passive: true, capture: true });
+    });
+  }
 
   var greetingDisplayed = false;
   function showGreetingBubble(){
@@ -797,36 +924,21 @@ export function buildWidgetCode(config: ChatConfig): string {
     dismissBtn.type = "button";
     dismissBtn.setAttribute("aria-label", "Dismiss");
     dismissBtn.innerHTML = '<svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>';
-    dismissBtn.onclick = function(){ greet.remove(); };
+    dismissBtn.onclick = function(){
+      greet.remove();
+      pendingChime = false;
+      pendingChimeExpires = 0;
+    };
     greet.appendChild(greetSpan);
     greet.appendChild(dismissBtn);
+    greet.onclick = function(){
+      onUserGestureAudio();
+      toggleMenu();
+    };
     root.insertBefore(greet, root.firstChild);
 
     if(SETTINGS.enableSound){
-      try {
-        var AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if(AudioCtx){
-          var ctx = new AudioCtx();
-          var playChime = function(){
-            var osc = ctx.createOscillator();
-            var gain = ctx.createGain();
-            osc.type = "sine";
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-            osc.frequency.setValueAtTime(880, ctx.currentTime + 0.08);
-            gain.gain.setValueAtTime(0.22, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.38);
-            osc.start(ctx.currentTime);
-            osc.stop(ctx.currentTime + 0.38);
-          };
-          if(ctx.state === "suspended"){
-            ctx.resume().then(playChime).catch(function(){});
-          } else {
-            playChime();
-          }
-        }
-      } catch(e){}
+      triggerNotificationSound();
     }
   }
 
