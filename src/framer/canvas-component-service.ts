@@ -3,8 +3,9 @@ import type { ChatConfig } from "../types"
 import { ICONS } from "../widget/icons"
 import { MODAL_THEME_GRADIENTS } from "../core/config"
 import { SVG_AVATAR_PRESETS } from "../core/avatars"
+import { getSiteInfo } from "../lib/framer/project"
 
-export function generateComponentCode(config: ChatConfig): string {
+export function generateComponentCode(config: ChatConfig, siteId?: string | null, siteUrl?: string | null): string {
     const iconEntries = Object.entries(ICONS)
         .map(([key, svg]) => `  ${JSON.stringify(key)}: ${JSON.stringify(svg)},`)
         .join("\n")
@@ -12,6 +13,8 @@ export function generateComponentCode(config: ChatConfig): string {
     const gradient = config.modalTheme === "custom" && config.modalCustomGradient
         ? config.modalCustomGradient
         : MODAL_THEME_GRADIENTS[config.modalTheme] || MODAL_THEME_GRADIENTS.whatsapp
+
+    const embeddedSiteDomain = siteUrl ? (function() { try { return new URL(siteUrl).hostname } catch { return "" } })() : ""
 
     const defaultAgentsJson = JSON.stringify(
         config.agents && config.agents.length > 0
@@ -46,6 +49,47 @@ import { addPropertyControls, ControlType, RenderTarget } from "framer"
 
 const ICONS: Record<string, string> = {
 ${iconEntries}
+}
+
+const EMBEDDED_SITE_ID = ${JSON.stringify(siteId || "")}
+const EMBEDDED_SITE_DOMAIN = ${JSON.stringify(embeddedSiteDomain)}
+
+function sendTrackingEvent(eventType: "view" | "click", channelId?: string) {
+  if (typeof window === "undefined") return
+  try {
+    const payload = JSON.stringify({
+      widgetId: EMBEDDED_SITE_ID || window.location.hostname || "chat-bubbles-default",
+      siteDomain: window.location.hostname,
+      siteUrl: window.location.href,
+      eventType: eventType,
+      channelId: channelId || "",
+    })
+
+    // 1. Send to local dev server (works when running in local dev/Framer desktop or localhost)
+    try {
+      fetch("http://localhost:3000/api/analytics/track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+        mode: "cors",
+      }).catch(() => {})
+    } catch {}
+
+    // 2. Also send to production server (supports sendBeacon for background delivery)
+    try {
+      if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
+        const blob = new Blob([payload], { type: "application/json" })
+        navigator.sendBeacon("https://app.framefic.com/chat-bubbles/api/analytics/track", blob)
+      } else {
+        fetch("https://app.framefic.com/chat-bubbles/api/analytics/track", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: payload,
+          mode: "cors",
+        }).catch(() => {})
+      }
+    } catch {}
+  } catch {}
 }
 
 const GRADIENTS: Record<string, string> = {
@@ -628,7 +672,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                 if (typeof (window as any).gtag === "function") {
                     (window as any).gtag("event", "chat_bubbles_view", { event_category: "Chat Bubbles", event_label: "widget_view" })
                 }
-                window.dispatchEvent(new CustomEvent("chat_bubbles_view", { detail: { timestamp: Date.now() } }))
+                sendTrackingEvent("view")
             }
         } catch {}
     }, [isCanvas, enableAnalytics, isWidgetHidden, currentLocationPath])
@@ -1923,6 +1967,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                                                     agentName: selectedAgent.name,
                                                 }
                                             }))
+                                            sendTrackingEvent("click", selectedAgent.channelId)
                                         } catch {}
                                     }
                                     if (closeAfterClick) {
@@ -1971,6 +2016,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                                                     (window as any).gtag("event", "chat_bubbles_click", { channel: channel.id, channel_label: channel.label })
                                                 }
                                                 window.dispatchEvent(new CustomEvent("chat_bubbles_interaction", { detail: { channel: channel.id, channelLabel: channel.label } }))
+                                                sendTrackingEvent("click", channel.id)
                                             } catch {}
                                         }
                                         if (closeAfterClick) setIsOpen(false)
@@ -2599,7 +2645,8 @@ export function scheduleDebouncedCodeFileSync(config: ChatConfig) {
                 const allowed = await (framer as any).isAllowedTo("setCodeFileContent", "CodeFile.setFileContent")
                 if (!allowed) return
             }
-            const code = generateComponentCode(config)
+            const siteInfo = await getSiteInfo().catch(() => null)
+            const code = generateComponentCode(config, siteInfo?.siteId, siteInfo?.siteUrl)
             const files = await framer.getCodeFiles()
             const file = files.find((f) => f.name === "ChatBubbles.tsx" || f.name === "ChatBubbles" || f.name === "Chatfic")
             if (file) {
@@ -2657,7 +2704,8 @@ export async function syncCanvasInstance(config: ChatConfig): Promise<boolean> {
 }
 
 export async function insertCanvasComponent(config: ChatConfig): Promise<{ success: boolean; message: string }> {
-    const code = generateComponentCode(config)
+    const siteInfo = await getSiteInfo().catch(() => null)
+    const code = generateComponentCode(config, siteInfo?.siteId, siteInfo?.siteUrl)
     const fileName = "ChatBubbles.tsx"
 
     try {

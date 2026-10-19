@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState, useCallback } from "react"
 import { framer } from "@framer/plugin"
 import { cloneDefaultConfig, normalizeConfig } from "./core/config"
 import { loadConfig, saveConfig } from "./core/storage"
@@ -9,7 +9,18 @@ import { Section } from "./ui/components/Section"
 import { Switch } from "./ui/components/Switch"
 import { HeroCard } from "./ui/components/HeroCard"
 import { HelpRow } from "./ui/components/HelpRow"
-import { ProfilePage } from "./ui/components/ProfilePage"
+import { ProfilePage } from "./profile/ProfilePage"
+import { SubscriptionPage } from "./profile/SubscriptionPage"
+import { useAuth } from "./features/auth/hooks/useAuth"
+import { usePaymentFlow } from "./features/payment/hooks/usePaymentFlow"
+import { AuthModal } from "./features/auth/components/AuthModal"
+import { PaymentModal } from "./features/payment/components/PaymentModal"
+import { PaymentSuccessModal } from "./features/payment/components/PaymentSuccessModal"
+import { TrialStatusModal } from "./features/auth/components/TrialStatusModal"
+import { getSiteInfo } from "./lib/framer/project"
+import { checkTrialEligibility } from "./features/payment/services/paymentService"
+import { loadStripe } from "@stripe/stripe-js"
+import { Crown } from "lucide-react"
 import { FrameficCard } from "./ui/components/FrameficCard"
 import { CustomColorPicker } from "./ui/components/CustomColorPicker"
 import { GradientColorPicker } from "./ui/components/GradientColorPicker"
@@ -146,6 +157,19 @@ const channelMeta: Record<ChannelId, { label: string; placeholder: string; hint:
     },
 }
 
+// Lazy load Stripe.js to prevent CORS errors on plugin startup
+const stripePromiseMap: Record<string, ReturnType<typeof loadStripe>> = {}
+const getStripe = (key: string) => {
+    if (!key) return null
+    if (!stripePromiseMap[key]) {
+        stripePromiseMap[key] = loadStripe(key).catch((err) => {
+            console.error("[ChatBubbles] Failed to load Stripe.js:", err)
+            return null
+        })
+    }
+    return stripePromiseMap[key]
+}
+
 export function App() {
     const [config, setConfig] = useState<ChatConfig>(cloneDefaultConfig())
     const [themePreference, setThemePreference] = useState<"light" | "dark" | "auto">(() => {
@@ -195,6 +219,204 @@ export function App() {
             setTab("home")
         }
     }, [tab, config.enableAnalytics])
+
+    // Auth & Subscription flows
+    const auth = useAuth()
+
+    const notify = useCallback((payload: { type: "Success" | "Error"; message: string }) => {
+        setMessage({
+            type: payload.type === "Success" ? "success" : "error",
+            text: payload.message,
+        })
+        try {
+            if (typeof (framer as any).notify === "function") {
+                ;(framer as any).notify(payload.message)
+            }
+        } catch {}
+    }, [])
+
+    const paymentFlow = usePaymentFlow({
+        notify,
+        userEmail: auth.user?.email,
+        userName: auth.user?.username,
+    })
+
+    const [profileView, setProfileView] = useState<"profile" | "subscription">("profile")
+    const [forceShowPlans, setForceShowPlans] = useState<number>(0)
+    const [trialModalStatus, setTrialModalStatus] = useState<"started" | "expired" | null>(null)
+    const [pendingPaymentPlan, setPendingPaymentPlan] = useState<string | null>(null)
+    const authSuccessInProgressRef = useRef<boolean>(false)
+
+    const isSubscriptionFullyActive = useMemo(() => {
+        return (
+            paymentFlow.isPaid &&
+            (!paymentFlow.planDetails ||
+                paymentFlow.planDetails.plan === "lifetime" ||
+                paymentFlow.planDetails.status === "active" ||
+                paymentFlow.planDetails.status === "trialing" ||
+                paymentFlow.planDetails.status === "paid" ||
+                paymentFlow.planDetails.status === "Scheduled to cancel")
+        )
+    }, [paymentFlow.isPaid, paymentFlow.planDetails])
+
+    const hasActiveAccess = auth.isLoggedIn && isSubscriptionFullyActive
+
+    const handleTabClick = useCallback(
+        (targetTab: Tab) => {
+            setIsProfileOpen(false)
+            setTab(targetTab)
+            if (targetTab !== "home" && !hasActiveAccess) {
+                if (!auth.isLoggedIn) {
+                    auth.openAuthModal("register")
+                } else {
+                    setTrialModalStatus("expired")
+                }
+            }
+        },
+        [auth, hasActiveAccess]
+    )
+
+    const handlePay = useCallback(
+        (event: any, planId: string) => {
+            if (!auth.isLoggedIn) {
+                setPendingPaymentPlan(planId)
+                auth.openAuthModal("register")
+                return
+            }
+            void paymentFlow.makePayment(event, planId)
+        },
+        [auth, paymentFlow]
+    )
+
+    const handleAuthSuccess = useCallback(
+        async (loggedInEmail?: string) => {
+            authSuccessInProgressRef.current = true
+            try {
+                let isPaidAfterRefresh = await paymentFlow.refreshSubscriptionStatus(loggedInEmail)
+
+                if (!isPaidAfterRefresh) {
+                    try {
+                        const siteInfo = await getSiteInfo().catch(() => ({ siteId: "", userId: null, userName: null, userEmail: null }))
+                        const resolvedEmail = loggedInEmail || auth.user?.email || siteInfo.userEmail
+                        const eligibility = await checkTrialEligibility(siteInfo.siteId, siteInfo.userId, resolvedEmail)
+
+                        if (eligibility.eligible) {
+                            if (paymentFlow.handleStartTrial) {
+                                await paymentFlow.handleStartTrial()
+                                isPaidAfterRefresh = true
+                            }
+                            setTrialModalStatus("started")
+                        } else {
+                            setTrialModalStatus("expired")
+                        }
+                    } catch (err) {
+                        console.error("Error checking trial eligibility after auth:", err)
+                    }
+                }
+
+                if (pendingPaymentPlan) {
+                    const planToBuy = pendingPaymentPlan
+                    setPendingPaymentPlan(null)
+                    void paymentFlow.makePayment(null, planToBuy)
+                }
+            } finally {
+                authSuccessInProgressRef.current = false
+            }
+        },
+        [auth.user, paymentFlow, pendingPaymentPlan]
+    )
+
+    // Auto trial check & lockout side effect
+    useEffect(() => {
+        let isMounted = true
+
+        const checkTrialStatus = async () => {
+            if (authSuccessInProgressRef.current) return
+            if (trialModalStatus === "started") return
+
+            if (!auth.isLoggedIn || paymentFlow.isCheckingPayment) {
+                if (isMounted) {
+                    setTrialModalStatus(null)
+                }
+                return
+            }
+
+            if (isProfileOpen && profileView === "subscription") {
+                if (isMounted) {
+                    setTrialModalStatus(null)
+                }
+                return
+            }
+
+            if (paymentFlow.isPaid) {
+                if (isMounted) {
+                    setTrialModalStatus(null)
+                }
+                return
+            }
+
+            try {
+                const siteInfo = await getSiteInfo().catch(() => ({ siteId: "", userId: null, userName: null, userEmail: null }))
+                const resolvedEmail = auth.user?.email || siteInfo.userEmail
+
+                const eligibility = await checkTrialEligibility(siteInfo.siteId, siteInfo.userId, resolvedEmail)
+
+                if (eligibility.eligible) {
+                    if (paymentFlow.handleStartTrial) {
+                        await paymentFlow.handleStartTrial()
+                    }
+                    if (isMounted) setTrialModalStatus("started")
+                } else {
+                    if (isMounted) setTrialModalStatus("expired")
+                }
+            } catch (err) {
+                console.error("Error checking trial status:", err)
+            }
+        }
+
+        void checkTrialStatus()
+
+        return () => {
+            isMounted = false
+        }
+    }, [auth.isLoggedIn, paymentFlow.isCheckingPayment, paymentFlow.isPaid, auth.user, isProfileOpen, profileView, trialModalStatus])
+
+    const trialBanner = useMemo(() => {
+        if (!auth.isLoggedIn || !paymentFlow.isPaid || paymentFlow.currentPlan !== "trial") return null
+
+        const secondsRemaining = paymentFlow.planDetails?.trialSecondsRemaining ?? 0
+        let countdownDisplay: string
+
+        if (secondsRemaining <= 0) {
+            countdownDisplay = "0:00:00"
+        } else if (secondsRemaining < 86400) {
+            const hours = Math.floor(secondsRemaining / 3600).toString().padStart(2, "0")
+            const minutes = Math.floor((secondsRemaining % 3600) / 60).toString().padStart(2, "0")
+            const secs = (secondsRemaining % 60).toString().padStart(2, "0")
+            countdownDisplay = `${hours}:${minutes}:${secs}`
+        } else {
+            const days = Math.ceil(secondsRemaining / 86400)
+            countdownDisplay = `${days} ${days === 1 ? "day" : "days"}`
+        }
+
+        return (
+            <div className="framefic-trial-sticky-banner">
+                <span>Free trial! <strong>{countdownDisplay}</strong> left</span>
+                <button
+                    type="button"
+                    className="framefic-trial-sticky-upgrade-btn"
+                    onClick={() => {
+                        setForceShowPlans((prev) => prev + 1)
+                        setIsProfileOpen(true)
+                        setProfileView("subscription")
+                    }}
+                >
+                    <Crown size={12} className="framefic-trial-sticky-btn-icon" />
+                    <span>Upgrade</span>
+                </button>
+            </div>
+        )
+    }, [auth.isLoggedIn, paymentFlow.isPaid, paymentFlow.currentPlan, paymentFlow.planDetails?.trialSecondsRemaining])
 
     // Agent creation & configuration state
     const [showAddAgent, setShowAddAgent] = useState(false)
@@ -511,6 +733,14 @@ export function App() {
     }
 
     async function handleInsertToCanvas() {
+        if (!hasActiveAccess) {
+            if (!auth.isLoggedIn) {
+                auth.openAuthModal("register")
+            } else {
+                setTrialModalStatus("expired")
+            }
+            return
+        }
         setInserting(true)
         setMessage(null)
         try {
@@ -539,37 +769,31 @@ export function App() {
         setMessage({ type: "info", text: "Settings restored to defaults." })
     }
 
+    const isProTabLocked = !isProfileOpen && tab !== "home" && !hasActiveAccess
+
     return (
         <div className={"app " + resolvedTheme}>
+            {trialBanner}
             <nav className="cf-tabs">
                 <div className="cf-tabs-list">
                     <button
                         type="button"
                         className={"cf-tab " + (!isProfileOpen && tab === "home" ? "active" : "")}
-                        onClick={() => {
-                            setIsProfileOpen(false)
-                            setTab("home")
-                        }}
+                        onClick={() => handleTabClick("home")}
                     >
                         Home
                     </button>
                     <button
                         type="button"
                         className={"cf-tab " + (!isProfileOpen && tab === "builder" ? "active" : "")}
-                        onClick={() => {
-                            setIsProfileOpen(false)
-                            setTab("builder")
-                        }}
+                        onClick={() => handleTabClick("builder")}
                     >
                         Builder
                     </button>
                     <button
                         type="button"
                         className={"cf-tab " + (!isProfileOpen && tab === "design" ? "active" : "")}
-                        onClick={() => {
-                            setIsProfileOpen(false)
-                            setTab("design")
-                        }}
+                        onClick={() => handleTabClick("design")}
                     >
                         Design
                     </button>
@@ -577,10 +801,7 @@ export function App() {
                         <button
                             type="button"
                             className={"cf-tab " + (!isProfileOpen && tab === "analytics" ? "active" : "")}
-                            onClick={() => {
-                                setIsProfileOpen(false)
-                                setTab("analytics")
-                            }}
+                            onClick={() => handleTabClick("analytics")}
                         >
                             Analytics
                         </button>
@@ -588,10 +809,7 @@ export function App() {
                     <button
                         type="button"
                         className={"cf-tab " + (!isProfileOpen && tab === "settings" ? "active" : "")}
-                        onClick={() => {
-                            setIsProfileOpen(false)
-                            setTab("settings")
-                        }}
+                        onClick={() => handleTabClick("settings")}
                     >
                         Settings
                     </button>
@@ -599,7 +817,12 @@ export function App() {
                 <button
                     type="button"
                     className={"cf-tab-profile " + (isProfileOpen ? "active" : "")}
-                    onClick={() => setIsProfileOpen(!isProfileOpen)}
+                    onClick={() => {
+                        if (!auth.isLoggedIn && !isProfileOpen) {
+                            auth.openAuthModal("register")
+                        }
+                        setIsProfileOpen(!isProfileOpen)
+                    }}
                     title="Account & Profile"
                     aria-label="Account & Profile"
                 >
@@ -607,7 +830,7 @@ export function App() {
                 </button>
             </nav>
 
-            <main className="content">
+            <main className={"content" + (isProTabLocked ? " cf-content-blurred" : "")}>
                 {message && (
                     <div className={"cf-notice " + message.type}>
                         <div className="cf-notice-icon-col">
@@ -634,7 +857,34 @@ export function App() {
                 )}
 
                 {isProfileOpen ? (
-                    <ProfilePage onBack={() => setIsProfileOpen(false)} />
+                    profileView === "subscription" ? (
+                        <SubscriptionPage
+                            onClose={() => setProfileView("profile")}
+                            hasSubscription={paymentFlow.isPaid}
+                            planDetails={paymentFlow.planDetails}
+                            isCreatingPayment={paymentFlow.isCreatingPayment}
+                            payingPlan={paymentFlow.payingPlan}
+                            lifetimeAvailability={paymentFlow.lifetimeAvailability}
+                            onPay={handlePay}
+                            onRefreshSubscription={paymentFlow.refreshSubscriptionStatus}
+                            notify={notify}
+                            defaultShowPlans={forceShowPlans}
+                        />
+                    ) : (
+                        <ProfilePage
+                            onBack={() => setIsProfileOpen(false)}
+                            authUser={auth.user}
+                            planDetails={paymentFlow.planDetails}
+                            hasSubscription={paymentFlow.isPaid}
+                            theme={themePreference}
+                            onSignIn={() => auth.openAuthModal("login")}
+                            onSignUp={() => auth.openAuthModal("register")}
+                            onLogout={auth.logout}
+                            onManageSubscription={() => setProfileView("subscription")}
+                            onRefreshSubscription={paymentFlow.refreshSubscriptionStatus}
+                            onStartTrial={paymentFlow.handleStartTrial}
+                        />
+                    )
                 ) : (
                     <>
                         {/* HOME TAB */}
@@ -648,19 +898,13 @@ export function App() {
                                     description="WhatsApp &amp; multi-channel social chat buttons for Framer."
                                     ctaLabel="Configure in Builder"
                                     ctaIcon={<IconArrowRight size={14} />}
-                                    onCtaClick={() => {
-                                        setIsProfileOpen(false)
-                                        setTab("builder")
-                                    }}
+                                    onCtaClick={() => handleTabClick("builder")}
                                 >
                                     <div className="cf-hero-config-grid">
                                         <button
                                             type="button"
                                             className="cf-hero-config-item"
-                                            onClick={() => {
-                                                setIsProfileOpen(false)
-                                                setTab("builder")
-                                            }}
+                                            onClick={() => handleTabClick("builder")}
                                             title="Current widget mode"
                                         >
                                             <span className="cf-hero-config-label">Mode</span>
@@ -672,8 +916,7 @@ export function App() {
                                             type="button"
                                             className="cf-hero-config-item"
                                             onClick={() => {
-                                                setIsProfileOpen(false)
-                                                setTab("builder")
+                                                handleTabClick("builder")
                                                 setBuilderSubTab("channels")
                                             }}
                                             title="Active channels in builder"
@@ -685,8 +928,7 @@ export function App() {
                                             type="button"
                                             className="cf-hero-config-item"
                                             onClick={() => {
-                                                setIsProfileOpen(false)
-                                                setTab("builder")
+                                                handleTabClick("builder")
                                                 setBuilderSubTab("agents")
                                             }}
                                             title="Team agents in builder"
@@ -2289,45 +2531,131 @@ export function App() {
                         )}
                     </>
                 )}
+
+                {isProTabLocked && (
+                    <div
+                        className="cf-tab-blur-overlay"
+                        onClick={() => {
+                            if (!auth.isLoggedIn) {
+                                auth.openAuthModal("register")
+                            } else {
+                                setTrialModalStatus("expired")
+                            }
+                        }}
+                    />
+                )}
             </main>
 
-            <footer className="actions">
-                <div className="cf-footer-grid">
-                    <button
-                        type="button"
-                        className="primary-cta"
-                        onClick={handleInsertToCanvas}
-                        disabled={inserting}
-                        title="Insert reusable Chat Bubbles component onto the Framer canvas"
-                    >
-                        <IconSparkles size={16} />
-                        <span>{inserting ? "Inserting..." : "Insert into Canvas"}</span>
-                    </button>
-                    <button
-                        type="button"
-                        className="secondary-cta"
-                        onClick={reset}
-                        disabled={inserting}
-                        title="Restore default settings"
-                    >
-                        <IconRefresh size={13} />
-                        <span>Reset</span>
-                    </button>
-                </div>
-                <div className="cf-shell-footer-bar">
-                    <a
-                        href="https://www.framefic.com/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="cf-shell-company-link"
-                        title="Visit Framefic website"
-                    >
-                        <span>@Framefic</span>
-                        <IconExternalLink size={12} />
-                    </a>
-                    <span className="cf-shell-version">v0.1.0 · Framefic</span>
-                </div>
-            </footer>
+            {!isProfileOpen && (
+                <footer className="actions">
+                    <div className="cf-footer-grid">
+                        <button
+                            type="button"
+                            className="primary-cta"
+                            onClick={handleInsertToCanvas}
+                            disabled={inserting}
+                            title="Insert reusable Chat Bubbles component onto the Framer canvas"
+                        >
+                            <IconSparkles size={16} />
+                            <span>{inserting ? "Inserting..." : "Insert into Canvas"}</span>
+                        </button>
+                        <button
+                            type="button"
+                            className="secondary-cta"
+                            onClick={reset}
+                            disabled={inserting}
+                            title="Restore default settings"
+                        >
+                            <IconRefresh size={13} />
+                            <span>Reset</span>
+                        </button>
+                    </div>
+                    <div className="cf-shell-footer-bar">
+                        <a
+                            href="https://www.framefic.com/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="cf-shell-company-link"
+                            title="Visit Framefic website"
+                        >
+                            <span>@Framefic</span>
+                            <IconExternalLink size={12} />
+                        </a>
+                        <span className="cf-shell-version">v0.1.0 · Framefic</span>
+                    </div>
+                </footer>
+            )}
+
+            <AuthModal
+                isOpen={auth.showAuthModal}
+                initialMode={auth.authModalMode}
+                onRegister={async (data) => {
+                    let siteId = null
+                    let framerUserId = null
+                    let framerSiteName = null
+                    let framerSiteUrl = null
+                    try {
+                        const info = await getSiteInfo()
+                        siteId = info.siteId || null
+                        framerUserId = info.userId || null
+                        framerSiteName = info.siteName || null
+                        framerSiteUrl = info.siteUrl || null
+                    } catch {}
+                    await auth.register({ ...data, siteId, framerUserId, framerSiteName, framerSiteUrl })
+                }}
+                onVerifySignup={async (email, code) => {
+                    await auth.verifySignup({ email, code })
+                    void handleAuthSuccess(email)
+                }}
+                onLogin={async (data) => {
+                    const res = await auth.login(data)
+                    if (data.code) {
+                        void handleAuthSuccess(data.email)
+                    }
+                    return res
+                }}
+                onSocialAuthSuccess={(data) => {
+                    auth.socialLogin(data.token, data.user)
+                    void handleAuthSuccess(data.user?.email)
+                }}
+                onClose={auth.closeAuthModal}
+            />
+
+            <PaymentModal
+                isOpen={paymentFlow.showPaymentModal}
+                clientSecret={paymentFlow.clientSecret}
+                showPaymentSuccessModal={paymentFlow.showPaymentSuccessModal}
+                showAmount={paymentFlow.showAmount}
+                showType={paymentFlow.showType}
+                plan={paymentFlow.payingPlan}
+                stripePromise={paymentFlow.showPaymentModal && paymentFlow.publishableKey ? getStripe(paymentFlow.publishableKey) : null}
+                onClose={paymentFlow.closePaymentModal}
+                defaultEmail={auth.user?.email ?? null}
+                subscriptionId={paymentFlow.activeSubscriptionId}
+                setClientSecret={paymentFlow.setClientSecret}
+                setShowAmount={paymentFlow.setShowAmount}
+                onSuccess={() => {
+                    paymentFlow.handlePaymentSuccess()
+                }}
+                notify={notify}
+            />
+
+            <PaymentSuccessModal isOpen={paymentFlow.showPaymentSuccessModal} />
+
+            <TrialStatusModal
+                isOpen={trialModalStatus !== null}
+                status={trialModalStatus}
+                onClose={() => setTrialModalStatus(null)}
+                onUpgrade={() => {
+                    setIsProfileOpen(true)
+                    setProfileView("subscription")
+                    setTrialModalStatus(null)
+                }}
+                onLogout={() => {
+                    auth.logout()
+                    setTrialModalStatus(null)
+                }}
+            />
         </div>
     )
 }

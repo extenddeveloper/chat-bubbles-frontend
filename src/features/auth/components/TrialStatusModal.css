@@ -1,0 +1,182 @@
+@import "../../../styles/variables.css";
+
+.framefic-trial-status-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--framefic-overlay);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+  animation: frameficTrialFadeIn 0.2s ease-out;
+}
+
+@keyframes frameficTrialFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.framefic-trial-status-panel {
+  position: relative;
+  width: 100%;
+  max-width: 348px;
+  border-radius: 14px;
+  border: 1px solid var(--stroke-faint);
+  background: var(--bg-card);
+  box-shadow: 0 2px 4px 0 rgba(90, 90, 90, 0.21) inset, 0 20px 48px -10px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+  animation: frameficTrialSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes frameficTrialSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.framefic-trial-status-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 0;
+  position: relative;
+  width: 100%;
+}
+
+.framefic-trial-status-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 10;
+  background: transparent;
+  border: none;
+  color: var(--framefic-text-muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.framefic-trial-status-close:hover {
+  background: var(--framefic-surface-2);
+  color: var(--framefic-heading);
+  transform: rotate(90deg);
+}
+
+.framefic-trial-status-content {
+  padding: 36px 24px 28px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.framefic-trial-status-icon-bubble {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+  transition: transform 0.3s ease;
+}
+
+.framefic-trial-status-icon-bubble:hover {
+  transform: scale(1.05);
+}
+
+.framefic-trial-status-icon-bubble--success {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.25);
+  color: #ffffff;
+}
+
+.framefic-trial-status-icon-bubble--locked {
+  background: var(--framefic-warning-btn, #DC2626);
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.25);
+  color: #ffffff;
+}
+
+.framefic-trial-status-content h3 {
+  margin: 0 0 8px 0;
+  font-family: "Inter", sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--framefic-heading);
+  line-height: 1.3;
+}
+
+.framefic-trial-status-description {
+  margin: 0 0 4px 0;
+  font-family: "Inter", sans-serif;
+  color: var(--framefic-text-muted);
+  line-height: 1.5;
+}
+
+.framefic-trial-status-btn {
+  width: 100%;
+  height: 38px;
+  margin-top: 10px;
+  border-radius: 8px;
+  border: 0;
+  cursor: pointer;
+  font-family: "Inter", sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #ffffff;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.1px;
+  border: 2px solid transparent;
+  background:
+    linear-gradient(var(--Secondary-Default, #5271FF), var(--Secondary-Default, #5271FF)) padding-box,
+    linear-gradient(180deg, #708AFF 0%, #3358FF 100%) border-box;
+}
+
+.framefic-trial-status-btn:active {
+  transform: translateY(0);
+}
+
+.framefic-trial-status-footnote {
+  display: block;
+  margin-top: 8px;
+  font-family: "Inter", sans-serif;
+  font-size: 11px;
+  color: var(--framefic-text-muted);
+  letter-spacing: 0.1px;
+}
+
+.framefic-trial-status-logout-link {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--framefic-text-muted);
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+  margin-top: 2px;
+}
+
+.framefic-trial-status-logout-link:hover {
+  color: var(--framefic-heading);
+  background: transparent;
+}

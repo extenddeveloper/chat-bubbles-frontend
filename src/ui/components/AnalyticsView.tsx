@@ -3,10 +3,13 @@ import type { ChatChannel } from "../../types"
 import { ICONS } from "../../widget/icons"
 import {
     type AnalyticsPeriod,
+    type AnalyticsData,
     formatNumber,
     formatViews,
-    generateAnalytics,
+    getXAxisLabels,
 } from "../../core/analytics"
+import { buildBackendUrl } from "../../config/backend"
+import { getSiteInfo } from "../../lib/framer/project"
 import {
     IconAnalyticsOff,
     IconChevronDown,
@@ -34,6 +37,7 @@ export function AnalyticsView({
     const [period, setPeriod] = useState<AnalyticsPeriod>("Last 7 days")
     const [periodOpen, setPeriodOpen] = useState(false)
     const [refreshKey, setRefreshKey] = useState(0)
+    const [backendData, setBackendData] = useState<AnalyticsData | null>(null)
     const dropdownRef = useRef<HTMLDivElement>(null)
 
     // Listen to real interaction updates from widget and live site
@@ -53,6 +57,99 @@ export function AnalyticsView({
         }
     }, [])
 
+    // Empty zero-state for clean real-time tracking
+    const emptyStats = useMemo<AnalyticsData>(() => {
+        const xLabels = getXAxisLabels(period)
+        const activeChannels = channels.filter((c) => c.enabled && c.value.trim() !== "")
+        const displayChannels = activeChannels.length > 0 ? activeChannels : channels.slice(0, 4)
+        return {
+            views: 0,
+            clicks: 0,
+            convRate: "0.0%",
+            bars: xLabels.map((lbl) => ({ label: lbl, value: 0, percentage: 0, highlight: false })),
+            channelStats: displayChannels.map((c) => ({
+                id: c.id,
+                label: c.label,
+                color: c.color,
+                clicks: 0,
+                percentage: 0,
+            })),
+            maxY: 10,
+            midY: 5,
+            isRealData: true,
+        }
+    }, [period, channels])
+
+    // Fetch dynamic analytics from backend database
+    useEffect(() => {
+        let isMounted = true
+        async function fetchBackendStats() {
+            try {
+                const siteInfo = await getSiteInfo().catch(() => ({ siteId: "", siteUrl: null }))
+                const widgetId = siteInfo?.siteId || "chat-bubbles-default"
+                let domainParam = ""
+                if (siteInfo?.siteUrl) {
+                    try {
+                        domainParam = "&domain=" + encodeURIComponent(new URL(siteInfo.siteUrl).hostname)
+                    } catch {}
+                }
+                const url = buildBackendUrl(`/api/analytics/${encodeURIComponent(widgetId)}?period=${encodeURIComponent(period)}${domainParam}`)
+                const res = await fetch(url)
+                if (!res.ok) return
+                const json = await res.json()
+                if (!isMounted) return
+                if (json) {
+                    const xLabels = getXAxisLabels(period)
+                    const rawBars = Array.isArray(json.bars) && json.bars.length > 0 ? json.bars : []
+                    const bars = xLabels.map((lbl, idx) => {
+                        const b = rawBars[idx]
+                        return {
+                            label: lbl,
+                            value: Number(b?.value || 0),
+                            percentage: Number(b?.percentage || 0),
+                            highlight: Boolean(b?.highlight),
+                        }
+                    })
+                    const maxVal = Math.max(...bars.map((b) => b.value), 10)
+                    const maxY = Math.ceil(maxVal * 1.15)
+                    const midY = Math.round(maxY / 2)
+
+                    const activeChannels = channels.filter((c) => c.enabled && c.value.trim() !== "")
+                    const displayChannels = activeChannels.length > 0 ? activeChannels : channels.slice(0, 4)
+                    const chClicks = Number(json.clicks || 0)
+                    const channelBreakdown = json.channels || {}
+                    const channelStats = displayChannels.map((channel) => {
+                        const clicks = Number(channelBreakdown[channel.id] || 0)
+                        return {
+                            id: channel.id,
+                            label: channel.label,
+                            color: channel.color,
+                            clicks,
+                            percentage: chClicks > 0 ? Math.round((clicks / chClicks) * 100) : 0,
+                        }
+                    })
+
+                    setBackendData({
+                        views: Number(json.views || 0),
+                        clicks: Number(json.clicks || 0),
+                        convRate: String(json.convRate || "0.0%"),
+                        bars,
+                        channelStats,
+                        maxY,
+                        midY,
+                        isRealData: true,
+                    })
+                }
+            } catch {
+                // Keep empty state
+            }
+        }
+        void fetchBackendStats()
+        return () => {
+            isMounted = false
+        }
+    }, [period, channels, refreshKey])
+
     // Close period dropdown when clicking outside
     useEffect(() => {
         function handleClickOutside(e: MouseEvent) {
@@ -67,9 +164,8 @@ export function AnalyticsView({
     }, [periodOpen])
 
     const data = useMemo(
-        () => generateAnalytics(period, channels),
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [period, channels, refreshKey]
+        () => backendData || emptyStats,
+        [backendData, emptyStats]
     )
 
     if (!enabled) {

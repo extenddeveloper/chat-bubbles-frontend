@@ -4620,3 +4620,25 @@ button.cf-btn-view-analytics:hover {
 #framer-environment-error {
     display: none !important;
 }
+
+/* ── Locked Pro Tab Blur Layer ── */
+.content.cf-content-blurred {
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.content.cf-content-blurred > *:not(.cf-tab-blur-overlay):not(.cf-notice) {
+    filter: blur(8px);
+    -webkit-filter: blur(8px);
+    opacity: 0.35;
+    pointer-events: none !important;
+    user-select: none !important;
+}
+
+.cf-tab-blur-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    background: transparent;
+    cursor: pointer;
+}

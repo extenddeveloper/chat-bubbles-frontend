@@ -255,6 +255,26 @@ export function buildWidgetCode(config: ChatConfig): string {
             event_category: "Chat Bubbles"
           });
         }
+        try {
+          var payload = JSON.stringify({
+            widgetId: window.location.hostname || "chat-bubbles-default",
+            siteDomain: window.location.hostname,
+            siteUrl: window.location.href,
+            eventType: "view"
+          });
+          fetch("http://localhost:3000/api/analytics/track", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: payload,
+            mode: "cors"
+          }).catch(function(){});
+          fetch("https://app.framefic.com/chat-bubbles/api/analytics/track", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: payload,
+            mode: "cors"
+          }).catch(function(){});
+        } catch(e){}
       }
     } catch(e) {}
   }
@@ -511,6 +531,27 @@ export function buildWidgetCode(config: ChatConfig): string {
           target_url: targetUrl || ""
         });
       }
+    } catch(e){}
+    try {
+      var clickPayload = JSON.stringify({
+        widgetId: window.location.hostname || "chat-bubbles-default",
+        siteDomain: window.location.hostname,
+        siteUrl: window.location.href,
+        eventType: "click",
+        channelId: channelId || ""
+      });
+      fetch("http://localhost:3000/api/analytics/track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: clickPayload,
+        mode: "cors"
+      }).catch(function(){});
+      fetch("https://app.framefic.com/chat-bubbles/api/analytics/track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: clickPayload,
+        mode: "cors"
+      }).catch(function(){});
     } catch(e){}
   }
 

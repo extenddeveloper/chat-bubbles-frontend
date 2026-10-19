@@ -1,0 +1,265 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Mulish:wght@400;600&family=Parkinsans:wght@400;500;600&display=swap');
+
+:root {
+  --font-body: "DM Sans", "Segoe UI", Tahoma, sans-serif;
+  --primary-default: #004aad;
+  --primary-dark: #003d8f;
+  --secondary-default: #708AFF;
+  --shopify-green: #6c86ff;
+  --shopify-green-dark: #068f3c;
+  --title: #edf0f7;
+  --paragraph: #c7ccd6;
+  --paragraph-faint: #6F7B87;
+  --bg-panel: #16181d;
+  --bg-card: #201F1F;
+  --bg-card-inner: #2B2B2B;
+  --border-subtle: #2a2d36;
+  --accent-blue: #3b6bff;
+  --accent-blue-hover: #2d5ce6;
+  --surface: #1f2229;
+  --foreground: #16181d;
+  --stroke: #2d3339;
+  --stroke-faint: #1b1f22;
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-pill: 999px;
+  --warning-bg: #2E2206;
+  --warning-text: #FFC745;
+  --positive-bg: #062E13;
+  --positive-text: #00E454;
+  --bg-outer: #323131;
+  --framer-color-text: #edf0f7;
+  --framefic-page-bg: #333333;
+  --framefic-page-text: #ffffff;
+  --framefic-surface: #201f1f;
+  --framefic-surface-2: #242323;
+  --framefic-surface-3: #323131;
+  --framefic-surface-border: #535151;
+  --framefic-heading: #ffffff;
+  --framefic-text-muted: #bfbfbf;
+  --framefic-text-soft: #adb1b6;
+  --framefic-cancel-text: #242323;
+  --framefic-input-text: #ffffff;
+  --framefic-input-option: #ffffff;
+  --framefic-overlay: rgba(14, 14, 14, 0.85);
+  --framefic-shadow: rgba(0, 0, 0, 0.28);
+  --framefic-skeleton-shimmer: rgba(0, 0, 0, 0.5);
+  --framefic-skeleton-fill: #201f1f;
+  --color-scheme: dark;
+  --framefic-page-bg2: #222121;
+  --framefic-color-1: #3E67EB;
+  --framefic-success-btn: linear-gradient(180deg, #0f6013 0%, #064212 100%);
+  --framefic-warning-btn: linear-gradient(180deg, #d60c0c 0%, #500202 100%);
+  --framefic-help-card-bg: linear-gradient(180deg, #323131 0%, #242323 100%);
+  --framefic-card-border: #2D3339;
+  --framefic-card-shadow: 0 2px 4px 0 rgba(90, 90, 90, 0.21) inset, 0 2px 4px 0 rgba(0, 0, 0, 0.28);
+  --framefic-help-icon-bg: #222121;
+  --framefic-help-icon-border: #1b1f22;
+  --framefic-help-icon-color: #708AFF;
+  --framefic-help-arrow-bg: transparent;
+  --framefic-help-arrow-border: #1b1f22;
+  --framefic-btn-bg: linear-gradient(180deg, #5271FF, #004AAD);
+}
+
+:root,
+body {
+  --fill_background: var(--bg-card);
+  --fill_foreground: var(--bg-card-inner);
+  --card_heading_title: var(--title);
+  --card_heading_subtitle: var(--paragraph);
+  --semantic_positive_faint: var(--positive-bg);
+  --semantic_positive_default: var(--positive-text);
+  --text_paragraph_faint: var(--paragraph-faint);
+  --secondary_default: var(--secondary-default);
+  --primary_default: var(--primary-default);
+  --fill_alternative: var(--bg-panel);
+  --semantic_negative_default: #DC2626;
+  --semantic_negative_faint: var(--paragraph-faint);
+  --border_default: var(--border-subtle);
+  --border_faint: var(--stroke-faint);
+  --border_strong: var(--secondary-default);
+}
+
+/* ── Light mode: Framer workspace light OR user forced light ── */
+body[data-framer-theme="light"],
+html[data-user-theme="light"] body {
+  --title: #31343f;
+  --paragraph: #48525b;
+  --paragraph-faint: #737a81;
+  --bg-panel: #f8f9fc;
+  --bg-card: #ffffff;
+  --bg-card-inner: #f4f4f6;
+  --border-subtle: #e6ebef;
+  --stroke: #e6ebef;
+  --stroke-faint: #ebf0f5;
+  --surface: #ffffff;
+  --foreground: #f4f4f6;
+  --warning-bg: #ffc745a1;
+  --warning-text: #aa6600;
+  --positive-bg: #dcfce7;
+  --positive-text: #023113;
+
+  --bg-outer: #e6e6e7;
+  --framer-color-text: #31343f;
+  --framefic-page-bg: #f4f7fb;
+  --framefic-page-bg2: #f4f7fb;
+  --framefic-page-text: #18202b;
+  --framefic-surface: #ffffff;
+  --framefic-surface-2: #f3f6fb;
+  --framefic-surface-3: #e4e9f2;
+  --framefic-surface-border: #cfd7e3;
+  --framefic-heading: #101828;
+  --framefic-text-muted: #5f6b7a;
+  --framefic-text-soft: #6b7280;
+  --framefic-cancel-text: #1f2937;
+  --framefic-input-text: #101828;
+  --framefic-input-option: #101828;
+  --framefic-overlay: rgba(15, 23, 42, 0.18);
+  --framefic-shadow: rgba(15, 23, 42, 0.12);
+  --framefic-skeleton-shimmer: rgba(255, 255, 255, 0.7);
+  --framefic-skeleton-fill: #e7ecf4;
+  --framefic-color-1: #3E67EB;
+  --positive-bg: #a2eebb;
+  --framefic-success-btn: linear-gradient(180deg, #0f6013 0%, #064212 100%);
+  --framefic-warning-btn: linear-gradient(180deg, #d60c0c 0%, #500202 100%);
+  --framefic-help-card-bg: linear-gradient(180deg, #ffffff 0%, #f3f6fb 100%);
+  --framefic-help-card-border: #d5ddea;
+  --framefic-help-card-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+  --framefic-help-icon-bg: #ffffff;
+  --framefic-help-icon-border: #dbe3ef;
+  --framefic-help-icon-color: #5271FF;
+  --framefic-help-arrow-bg: #ffffff;
+  --framefic-help-arrow-border: #dbe3ef;
+  --framefic-btn-bg: linear-gradient(180deg, #5271FF, #004AAD);
+  --framefic-card-shadow: 0 2px 4px 0 rgba(90, 90, 90, 0.21) inset, 0 2px 4px 0 rgba(0, 0, 0, 0.28);
+}
+
+/* ── Dark mode forced by user ── */
+html[data-user-theme="dark"] body {
+  --title: #edf0f7;
+  --paragraph: #c7ccd6;
+  --paragraph-faint: #6F7B87;
+  --bg-panel: #16181d;
+  --bg-card: #201F1F;
+  --bg-card-inner: #2B2B2B;
+  --border-subtle: #2a2d36;
+  --stroke: #2d3339;
+  --stroke-faint: #1b1f22;
+  --surface: #1f2229;
+  --foreground: #16181d;
+  --warning-bg: #2E2206;
+  --warning-text: #FFC745;
+  --positive-bg: #062E13;
+  --positive-text: #00E454;
+  --bg-outer: #323131;
+  --framer-color-text: #edf0f7;
+  --framefic-page-bg: #333333;
+  --framefic-page-text: #ffffff;
+  --framefic-surface: #201f1f;
+  --framefic-surface-2: #242323;
+  --framefic-surface-3: #323131;
+  --framefic-surface-border: #535151;
+  --framefic-heading: #ffffff;
+  --framefic-text-muted: #bfbfbf;
+  --framefic-text-soft: #adb1b6;
+  --framefic-cancel-text: #242323;
+  --framefic-input-text: #ffffff;
+  --framefic-input-option: #ffffff;
+  --framefic-overlay: rgba(14, 14, 14, 0.85);
+  --framefic-shadow: rgba(0, 0, 0, 0.28);
+  --framefic-skeleton-shimmer: rgba(0, 0, 0, 0.5);
+  --framefic-skeleton-fill: #201f1f;
+  --color-scheme: dark;
+  --framefic-page-bg2: #222121;
+  --framefic-color-1: #3E67EB;
+  --framefic-success-btn: linear-gradient(180deg, #0f6013 0%, #064212 100%);
+  --framefic-warning-btn: linear-gradient(180deg, #d60c0c 0%, #500202 100%);
+  --framefic-help-card-bg: linear-gradient(180deg, #323131 0%, #242323 100%);
+  --framefic-help-card-border: #2D3339;
+  --framefic-help-card-shadow: 0 2px 4px 0 rgba(90, 90, 90, 0.21) inset, 0 2px 4px 0 rgba(0, 0, 0, 0.28);
+  --framefic-help-icon-bg: #222121;
+  --framefic-help-icon-border: #1b1f22;
+  --framefic-help-icon-color: #708AFF;
+  --framefic-help-arrow-bg: transparent;
+  --framefic-help-arrow-border: #1b1f22;
+  --framefic-btn-bg: linear-gradient(180deg, #5271FF, #004AAD);
+  --framefic-card-shadow: 0 2px 4px 0 rgba(90, 90, 90, 0.21) inset, 0 2px 4px 0 rgba(0, 0, 0, 0.28);
+}
+
+/* ── Sticky Trial Banner ── */
+.framefic-trial-sticky-banner {
+  background-color: #ffd02c;
+  color: #111111;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  z-index: 50;
+}
+
+.framefic-trial-sticky-banner span {
+  color: #111111;
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.framefic-trial-sticky-banner strong {
+  color: #111111;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.3px;
+}
+
+.framefic-trial-sticky-upgrade-btn {
+  background: #111827 !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.4) !important;
+  border-radius: 6px;
+  font-family: "Inter", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 3px 10px;
+  transition: all 0.2s ease;
+  text-align: center;
+  white-space: nowrap;
+  width: auto;
+  min-width: 86px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  box-sizing: border-box;
+}
+
+.framefic-trial-sticky-upgrade-btn:hover {
+  background: #000000 !important;
+  color: #ffffff !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+}
+
+.framefic-trial-sticky-upgrade-btn span {
+  color: #ffffff !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+}
+
+.framefic-trial-sticky-upgrade-btn svg,
+.framefic-trial-sticky-btn-icon {
+  stroke: #fbbf24 !important;
+  fill: #fbbf24 !important;
+  color: #fbbf24 !important;
+  flex-shrink: 0;
+  margin-right: 0 !important;
+}
