@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react"
 import { framer } from "@framer/plugin"
 import { cloneDefaultConfig, normalizeConfig } from "./core/config"
 import { loadConfig, saveConfig } from "./core/storage"
-import { insertCanvasComponent, syncCanvasInstance } from "./framer/canvas-component-service"
+import { insertCanvasComponent, syncCanvasInstance, setCanvasLicensingState } from "./framer/canvas-component-service"
+import { BACKEND_BASE_URL } from "./config/backend"
 import type { ChannelId, ChatAgent, ChatChannel, ChatConfig, ModalTheme } from "./types"
 import { Field } from "./ui/components/Field"
 import { Section } from "./ui/components/Section"
@@ -260,6 +261,21 @@ export function App() {
     }, [paymentFlow.isPaid, paymentFlow.planDetails])
 
     const hasActiveAccess = auth.isLoggedIn && isSubscriptionFullyActive
+
+    const isTrialActive = useMemo(() => {
+        return Boolean(
+            hasActiveAccess &&
+            (paymentFlow.planDetails?.isTrial || paymentFlow.planDetails?.plan === "trial")
+        )
+    }, [hasActiveAccess, paymentFlow.planDetails])
+
+    const isActualPaid = useMemo(() => {
+        return Boolean(hasActiveAccess && !isTrialActive)
+    }, [hasActiveAccess, isTrialActive])
+
+    useEffect(() => {
+        setCanvasLicensingState(isActualPaid, isTrialActive, BACKEND_BASE_URL)
+    }, [isActualPaid, isTrialActive])
 
     const handleTabClick = useCallback(
         (targetTab: Tab) => {
@@ -746,7 +762,7 @@ export function App() {
         try {
             const normalized = normalizeConfig(config)
             await saveConfig(normalized)
-            const result = await insertCanvasComponent(normalized)
+            const result = await insertCanvasComponent(normalized, isActualPaid, isTrialActive)
             setMessage({
                 type: result.success ? "success" : "error",
                 text: result.message,

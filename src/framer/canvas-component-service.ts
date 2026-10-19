@@ -4,8 +4,28 @@ import { ICONS } from "../widget/icons"
 import { MODAL_THEME_GRADIENTS } from "../core/config"
 import { SVG_AVATAR_PRESETS } from "../core/avatars"
 import { getSiteInfo } from "../lib/framer/project"
+import { BACKEND_BASE_URL } from "../config/backend"
 
-export function generateComponentCode(config: ChatConfig, siteId?: string | null, siteUrl?: string | null): string {
+let cachedIsPaid: boolean = false
+let cachedIsTrial: boolean = false
+let cachedApiBaseUrl: string = BACKEND_BASE_URL
+
+export function setCanvasLicensingState(isPaid: boolean, isTrial: boolean, apiBaseUrl?: string) {
+    cachedIsPaid = isPaid
+    cachedIsTrial = isTrial
+    if (apiBaseUrl) cachedApiBaseUrl = apiBaseUrl
+}
+
+export function generateComponentCode(
+    config: ChatConfig,
+    siteId?: string | null,
+    siteUrl?: string | null,
+    isPaid: boolean = cachedIsPaid,
+    isTrial: boolean = cachedIsTrial,
+    apiBaseUrl: string = cachedApiBaseUrl
+): string {
+    const isActualPaid = Boolean(isPaid && !isTrial)
+    const isActualTrial = Boolean(isPaid && isTrial)
     const iconEntries = Object.entries(ICONS)
         .map(([key, svg]) => `  ${JSON.stringify(key)}: ${JSON.stringify(svg)},`)
         .join("\n")
@@ -53,6 +73,145 @@ ${iconEntries}
 
 const EMBEDDED_SITE_ID = ${JSON.stringify(siteId || "")}
 const EMBEDDED_SITE_DOMAIN = ${JSON.stringify(embeddedSiteDomain)}
+const IS_SUBSCRIBED = ${isActualPaid ? "true" : "false"};
+const IS_TRIAL = ${isActualTrial ? "true" : "false"};
+const __CHAT_BUBBLES_SITE_ID__ = ${JSON.stringify(siteId || "")};
+const __CHAT_BUBBLES_API_URL__ = ${JSON.stringify(apiBaseUrl || "")};
+
+var SUBSCRIPTION_CACHE_KEY = "cf_sub_" + __CHAT_BUBBLES_SITE_ID__;
+var SUBSCRIPTION_CACHE_TTL = 10 * 1000;
+
+function checkSubscriptionFromServer(siteId: string, apiUrl: string) {
+  if (!siteId || !apiUrl) return Promise.resolve(null)
+  var cacheRaw: string | null = null
+  try { cacheRaw = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(SUBSCRIPTION_CACHE_KEY) : null } catch (e) {}
+  if (cacheRaw) {
+    try {
+      var cached = JSON.parse(cacheRaw)
+      if (cached && typeof cached.ts === "number" && Date.now() - cached.ts < SUBSCRIPTION_CACHE_TTL) {
+        if (cached.paid === true) {
+          return Promise.resolve({
+            isPaid: true,
+            isTrial: cached.isTrial === true || cached.plan === "trial",
+            plan: cached.plan || null,
+            status: cached.status || null,
+            trialSecondsRemaining: cached.trialSecondsRemaining ? Math.max(0, cached.trialSecondsRemaining - Math.floor((Date.now() - cached.ts) / 1000)) : 0
+          })
+        }
+      }
+    } catch (e) {}
+  }
+  var cleanApiUrl = apiUrl || ""
+  if (typeof window !== "undefined" && window.location && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+    if (/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?/i.test(cleanApiUrl)) {
+      cleanApiUrl = "https://app.framefic.com/chat-bubbles"
+    }
+  }
+  while (cleanApiUrl.charAt(cleanApiUrl.length - 1) === "/") {
+    cleanApiUrl = cleanApiUrl.slice(0, -1)
+  }
+  var url = cleanApiUrl + "/api/subscription-status?siteId=" + encodeURIComponent(siteId)
+  return fetch(url).then(function (r) {
+    if (!r.ok) return null
+    return r.json()
+  }).then(function (data) {
+    if (!data || typeof data.isPaid !== "boolean") return null
+    var isPaid = data.isPaid && ["monthly", "yearly", "lifetime", "trial"].indexOf(data.plan) >= 0 && ["active", "trialing", "paid", "Scheduled to cancel"].indexOf(data.status) >= 0
+    var isTrial = isPaid && (data.plan === "trial" || data.isTrial === true)
+    try {
+      if (typeof sessionStorage !== "undefined") {
+        if (isPaid) {
+          sessionStorage.setItem(SUBSCRIPTION_CACHE_KEY, JSON.stringify({
+            paid: true,
+            isTrial: isTrial,
+            plan: data.plan,
+            status: data.status,
+            trialSecondsRemaining: data.trialSecondsRemaining,
+            ts: Date.now()
+          }))
+        } else {
+          sessionStorage.removeItem(SUBSCRIPTION_CACHE_KEY)
+        }
+      }
+    } catch (e) {}
+    return {
+      isPaid: isPaid,
+      isTrial: isTrial,
+      plan: data.plan,
+      status: data.status,
+      trialSecondsRemaining: data.trialSecondsRemaining,
+      trialEndsAt: data.trialEndsAt
+    }
+  }).catch(function () { return null })
+}
+
+function useSubscriptionCheck() {
+  var initialSub = !!(IS_SUBSCRIBED || IS_TRIAL)
+  var initialTrial = !!IS_TRIAL
+  var [isSubscribed, setIsSubscribed] = React.useState(initialSub)
+  var [secondsLeft, setSecondsLeft] = React.useState(0)
+  var [isTrial, setIsTrial] = React.useState(initialTrial)
+  var checkedRef = React.useRef(false)
+
+  React.useEffect(function () {
+    if (checkedRef.current) return
+    checkedRef.current = true
+    if (!__CHAT_BUBBLES_SITE_ID__) {
+      if (!IS_SUBSCRIBED && !IS_TRIAL) {
+        setIsSubscribed(false)
+        setIsTrial(false)
+      }
+      return
+    }
+
+    checkSubscriptionFromServer(__CHAT_BUBBLES_SITE_ID__, __CHAT_BUBBLES_API_URL__).then(function (data: any) {
+      if (data === null) {
+        setIsSubscribed(!!(IS_SUBSCRIBED || IS_TRIAL))
+        setIsTrial(!!(!IS_SUBSCRIBED && IS_TRIAL))
+        return
+      }
+      var isPaid = !!data.isPaid
+      setIsSubscribed(isPaid)
+      if (isPaid && (data.isTrial || data.plan === "trial")) {
+        setIsTrial(true)
+        if (typeof data.trialSecondsRemaining === "number") {
+          setSecondsLeft(data.trialSecondsRemaining)
+        } else if (data.trialEndsAt) {
+          var remaining = Math.max(0, Math.floor((new Date(data.trialEndsAt).getTime() - Date.now()) / 1000))
+          setSecondsLeft(remaining)
+        }
+      } else if (isPaid && !data.isTrial && data.plan !== "trial") {
+        setIsTrial(false)
+      } else {
+        setIsSubscribed(false)
+        setIsTrial(false)
+      }
+    })
+  }, [])
+
+  React.useEffect(function () {
+    if (!isTrial || secondsLeft <= 0) return
+    var interval = setInterval(function () {
+      setSecondsLeft(function (prev: number) {
+        if (prev <= 1) {
+          clearInterval(interval)
+          setIsSubscribed(false)
+          setIsTrial(false)
+          try {
+            if (typeof sessionStorage !== "undefined") {
+              sessionStorage.removeItem(SUBSCRIPTION_CACHE_KEY)
+            }
+          } catch (e) {}
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+    return function () { clearInterval(interval) }
+  }, [isTrial, secondsLeft])
+
+  return { isSubscribed: isSubscribed, isTrial: isTrial }
+}
 
 function sendTrackingEvent(eventType: "view" | "click", channelId?: string) {
   if (typeof window === "undefined") return
@@ -439,6 +598,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
     } = props
 
     const isCanvas = typeof RenderTarget !== "undefined" && typeof RenderTarget.current === "function" && RenderTarget.current() === RenderTarget.canvas
+    const { isSubscribed: runtimeSubscribed, isTrial: runtimeIsTrial } = useSubscriptionCheck()
     const containerRef = React.useRef<HTMLDivElement>(null)
     const [isOpen, setIsOpen] = React.useState(isCanvas ? canvasPreview !== "closed" : false)
     const [greetingDismissed, setGreetingDismissed] = React.useState(false)
@@ -1225,6 +1385,77 @@ export default function ChatBubbles(props: ChatBubblesProps) {
               }),
     }
 
+    // PRO Feature Locked: Early return if subscription or trial has expired
+    const proLockedBoxStyle: React.CSSProperties = {
+        width: isCanvas ? "100%" : "300px",
+        minHeight: 140,
+        position: isCanvas ? "relative" : "fixed",
+        bottom: isCanvas ? "auto" : (isBottom ? 24 : "auto"),
+        top: isCanvas ? "auto" : (!isBottom ? 24 : "auto"),
+        right: isCanvas ? "auto" : (isRight ? 24 : "auto"),
+        left: isCanvas ? "auto" : (!isRight ? 24 : "auto"),
+        zIndex: 999999,
+        borderRadius: 16,
+        border: "1px dashed rgba(255, 255, 255, 0.25)",
+        boxSizing: "border-box",
+        overflow: "hidden",
+        background: "#121214",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: "24px",
+        textAlign: "center",
+        color: "#ffffff",
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+        boxShadow: "0 12px 32px rgba(0, 0, 0, 0.36)",
+        userSelect: "none",
+    }
+    const proLockedIconWrapStyle: React.CSSProperties = {
+        background: "rgba(255, 255, 255, 0.1)",
+        border: "1px solid rgba(255, 255, 255, 0.2)",
+        borderRadius: "50%",
+        width: 48,
+        height: 48,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        marginBottom: 12,
+    }
+    const proLockedTitleStyle: React.CSSProperties = {
+        fontSize: 14,
+        fontWeight: 700,
+        marginBottom: 6,
+        color: "#ffffff",
+    }
+    const proLockedDescStyle: React.CSSProperties = {
+        fontSize: 12,
+        opacity: 0.85,
+        maxWidth: 260,
+        lineHeight: 1.5,
+        color: "#94a3b8",
+    }
+
+    if (!runtimeSubscribed) {
+        return (
+            <div
+                className="cf-canvas-pro-locked-container"
+                style={proLockedBoxStyle}
+            >
+                <div style={proLockedIconWrapStyle}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#708AFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                </div>
+                <div style={proLockedTitleStyle}>PRO Feature Locked</div>
+                <div style={proLockedDescStyle}>
+                    Upgrade this site to a PRO plan in the Chat Bubbles plugin to activate.
+                </div>
+            </div>
+        )
+    }
+
     if (isWidgetHidden) return null
 
     // Duplicate component blocker: renders warning and disables chat interaction if cloned or duplicated
@@ -1713,6 +1944,74 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                   display: none !important;
                 }
               }
+
+              /* Framefic Watermark Badge */
+              .cf-canvas-wm-wrap {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                padding: 10px 14px 12px !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+                background: transparent !important;
+                user-select: none !important;
+                pointer-events: auto !important;
+                flex-shrink: 0 !important;
+              }
+              .cf-canvas-wm-buttons {
+                padding: 6px 0 0 !important;
+                width: auto !important;
+              }
+              .framefic-wm-link {
+                display: inline-flex !important;
+                align-items: center !important;
+                gap: 5px !important;
+                padding: 4px 10px 4px 6px !important;
+                border-radius: 999px !important;
+                background: #0f172a !important;
+                border: 1px solid rgba(255, 255, 255, 0.16) !important;
+                text-decoration: none !important;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', Helvetica, Arial, sans-serif !important;
+                font-size: 11px !important;
+                line-height: 1 !important;
+                cursor: pointer !important;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22) !important;
+                transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+              }
+              .framefic-wm-link:hover {
+                transform: translateY(-1px) scale(1.03) !important;
+                border-color: rgba(82, 113, 255, 0.5) !important;
+                box-shadow: 0 4px 14px rgba(82, 113, 255, 0.28) !important;
+              }
+              .framefic-wm-icon {
+                width: 14px !important;
+                height: 14px !important;
+                border-radius: 4px !important;
+                background: linear-gradient(135deg, #5271ff 0%, #3557ff 100%) !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                box-shadow: 0 1px 3px rgba(82, 113, 255, 0.35), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.4) !important;
+                flex-shrink: 0 !important;
+                transition: transform 0.22s ease !important;
+              }
+              .framefic-wm-link:hover .framefic-wm-icon {
+                transform: scale(1.08) !important;
+              }
+              .framefic-wm-text {
+                color: #94a3b8 !important;
+                font-weight: 500 !important;
+                letter-spacing: 0.1px !important;
+                transition: color 0.2s ease !important;
+              }
+              .framefic-wm-link:hover .framefic-wm-text {
+                color: rgba(255, 255, 255, 0.9) !important;
+              }
+              .framefic-wm-brand {
+                color: #ffffff !important;
+                font-weight: 600 !important;
+                letter-spacing: 0.2px !important;
+              }
             \`}</style>
             <button
                 type="button"
@@ -1981,6 +2280,28 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                             </a>
                         </div>
                     )}
+                    {runtimeIsTrial ? (
+                        <div className="cf-canvas-wm-wrap">
+                            <a
+                                href="https://framefic.com"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="framefic-wm-link"
+                            >
+                                <span className="framefic-wm-icon">
+                                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M2.2 5V3.4C2.2 2.74 2.74 2.2 3.4 2.2H5" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                        <path d="M11 2.2H12.6C13.26 2.2 13.8 2.74 13.8 3.4V5" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                        <path d="M2.2 11V12.6C2.2 13.26 2.74 13.8 3.4 13.8H5" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                        <path d="M11 13.8H12.6C13.26 13.8 13.8 13.26 13.8 12.6V11" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                        <rect x="4.4" y="4.6" width="7.2" height="6.8" rx="1.6" fill="#ffffff" />
+                                    </svg>
+                                </span>
+                                <span className="framefic-wm-text">Made with</span>
+                                <span className="framefic-wm-brand">Framefic</span>
+                            </a>
+                        </div>
+                    ) : null}
                 </div>
             ) : null}
 
@@ -2072,6 +2393,28 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                             )
                         })()
                     ) : null}
+                    {runtimeIsTrial ? (
+                        <div className="cf-canvas-wm-wrap cf-canvas-wm-buttons">
+                            <a
+                                href="https://framefic.com"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="framefic-wm-link"
+                            >
+                                <span className="framefic-wm-icon">
+                                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M2.2 5V3.4C2.2 2.74 2.74 2.2 3.4 2.2H5" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                        <path d="M11 2.2H12.6C13.26 2.2 13.8 2.74 13.8 3.4V5" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                        <path d="M2.2 11V12.6C2.2 13.26 2.74 13.8 3.4 13.8H5" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                        <path d="M11 13.8H12.6C13.26 13.8 13.8 13.26 13.8 12.6V11" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                        <rect x="4.4" y="4.6" width="7.2" height="6.8" rx="1.6" fill="#ffffff" />
+                                    </svg>
+                                </span>
+                                <span className="framefic-wm-text">Made with</span>
+                                <span className="framefic-wm-brand">Framefic</span>
+                            </a>
+                        </div>
+                    ) : null}
                 </div>
             ) : null}
         </div>
@@ -2086,6 +2429,31 @@ ChatBubbles.defaultProps = {
 }
 
 addPropertyControls(ChatBubbles, {
+    isPro: {
+        type: ControlType.Boolean,
+        title: "Is Pro",
+        defaultValue: IS_SUBSCRIBED,
+        hidden() {
+            return true
+        },
+    },
+    isTrial: {
+        type: ControlType.Boolean,
+        title: "Is Trial",
+        defaultValue: IS_TRIAL,
+        hidden() {
+            return true
+        },
+    },
+    subscriptionLocked: {
+        type: ControlType.Enum,
+        options: ["locked"],
+        optionTitles: ["Upgrade to PRO to customize"],
+        title: "Status",
+        hidden() {
+            return !!(IS_SUBSCRIBED || IS_TRIAL)
+        },
+    },
     canvasPreview: {
         type: ControlType.Enum,
         title: "Canvas State",
@@ -2633,6 +3001,8 @@ export function buildControlPayload(config: ChatConfig) {
         customLabel: config.channels.find((c) => c.id === "custom")?.label || "Custom",
         agentsData: JSON.stringify(config.agents || []),
         scheduleDaysData: JSON.stringify(config.scheduleDays || [1, 2, 3, 4, 5]),
+        isPro: Boolean(cachedIsPaid && !cachedIsTrial),
+        isTrial: Boolean(cachedIsPaid && cachedIsTrial),
     }
 }
 
@@ -2646,7 +3016,14 @@ export function scheduleDebouncedCodeFileSync(config: ChatConfig) {
                 if (!allowed) return
             }
             const siteInfo = await getSiteInfo().catch(() => null)
-            const code = generateComponentCode(config, siteInfo?.siteId, siteInfo?.siteUrl)
+            const code = generateComponentCode(
+                config,
+                siteInfo?.siteId,
+                siteInfo?.siteUrl,
+                cachedIsPaid,
+                cachedIsTrial,
+                cachedApiBaseUrl
+            )
             const files = await framer.getCodeFiles()
             const file = files.find((f) => f.name === "ChatBubbles.tsx" || f.name === "ChatBubbles" || f.name === "Chatfic")
             if (file) {
@@ -2703,9 +3080,22 @@ export async function syncCanvasInstance(config: ChatConfig): Promise<boolean> {
     }
 }
 
-export async function insertCanvasComponent(config: ChatConfig): Promise<{ success: boolean; message: string }> {
+export async function insertCanvasComponent(
+    config: ChatConfig,
+    isPaid: boolean = cachedIsPaid,
+    isTrial: boolean = cachedIsTrial
+): Promise<{ success: boolean; message: string }> {
+    cachedIsPaid = isPaid
+    cachedIsTrial = isTrial
     const siteInfo = await getSiteInfo().catch(() => null)
-    const code = generateComponentCode(config, siteInfo?.siteId, siteInfo?.siteUrl)
+    const code = generateComponentCode(
+        config,
+        siteInfo?.siteId,
+        siteInfo?.siteUrl,
+        isPaid,
+        isTrial,
+        cachedApiBaseUrl
+    )
     const fileName = "ChatBubbles.tsx"
 
     try {
