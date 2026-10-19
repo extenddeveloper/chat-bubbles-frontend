@@ -1371,6 +1371,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
         top: !isBottom ? 68 : "auto",
         right: isRight ? 0 : "auto",
         left: !isRight ? 0 : "auto",
+        gap: 10,
         ...(layout === "grid"
             ? {
                   display: "grid",
@@ -1385,7 +1386,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
               }
             : {
                   display: "flex",
-                  flexDirection: isBottom ? "column-reverse" : "column",
+                  flexDirection: "column",
                   alignItems: isRight ? "flex-end" : "flex-start",
               }),
     }
@@ -1403,6 +1404,27 @@ export default function ChatBubbles(props: ChatBubblesProps) {
         display: "flex",
         flexDirection: "column",
         transition: "filter 0.3s ease, opacity 0.3s ease",
+    }
+    const modalInnerContentStyle: React.CSSProperties = {
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        flex: 1,
+        minHeight: 0,
+        ...(isLocked ? lockedBlurContentStyle : undefined),
+    }
+    const buttonsContainerWithLockStyle: React.CSSProperties = {
+        ...buttonsContainerStyle,
+        ...(isLocked
+            ? {
+                  filter: "blur(6px)",
+                  WebkitFilter: "blur(6px)",
+                  opacity: 0.45,
+                  pointerEvents: "none",
+                  userSelect: "none",
+              }
+            : undefined),
     }
     const proLockedModalOverlayStyle: React.CSSProperties = {
         position: "absolute",
@@ -1428,15 +1450,15 @@ export default function ChatBubbles(props: ChatBubblesProps) {
     }
     const proLockedButtonsOverlayStyle: React.CSSProperties = {
         position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
+        bottom: isBottom ? 68 : "auto",
+        top: !isBottom ? 68 : "auto",
+        right: isRight ? 0 : "auto",
+        left: !isRight ? 0 : "auto",
         zIndex: 100,
-        minWidth: 220,
-        minHeight: 130,
+        minWidth: 200,
+        minHeight: 120,
         borderRadius: 16,
-        background: "rgba(10, 10, 12, 0.72)",
+        background: "rgba(10, 10, 12, 0.75)",
         backdropFilter: "blur(6px)",
         WebkitBackdropFilter: "blur(6px)",
         display: "flex",
@@ -1595,7 +1617,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                 color: #ffffff !important;
                 text-decoration: none !important;
               }
-              a.cf-channel-btn svg, .cf-channel-btn svg, a svg, .cf-canvas-icon-inner svg {
+              a.cf-channel-btn svg, .cf-channel-btn svg, .cf-canvas-icon-inner svg {
                 width: 22px !important;
                 height: 22px !important;
                 max-width: 22px !important;
@@ -1970,58 +1992,91 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                 display: flex !important;
                 align-items: center !important;
                 justify-content: center !important;
-                padding: 10px 14px 12px !important;
+                padding: 6px 12px 6px !important;
                 width: 100% !important;
                 box-sizing: border-box !important;
                 background: transparent !important;
                 user-select: none !important;
                 pointer-events: auto !important;
                 flex-shrink: 0 !important;
+                grid-column: 1 / -1 !important;
+                overflow: visible !important;
               }
               .cf-canvas-wm-buttons {
-                padding: 6px 0 0 !important;
-                width: auto !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 100% !important;
+                align-self: center !important;
+                justify-content: center !important;
+                overflow: visible !important;
               }
               .framefic-wm-link {
                 display: inline-flex !important;
                 align-items: center !important;
-                gap: 5px !important;
-                padding: 4px 10px 4px 6px !important;
+                justify-content: center !important;
+                gap: 3.5px !important;
+                padding: 2px 7px 2px 4.5px !important;
                 border-radius: 999px !important;
                 background: #0f172a !important;
                 border: 1px solid rgba(255, 255, 255, 0.16) !important;
                 text-decoration: none !important;
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', Helvetica, Arial, sans-serif !important;
-                font-size: 11px !important;
+                font-size: 9.5px !important;
                 line-height: 1 !important;
                 cursor: pointer !important;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22) !important;
+                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22) !important;
                 transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+                white-space: nowrap !important;
+                flex-shrink: 0 !important;
+                box-sizing: border-box !important;
+                width: max-content !important;
+                max-width: max-content !important;
+                overflow: visible !important;
               }
               .framefic-wm-link:hover {
-                transform: translateY(-1px) scale(1.03) !important;
+                transform: translateY(-1px) scale(1.02) !important;
                 border-color: rgba(82, 113, 255, 0.5) !important;
-                box-shadow: 0 4px 14px rgba(82, 113, 255, 0.28) !important;
+                box-shadow: 0 2px 8px rgba(82, 113, 255, 0.28) !important;
               }
               .framefic-wm-icon {
-                width: 14px !important;
-                height: 14px !important;
-                border-radius: 4px !important;
+                width: 11px !important;
+                height: 11px !important;
+                min-width: 11px !important;
+                min-height: 11px !important;
+                max-width: 11px !important;
+                max-height: 11px !important;
+                border-radius: 2.5px !important;
                 background: linear-gradient(135deg, #5271ff 0%, #3557ff 100%) !important;
                 display: inline-flex !important;
                 align-items: center !important;
                 justify-content: center !important;
-                box-shadow: 0 1px 3px rgba(82, 113, 255, 0.35), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.4) !important;
+                box-shadow: 0 1px 2px rgba(82, 113, 255, 0.35) !important;
                 flex-shrink: 0 !important;
-                transition: transform 0.22s ease !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: hidden !important;
               }
-              .framefic-wm-link:hover .framefic-wm-icon {
-                transform: scale(1.08) !important;
+              .framefic-wm-icon svg {
+                width: 7px !important;
+                height: 7px !important;
+                min-width: 7px !important;
+                min-height: 7px !important;
+                max-width: 7px !important;
+                max-height: 7px !important;
+                display: block !important;
+                margin: 0 !important;
+                padding: 0 !important;
               }
               .framefic-wm-text {
                 color: #94a3b8 !important;
+                font-size: 9.5px !important;
                 font-weight: 500 !important;
                 letter-spacing: 0.1px !important;
+                white-space: nowrap !important;
+                word-break: keep-all !important;
+                line-height: 1 !important;
+                display: inline-block !important;
+                flex-shrink: 0 !important;
                 transition: color 0.2s ease !important;
               }
               .framefic-wm-link:hover .framefic-wm-text {
@@ -2029,8 +2084,14 @@ export default function ChatBubbles(props: ChatBubblesProps) {
               }
               .framefic-wm-brand {
                 color: #ffffff !important;
+                font-size: 9.5px !important;
                 font-weight: 600 !important;
-                letter-spacing: 0.2px !important;
+                letter-spacing: 0.15px !important;
+                white-space: nowrap !important;
+                word-break: keep-all !important;
+                line-height: 1 !important;
+                display: inline-block !important;
+                flex-shrink: 0 !important;
               }
             \`}</style>
             <button
@@ -2096,7 +2157,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
 
             {isOpen && widgetMode === "modal" ? (
                 <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
-                    <div style={isLocked ? lockedBlurContentStyle : undefined}>
+                    <div style={modalInnerContentStyle}>
                         <div className="cf-canvas-modal-header" style={headerWrapStyle}>
                             <div className="cf-canvas-modal-top">
                                 {selectedAgent ? (
@@ -2310,11 +2371,11 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                                     className="framefic-wm-link"
                                 >
                                     <span className="framefic-wm-icon">
-                                        <svg width="10" height="10" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M2.2 5V3.4C2.2 2.74 2.74 2.2 3.4 2.2H5" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                            <path d="M11 2.2H12.6C13.26 2.2 13.8 2.74 13.8 3.4V5" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                            <path d="M2.2 11V12.6C2.2 13.26 2.74 13.8 3.4 13.8H5" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                            <path d="M11 13.8H12.6C13.26 13.8 13.8 13.26 13.8 12.6V11" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                        <svg width="7" height="7" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M2.2 5V3.4C2.2 2.74 2.74 2.2 3.4 2.2H5" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                                            <path d="M11 2.2H12.6C13.26 2.2 13.8 2.74 13.8 3.4V5" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                                            <path d="M2.2 11V12.6C2.2 13.26 2.74 13.8 3.4 13.8H5" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                                            <path d="M11 13.8H12.6C13.26 13.8 13.8 13.26 13.8 12.6V11" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
                                             <rect x="4.4" y="4.6" width="7.2" height="6.8" rx="1.6" fill="#ffffff" />
                                         </svg>
                                     </span>
@@ -2343,8 +2404,8 @@ export default function ChatBubbles(props: ChatBubblesProps) {
             ) : null}
 
             {isOpen && widgetMode === "buttons" ? (
-                <div className="cf-canvas-buttons-container" style={buttonsContainerStyle}>
-                    <div style={isLocked ? lockedBlurContentStyle : undefined}>
+                <>
+                    <div className="cf-canvas-buttons-container" style={buttonsContainerWithLockStyle}>
                         {channels.map((channel, idx) => {
                             const channelItemStyle: React.CSSProperties = {
                                 flexDirection: isRight ? "row-reverse" : "row",
@@ -2440,11 +2501,11 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                                     className="framefic-wm-link"
                                 >
                                     <span className="framefic-wm-icon">
-                                        <svg width="10" height="10" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M2.2 5V3.4C2.2 2.74 2.74 2.2 3.4 2.2H5" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                            <path d="M11 2.2H12.6C13.26 2.2 13.8 2.74 13.8 3.4V5" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                            <path d="M2.2 11V12.6C2.2 13.26 2.74 13.8 3.4 13.8H5" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                            <path d="M11 13.8H12.6C13.26 13.8 13.8 13.26 13.8 12.6V11" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                        <svg width="7" height="7" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M2.2 5V3.4C2.2 2.74 2.74 2.2 3.4 2.2H5" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                                            <path d="M11 2.2H12.6C13.26 2.2 13.8 2.74 13.8 3.4V5" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                                            <path d="M2.2 11V12.6C2.2 13.26 2.74 13.8 3.4 13.8H5" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                                            <path d="M11 13.8H12.6C13.26 13.8 13.8 13.26 13.8 12.6V11" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
                                             <rect x="4.4" y="4.6" width="7.2" height="6.8" rx="1.6" fill="#ffffff" />
                                         </svg>
                                     </span>
@@ -2469,7 +2530,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                             </div>
                         </div>
                     ) : null}
-                </div>
+                </>
             ) : null}
         </div>
     )
