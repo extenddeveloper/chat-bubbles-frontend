@@ -30,7 +30,7 @@ export const PLANS = {
 }
 
 export const PLAN_FEATURES = [
-    "All 14+ chat channels unlocked",
+    "19 channels widget",
     "Unlimited multi-agent support team",
     "Full custom themes & color gradients",
     "Canvas style controls & zero watermarks",
