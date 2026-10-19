@@ -6,12 +6,12 @@ import { SVG_AVATAR_PRESETS } from "../core/avatars"
 import { getSiteInfo } from "../lib/framer/project"
 import { BACKEND_BASE_URL } from "../config/backend"
 
-let cachedIsPaid: boolean = false
+let cachedHasAccess: boolean = false
 let cachedIsTrial: boolean = false
 let cachedApiBaseUrl: string = BACKEND_BASE_URL
 
-export function setCanvasLicensingState(isPaid: boolean, isTrial: boolean, apiBaseUrl?: string) {
-    cachedIsPaid = isPaid
+export function setCanvasLicensingState(hasAccess: boolean, isTrial: boolean, apiBaseUrl?: string) {
+    cachedHasAccess = hasAccess
     cachedIsTrial = isTrial
     if (apiBaseUrl) cachedApiBaseUrl = apiBaseUrl
 }
@@ -20,12 +20,12 @@ export function generateComponentCode(
     config: ChatConfig,
     siteId?: string | null,
     siteUrl?: string | null,
-    isPaid: boolean = cachedIsPaid,
+    hasAccess: boolean = cachedHasAccess,
     isTrial: boolean = cachedIsTrial,
     apiBaseUrl: string = cachedApiBaseUrl
 ): string {
-    const isActualPaid = Boolean(isPaid && !isTrial)
-    const isActualTrial = Boolean(isPaid && isTrial)
+    const isActualPaid = Boolean(hasAccess && !isTrial)
+    const isActualTrial = Boolean(hasAccess && isTrial)
     const iconEntries = Object.entries(ICONS)
         .map(([key, svg]) => `  ${JSON.stringify(key)}: ${JSON.stringify(svg)},`)
         .join("\n")
@@ -82,7 +82,7 @@ var SUBSCRIPTION_CACHE_KEY = "cf_sub_" + __CHAT_BUBBLES_SITE_ID__;
 var SUBSCRIPTION_CACHE_TTL = 10 * 1000;
 
 function checkSubscriptionFromServer(siteId: string, apiUrl: string) {
-  if (!siteId || !apiUrl) return Promise.resolve(null)
+  if (!siteId) return Promise.resolve(null)
   var cacheRaw: string | null = null
   try { cacheRaw = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(SUBSCRIPTION_CACHE_KEY) : null } catch (e) {}
   if (cacheRaw) {
@@ -101,19 +101,24 @@ function checkSubscriptionFromServer(siteId: string, apiUrl: string) {
       }
     } catch (e) {}
   }
-  var cleanApiUrl = apiUrl || ""
-  if (typeof window !== "undefined" && window.location && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
-    if (/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?/i.test(cleanApiUrl)) {
-      cleanApiUrl = "https://app.framefic.com/chat-bubbles"
+
+  function fetchStatus(base: string) {
+    if (!base) return Promise.resolve(null)
+    var clean = base
+    while (clean.charAt(clean.length - 1) === "/") clean = clean.slice(0, -1)
+    var url = clean + "/api/subscription-status?siteId=" + encodeURIComponent(siteId)
+    return fetch(url).then(function (r) {
+      if (!r.ok) return null
+      return r.json()
+    }).catch(function () { return null })
+  }
+
+  return fetchStatus(apiUrl).then(function (data) {
+    if (data && typeof data.isPaid === "boolean") return data
+    if (apiUrl && !/^https?:\\/\\/app\\.framefic\\.com/i.test(apiUrl)) {
+      return fetchStatus("https://app.framefic.com/chat-bubbles")
     }
-  }
-  while (cleanApiUrl.charAt(cleanApiUrl.length - 1) === "/") {
-    cleanApiUrl = cleanApiUrl.slice(0, -1)
-  }
-  var url = cleanApiUrl + "/api/subscription-status?siteId=" + encodeURIComponent(siteId)
-  return fetch(url).then(function (r) {
-    if (!r.ok) return null
-    return r.json()
+    return null
   }).then(function (data) {
     if (!data || typeof data.isPaid !== "boolean") return null
     var isPaid = data.isPaid && ["monthly", "yearly", "lifetime", "trial"].indexOf(data.plan) >= 0 && ["active", "trialing", "paid", "Scheduled to cancel"].indexOf(data.status) >= 0
@@ -837,11 +842,11 @@ export default function ChatBubbles(props: ChatBubblesProps) {
         } catch {}
     }, [isCanvas, enableAnalytics, isWidgetHidden, currentLocationPath])
 
-    // Web Audio Synthesizer chime for notifications (never plays on Canvas design preview or when hidden)
+    // Web Audio Synthesizer chime for notifications (never plays on Canvas design preview or when hidden or locked)
     const playNotificationChime = React.useCallback((force: boolean = false) => {
-        if (isCanvas || !enableSound || isWidgetHidden) return
+        if (isCanvas || !enableSound || isWidgetHidden || !runtimeSubscribed) return
         playNotificationChimeDirect(force)
-    }, [isCanvas, enableSound, isWidgetHidden])
+    }, [isCanvas, enableSound, isWidgetHidden, runtimeSubscribed])
 
     // Unlock audio on real user gesture (click/tap/scroll/key) and immediately flush pending chime
     React.useEffect(() => {
@@ -1385,31 +1390,65 @@ export default function ChatBubbles(props: ChatBubblesProps) {
               }),
     }
 
-    // PRO Feature Locked: Early return if subscription or trial has expired
-    const proLockedBoxStyle: React.CSSProperties = {
-        width: isCanvas ? "100%" : "300px",
-        minHeight: 140,
-        position: isCanvas ? "relative" : "fixed",
-        bottom: isCanvas ? "auto" : (isBottom ? 24 : "auto"),
-        top: isCanvas ? "auto" : (!isBottom ? 24 : "auto"),
-        right: isCanvas ? "auto" : (isRight ? 24 : "auto"),
-        left: isCanvas ? "auto" : (!isRight ? 24 : "auto"),
-        zIndex: 999999,
-        borderRadius: 16,
-        border: "1px dashed rgba(255, 255, 255, 0.25)",
-        boxSizing: "border-box",
-        overflow: "hidden",
-        background: "#121214",
+    // Pro licensing & lock state
+    const isLocked = !runtimeSubscribed
+
+    const lockedBlurContentStyle: React.CSSProperties = {
+        filter: "blur(6px)",
+        WebkitFilter: "blur(6px)",
+        opacity: 0.45,
+        pointerEvents: "none",
+        userSelect: "none",
+        width: "100%",
         display: "flex",
         flexDirection: "column",
-        justifyContent: "center",
+        transition: "filter 0.3s ease, opacity 0.3s ease",
+    }
+    const proLockedModalOverlayStyle: React.CSSProperties = {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 100,
+        borderRadius: 24,
+        background: "rgba(10, 10, 12, 0.65)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
+        display: "flex",
+        flexDirection: "column",
         alignItems: "center",
+        justifyContent: "center",
         padding: "24px",
         textAlign: "center",
         color: "#ffffff",
         fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-        boxShadow: "0 12px 32px rgba(0, 0, 0, 0.36)",
         userSelect: "none",
+        boxSizing: "border-box",
+    }
+    const proLockedButtonsOverlayStyle: React.CSSProperties = {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 100,
+        minWidth: 220,
+        minHeight: 130,
+        borderRadius: 16,
+        background: "rgba(10, 10, 12, 0.72)",
+        backdropFilter: "blur(6px)",
+        WebkitBackdropFilter: "blur(6px)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "16px",
+        textAlign: "center",
+        color: "#ffffff",
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+        userSelect: "none",
+        boxSizing: "border-box",
     }
     const proLockedIconWrapStyle: React.CSSProperties = {
         background: "rgba(255, 255, 255, 0.1)",
@@ -1421,6 +1460,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
         justifyContent: "center",
         alignItems: "center",
         marginBottom: 12,
+        boxShadow: "0 4px 16px rgba(0, 0, 0, 0.2)",
     }
     const proLockedTitleStyle: React.CSSProperties = {
         fontSize: 14,
@@ -1434,26 +1474,6 @@ export default function ChatBubbles(props: ChatBubblesProps) {
         maxWidth: 260,
         lineHeight: 1.5,
         color: "#94a3b8",
-    }
-
-    if (!runtimeSubscribed) {
-        return (
-            <div
-                className="cf-canvas-pro-locked-container"
-                style={proLockedBoxStyle}
-            >
-                <div style={proLockedIconWrapStyle}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#708AFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                    </svg>
-                </div>
-                <div style={proLockedTitleStyle}>PRO Feature Locked</div>
-                <div style={proLockedDescStyle}>
-                    Upgrade this site to a PRO plan in the Chat Bubbles plugin to activate.
-                </div>
-            </div>
-        )
     }
 
     if (isWidgetHidden) return null
@@ -2050,7 +2070,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                 ) : null}
             </button>
 
-            {greetingEnabled && greetingVisible && !greetingDismissed && !isOpen ? (
+            {!isLocked && greetingEnabled && greetingVisible && !greetingDismissed && !isOpen ? (
                 <div
                     className="cf-canvas-greeting"
                     style={greetingPosStyle}
@@ -2076,18 +2096,44 @@ export default function ChatBubbles(props: ChatBubblesProps) {
 
             {isOpen && widgetMode === "modal" ? (
                 <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
-                    <div className="cf-canvas-modal-header" style={headerWrapStyle}>
-                        <div className="cf-canvas-modal-top">
-                            {selectedAgent ? (
+                    <div style={isLocked ? lockedBlurContentStyle : undefined}>
+                        <div className="cf-canvas-modal-header" style={headerWrapStyle}>
+                            <div className="cf-canvas-modal-top">
+                                {selectedAgent ? (
+                                    <button
+                                        type="button"
+                                        className="cf-header-btn cf-header-back-btn"
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            setNavDirection("backward")
+                                            setSelectedAgent(null)
+                                        }}
+                                        aria-label="Back to agent list"
+                                    >
+                                        <svg
+                                            width="11"
+                                            height="11"
+                                            viewBox="0 0 16 16"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2.2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        >
+                                            <path d="M9.5 4L5.5 8l4 4" />
+                                        </svg>
+                                    </button>
+                                ) : null}
                                 <button
                                     type="button"
-                                    className="cf-header-btn cf-header-back-btn"
+                                    className="cf-header-btn cf-header-close-btn"
                                     onClick={(e) => {
                                         e.stopPropagation()
-                                        setNavDirection("backward")
+                                        setIsOpen(false)
                                         setSelectedAgent(null)
+                                        setNavDirection("forward")
                                     }}
-                                    aria-label="Back to agent list"
+                                    aria-label="Close chat"
                                 >
                                     <svg
                                         width="11"
@@ -2099,207 +2145,198 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                                         strokeLinecap="round"
                                         strokeLinejoin="round"
                                     >
-                                        <path d="M9.5 4L5.5 8l4 4" />
+                                        <path d="M4.5 4.5l7 7M11.5 4.5l-7 7" />
                                     </svg>
                                 </button>
-                            ) : null}
-                            <button
-                                type="button"
-                                className="cf-header-btn cf-header-close-btn"
-                                onClick={(e) => {
-                                    e.stopPropagation()
-                                    setIsOpen(false)
-                                    setSelectedAgent(null)
-                                    setNavDirection("forward")
-                                }}
-                                aria-label="Close chat"
+                            </div>
+                            <div
+                                key={selectedAgent ? "header-agent-" + selectedAgent.id : "header-main"}
+                                className={"cf-canvas-header-info" + (selectedAgent ? " cf-view-slide-forward" : (navDirection === "backward" ? " cf-view-slide-backward" : ""))}
                             >
-                                <svg
-                                    width="11"
-                                    height="11"
-                                    viewBox="0 0 16 16"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2.2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
+                                <h3 className="cf-canvas-modal-h3">
+                                    {selectedAgent ? selectedAgent.name : modalTitle}
+                                </h3>
+                                <p className="cf-canvas-modal-p">
+                                    {selectedAgent ? selectedAgent.role : modalSubtitle}
+                                </p>
+                                {!selectedAgent && (modalResponseTime || (scheduleEnabled && isOffline)) ? (
+                                    <span className={"cf-canvas-response-badge" + (isOffline ? " offline" : "")}>
+                                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.2l2.2 1.3"/></svg>
+                                        <span>{isOffline ? (scheduleOfflineText || "Back tomorrow at 9:00 AM") : modalResponseTime}</span>
+                                    </span>
+                                ) : null}
+                            </div>
+                        </div>
+
+                        {!selectedAgent ? (
+                            <div
+                                key="agents-list"
+                                className={"cf-canvas-agents-wrap" + (navDirection === "backward" ? " cf-view-slide-backward" : "")}
+                            >
+                                {agents.map((agent: any) => {
+                                    const agentBadgeBgStyle: React.CSSProperties = {
+                                        background: agent.color,
+                                    }
+                                    return (
+                                        <div
+                                            key={agent.id}
+                                            className="cf-canvas-agent-card"
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                setNavDirection("forward")
+                                                setSelectedAgent(agent)
+                                                setCustomMessage(agent.message || "")
+                                            }}
+                                        >
+                                            <div className="cf-canvas-agent-av-wrap">
+                                                <img
+                                                    src={agent.avatar}
+                                                    alt={agent.name}
+                                                    className="cf-canvas-agent-av-img"
+                                                />
+                                                <span
+                                                    className={"cf-canvas-agent-av-badge" + (isOffline ? " offline" : "")}
+                                                    style={isOffline ? { background: "#6b7280" } : agentBadgeBgStyle}
+                                                    dangerouslySetInnerHTML={{ __html: ICONS[agent.channelId] || "" }}
+                                                />
+                                            </div>
+                                            <div className="cf-canvas-agent-info">
+                                                <div className="cf-canvas-agent-name-row">
+                                                    <span className="cf-canvas-agent-name">{agent.name}</span>
+                                                    {agent.online !== false && !isOffline ? (
+                                                        <span className="cf-canvas-agent-online-dot" />
+                                                    ) : null}
+                                                </div>
+                                                <div className="cf-canvas-agent-role">
+                                                    {agent.role}{isOffline ? " • Offline" : ""}
+                                                </div>
+                                            </div>
+                                            <span className="cf-canvas-agent-arrow">
+                                                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 3.5L10.5 8L6 12.5"/></svg>
+                                            </span>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        ) : (
+                            <div
+                                key={"chat-view-" + selectedAgent.id}
+                                className="cf-canvas-chat-wrap cf-view-slide-forward"
+                            >
+                                <div className="cf-canvas-chat-bubble">
+                                    {modalChatBubble || selectedAgent.message || "We typically reply within a few minutes. How can we help you today?"}
+                                </div>
+                                <input
+                                    type="text"
+                                    className="cf-canvas-chat-input"
+                                    placeholder={selectedAgent.message ? selectedAgent.message : "Type your message..."}
+                                    maxLength={500}
+                                    value={customMessage}
+                                    onChange={(e) => setCustomMessage(e.target.value)}
+                                />
+                                <a
+                                    href={(() => {
+                                        const msg = customMessage.trim() || (selectedAgent.message || "").trim()
+                                        const rawVal = String(selectedAgent.value || "").trim()
+                                        if (selectedAgent.channelId === "whatsapp") {
+                                            const clean = rawVal.replace(/[^0-9]/g, "")
+                                            return clean ? "https://wa.me/" + clean + (msg ? "?text=" + encodeURIComponent(msg) : "") : "https://wa.me/"
+                                        }
+                                        if (selectedAgent.channelId === "telegram") {
+                                            const handle = rawVal.replace(/^@/, "").replace(/[^a-zA-Z0-9._-]/g, "")
+                                            return handle ? "https://t.me/" + handle + (msg ? "?text=" + encodeURIComponent(msg) : "") : "https://t.me/"
+                                        }
+                                        if (selectedAgent.channelId === "email") {
+                                            const cleanEmail = rawVal.replace(/[^a-zA-Z0-9._%+\-@]/g, "")
+                                            const emailParams: string[] = []
+                                            const activeSub = (selectedAgent as any).emailSubject || emailSubject || ""
+                                            if (activeSub && activeSub.trim()) emailParams.push("subject=" + encodeURIComponent(activeSub.trim()))
+                                            if (msg) emailParams.push("body=" + encodeURIComponent(msg))
+                                            const emailQuery = emailParams.length > 0 ? "?" + emailParams.join("&") : ""
+                                            return cleanEmail ? "mailto:" + cleanEmail + emailQuery : "mailto:"
+                                        }
+                                        return selectedAgent.url || "#"
+                                    })()}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="cf-canvas-start-btn"
+                                    style={headerWrapStyle}
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        if (enableAnalytics && typeof window !== "undefined") {
+                                            try {
+                                                if (Array.isArray((window as any).dataLayer)) {
+                                                    (window as any).dataLayer.push({
+                                                        event: "chat_bubbles_click",
+                                                        channel: selectedAgent.channelId,
+                                                        channel_label: selectedAgent.channelLabel || selectedAgent.channelId,
+                                                        agent_name: selectedAgent.name,
+                                                    })
+                                                }
+                                                if (typeof (window as any).gtag === "function") {
+                                                    (window as any).gtag("event", "chat_bubbles_click", {
+                                                        channel: selectedAgent.channelId,
+                                                        channel_label: selectedAgent.channelLabel || selectedAgent.channelId,
+                                                        agent_name: selectedAgent.name,
+                                                    })
+                                                }
+                                                window.dispatchEvent(new CustomEvent("chat_bubbles_interaction", {
+                                                    detail: {
+                                                        channel: selectedAgent.channelId,
+                                                        channelLabel: selectedAgent.channelLabel || selectedAgent.channelId,
+                                                        agentName: selectedAgent.name,
+                                                    }
+                                                }))
+                                                sendTrackingEvent("click", selectedAgent.channelId)
+                                            } catch {}
+                                        }
+                                        if (closeAfterClick) {
+                                            setIsOpen(false)
+                                            setSelectedAgent(null)
+                                            setNavDirection("forward")
+                                        }
+                                    }}
                                 >
-                                    <path d="M4.5 4.5l7 7M11.5 4.5l-7 7" />
-                                </svg>
-                            </button>
-                        </div>
-                        <div
-                            key={selectedAgent ? "header-agent-" + selectedAgent.id : "header-main"}
-                            className={"cf-canvas-header-info" + (selectedAgent ? " cf-view-slide-forward" : (navDirection === "backward" ? " cf-view-slide-backward" : ""))}
-                        >
-                            <h3 className="cf-canvas-modal-h3">
-                                {selectedAgent ? selectedAgent.name : modalTitle}
-                            </h3>
-                            <p className="cf-canvas-modal-p">
-                                {selectedAgent ? selectedAgent.role : modalSubtitle}
-                            </p>
-                            {!selectedAgent && (modalResponseTime || (scheduleEnabled && isOffline)) ? (
-                                <span className={"cf-canvas-response-badge" + (isOffline ? " offline" : "")}>
-                                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.2l2.2 1.3"/></svg>
-                                    <span>{isOffline ? (scheduleOfflineText || "Back tomorrow at 9:00 AM") : modalResponseTime}</span>
-                                </span>
-                            ) : null}
-                        </div>
+                                    {modalStartChatText}
+                                </a>
+                            </div>
+                        )}
+                        {runtimeIsTrial && !isLocked ? (
+                            <div className="cf-canvas-wm-wrap">
+                                <a
+                                    href="https://framefic.com"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="framefic-wm-link"
+                                >
+                                    <span className="framefic-wm-icon">
+                                        <svg width="10" height="10" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M2.2 5V3.4C2.2 2.74 2.74 2.2 3.4 2.2H5" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                            <path d="M11 2.2H12.6C13.26 2.2 13.8 2.74 13.8 3.4V5" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                            <path d="M2.2 11V12.6C2.2 13.26 2.74 13.8 3.4 13.8H5" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                            <path d="M11 13.8H12.6C13.26 13.8 13.8 13.26 13.8 12.6V11" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                            <rect x="4.4" y="4.6" width="7.2" height="6.8" rx="1.6" fill="#ffffff" />
+                                        </svg>
+                                    </span>
+                                    <span className="framefic-wm-text">Made with</span>
+                                    <span className="framefic-wm-brand">Framefic</span>
+                                </a>
+                            </div>
+                        ) : null}
                     </div>
 
-                    {!selectedAgent ? (
-                        <div
-                            key="agents-list"
-                            className={"cf-canvas-agents-wrap" + (navDirection === "backward" ? " cf-view-slide-backward" : "")}
-                        >
-                            {agents.map((agent: any) => {
-                                const agentBadgeBgStyle: React.CSSProperties = {
-                                    background: agent.color,
-                                }
-                                return (
-                                    <div
-                                        key={agent.id}
-                                        className="cf-canvas-agent-card"
-                                        onClick={(e) => {
-                                            e.stopPropagation()
-                                            setNavDirection("forward")
-                                            setSelectedAgent(agent)
-                                            setCustomMessage(agent.message || "")
-                                        }}
-                                    >
-                                        <div className="cf-canvas-agent-av-wrap">
-                                            <img
-                                                src={agent.avatar}
-                                                alt={agent.name}
-                                                className="cf-canvas-agent-av-img"
-                                            />
-                                            <span
-                                                className={"cf-canvas-agent-av-badge" + (isOffline ? " offline" : "")}
-                                                style={isOffline ? { background: "#6b7280" } : agentBadgeBgStyle}
-                                                dangerouslySetInnerHTML={{ __html: ICONS[agent.channelId] || "" }}
-                                            />
-                                        </div>
-                                        <div className="cf-canvas-agent-info">
-                                            <div className="cf-canvas-agent-name-row">
-                                                <span className="cf-canvas-agent-name">{agent.name}</span>
-                                                {agent.online !== false && !isOffline ? (
-                                                    <span className="cf-canvas-agent-online-dot" />
-                                                ) : null}
-                                            </div>
-                                            <div className="cf-canvas-agent-role">
-                                                {agent.role}{isOffline ? " • Offline" : ""}
-                                            </div>
-                                        </div>
-                                        <span className="cf-canvas-agent-arrow">
-                                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 3.5L10.5 8L6 12.5"/></svg>
-                                        </span>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    ) : (
-                        <div
-                            key={"chat-view-" + selectedAgent.id}
-                            className="cf-canvas-chat-wrap cf-view-slide-forward"
-                        >
-                            <div className="cf-canvas-chat-bubble">
-                                {modalChatBubble || selectedAgent.message || "We typically reply within a few minutes. How can we help you today?"}
+                    {isLocked ? (
+                        <div className="cf-canvas-pro-locked-overlay" style={proLockedModalOverlayStyle}>
+                            <div style={proLockedIconWrapStyle}>
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#708AFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                </svg>
                             </div>
-                            <input
-                                type="text"
-                                className="cf-canvas-chat-input"
-                                placeholder={selectedAgent.message ? selectedAgent.message : "Type your message..."}
-                                maxLength={500}
-                                value={customMessage}
-                                onChange={(e) => setCustomMessage(e.target.value)}
-                            />
-                            <a
-                                href={(() => {
-                                    const msg = customMessage.trim() || (selectedAgent.message || "").trim()
-                                    const rawVal = String(selectedAgent.value || "").trim()
-                                    if (selectedAgent.channelId === "whatsapp") {
-                                        const clean = rawVal.replace(/[^0-9]/g, "")
-                                        return clean ? "https://wa.me/" + clean + (msg ? "?text=" + encodeURIComponent(msg) : "") : "https://wa.me/"
-                                    }
-                                    if (selectedAgent.channelId === "telegram") {
-                                        const handle = rawVal.replace(/^@/, "").replace(/[^a-zA-Z0-9._-]/g, "")
-                                        return handle ? "https://t.me/" + handle + (msg ? "?text=" + encodeURIComponent(msg) : "") : "https://t.me/"
-                                    }
-                                    if (selectedAgent.channelId === "email") {
-                                        const cleanEmail = rawVal.replace(/[^a-zA-Z0-9._%+\-@]/g, "")
-                                        const emailParams: string[] = []
-                                        const activeSub = (selectedAgent as any).emailSubject || emailSubject || ""
-                                        if (activeSub && activeSub.trim()) emailParams.push("subject=" + encodeURIComponent(activeSub.trim()))
-                                        if (msg) emailParams.push("body=" + encodeURIComponent(msg))
-                                        const emailQuery = emailParams.length > 0 ? "?" + emailParams.join("&") : ""
-                                        return cleanEmail ? "mailto:" + cleanEmail + emailQuery : "mailto:"
-                                    }
-                                    return selectedAgent.url || "#"
-                                })()}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="cf-canvas-start-btn"
-                                style={headerWrapStyle}
-                                onClick={(e) => {
-                                    e.stopPropagation()
-                                    if (enableAnalytics && typeof window !== "undefined") {
-                                        try {
-                                            if (Array.isArray((window as any).dataLayer)) {
-                                                (window as any).dataLayer.push({
-                                                    event: "chat_bubbles_click",
-                                                    channel: selectedAgent.channelId,
-                                                    channel_label: selectedAgent.channelLabel || selectedAgent.channelId,
-                                                    agent_name: selectedAgent.name,
-                                                })
-                                            }
-                                            if (typeof (window as any).gtag === "function") {
-                                                (window as any).gtag("event", "chat_bubbles_click", {
-                                                    channel: selectedAgent.channelId,
-                                                    channel_label: selectedAgent.channelLabel || selectedAgent.channelId,
-                                                    agent_name: selectedAgent.name,
-                                                })
-                                            }
-                                            window.dispatchEvent(new CustomEvent("chat_bubbles_interaction", {
-                                                detail: {
-                                                    channel: selectedAgent.channelId,
-                                                    channelLabel: selectedAgent.channelLabel || selectedAgent.channelId,
-                                                    agentName: selectedAgent.name,
-                                                }
-                                            }))
-                                            sendTrackingEvent("click", selectedAgent.channelId)
-                                        } catch {}
-                                    }
-                                    if (closeAfterClick) {
-                                        setIsOpen(false)
-                                        setSelectedAgent(null)
-                                        setNavDirection("forward")
-                                    }
-                                }}
-                            >
-                                {modalStartChatText}
-                            </a>
-                        </div>
-                    )}
-                    {runtimeIsTrial ? (
-                        <div className="cf-canvas-wm-wrap">
-                            <a
-                                href="https://framefic.com"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="framefic-wm-link"
-                            >
-                                <span className="framefic-wm-icon">
-                                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M2.2 5V3.4C2.2 2.74 2.74 2.2 3.4 2.2H5" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                        <path d="M11 2.2H12.6C13.26 2.2 13.8 2.74 13.8 3.4V5" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                        <path d="M2.2 11V12.6C2.2 13.26 2.74 13.8 3.4 13.8H5" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                        <path d="M11 13.8H12.6C13.26 13.8 13.8 13.26 13.8 12.6V11" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                        <rect x="4.4" y="4.6" width="7.2" height="6.8" rx="1.6" fill="#ffffff" />
-                                    </svg>
-                                </span>
-                                <span className="framefic-wm-text">Made with</span>
-                                <span className="framefic-wm-brand">Framefic</span>
-                            </a>
+                            <div style={proLockedTitleStyle}>PRO Feature Locked</div>
+                            <div style={proLockedDescStyle}>
+                                Upgrade this site to a PRO plan in the Chat Bubbles plugin to activate.
+                            </div>
                         </div>
                     ) : null}
                 </div>
@@ -2307,112 +2344,129 @@ export default function ChatBubbles(props: ChatBubblesProps) {
 
             {isOpen && widgetMode === "buttons" ? (
                 <div className="cf-canvas-buttons-container" style={buttonsContainerStyle}>
-                    {channels.map((channel, idx) => {
-                        const channelItemStyle: React.CSSProperties = {
-                            flexDirection: isRight ? "row-reverse" : "row",
-                        }
-                        const channelBtnStyle: React.CSSProperties = {
-                            borderRadius: radius,
-                            backgroundColor: channel.color,
-                            color: "#ffffff",
-                        }
-                        const isCapped = Boolean(mobileCapChannels ?? true) && channels.length > 4 && !mobileExpanded && idx >= 4
-                        return (
-                            <div
-                                key={channel.id}
-                                className={"cf-canvas-channel-item" + (isCapped ? " is-overflow-hidden" : "")}
-                                style={channelItemStyle}
-                            >
-                                <a
-                                    href={channel.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    onClick={() => {
-                                        if (enableAnalytics && typeof window !== "undefined") {
-                                            try {
-                                                if (Array.isArray((window as any).dataLayer)) {
-                                                    (window as any).dataLayer.push({ event: "chat_bubbles_click", channel: channel.id, channel_label: channel.label })
-                                                }
-                                                if (typeof (window as any).gtag === "function") {
-                                                    (window as any).gtag("event", "chat_bubbles_click", { channel: channel.id, channel_label: channel.label })
-                                                }
-                                                window.dispatchEvent(new CustomEvent("chat_bubbles_interaction", { detail: { channel: channel.id, channelLabel: channel.label } }))
-                                                sendTrackingEvent("click", channel.id)
-                                            } catch {}
-                                        }
-                                        if (closeAfterClick) setIsOpen(false)
-                                    }}
-                                    className="cf-channel-btn"
-                                    style={channelBtnStyle}
-                                >
-                                    <div
-                                        className="cf-canvas-icon-inner"
-                                        dangerouslySetInnerHTML={{ __html: ICONS[channel.id] || "" }}
-                                    />
-                                </a>
-                                {showLabels ? (
-                                    <span className="cf-canvas-channel-label">
-                                        {channel.label}
-                                    </span>
-                                ) : null}
-                            </div>
-                        )
-                    })}
-
-                    {Boolean(mobileCapChannels ?? true) && channels.length > 4 ? (
-                        (() => {
-                            const moreItemStyle: React.CSSProperties = {
+                    <div style={isLocked ? lockedBlurContentStyle : undefined}>
+                        {channels.map((channel, idx) => {
+                            const channelItemStyle: React.CSSProperties = {
                                 flexDirection: isRight ? "row-reverse" : "row",
                             }
-                            const moreBtnStyle: React.CSSProperties = {
+                            const channelBtnStyle: React.CSSProperties = {
                                 borderRadius: radius,
+                                backgroundColor: channel.color,
+                                color: "#ffffff",
                             }
+                            const isCapped = Boolean(mobileCapChannels ?? true) && channels.length > 4 && !mobileExpanded && idx >= 4
                             return (
                                 <div
-                                    className="cf-canvas-channel-item cf-canvas-more-item"
-                                    style={moreItemStyle}
+                                    key={channel.id}
+                                    className={"cf-canvas-channel-item" + (isCapped ? " is-overflow-hidden" : "")}
+                                    style={channelItemStyle}
                                 >
-                                    <button
-                                        type="button"
-                                        className={"cf-canvas-more-btn" + (mobileExpanded ? " is-expanded" : "")}
-                                        style={moreBtnStyle}
-                                        onClick={(e) => {
-                                            e.stopPropagation()
-                                            setMobileExpanded(!mobileExpanded)
+                                    <a
+                                        href={channel.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={() => {
+                                            if (enableAnalytics && typeof window !== "undefined") {
+                                                try {
+                                                    if (Array.isArray((window as any).dataLayer)) {
+                                                        (window as any).dataLayer.push({ event: "chat_bubbles_click", channel: channel.id, channel_label: channel.label })
+                                                    }
+                                                    if (typeof (window as any).gtag === "function") {
+                                                        (window as any).gtag("event", "chat_bubbles_click", { channel: channel.id, channel_label: channel.label })
+                                                    }
+                                                    window.dispatchEvent(new CustomEvent("chat_bubbles_interaction", { detail: { channel: channel.id, channelLabel: channel.label } }))
+                                                    sendTrackingEvent("click", channel.id)
+                                                } catch {}
+                                            }
+                                            if (closeAfterClick) setIsOpen(false)
                                         }}
-                                        aria-label={mobileExpanded ? "Show less channels" : "Show more channels"}
+                                        className="cf-channel-btn"
+                                        style={channelBtnStyle}
                                     >
-                                        {mobileExpanded ? "−" : "+" + (channels.length - 4)}
-                                    </button>
+                                        <div
+                                            className="cf-canvas-icon-inner"
+                                            dangerouslySetInnerHTML={{ __html: ICONS[channel.id] || "" }}
+                                        />
+                                    </a>
                                     {showLabels ? (
                                         <span className="cf-canvas-channel-label">
-                                            {mobileExpanded ? "Show Less" : "+" + (channels.length - 4) + " More"}
+                                            {channel.label}
                                         </span>
                                     ) : null}
                                 </div>
                             )
-                        })()
-                    ) : null}
-                    {runtimeIsTrial ? (
-                        <div className="cf-canvas-wm-wrap cf-canvas-wm-buttons">
-                            <a
-                                href="https://framefic.com"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="framefic-wm-link"
-                            >
-                                <span className="framefic-wm-icon">
-                                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M2.2 5V3.4C2.2 2.74 2.74 2.2 3.4 2.2H5" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                        <path d="M11 2.2H12.6C13.26 2.2 13.8 2.74 13.8 3.4V5" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                        <path d="M2.2 11V12.6C2.2 13.26 2.74 13.8 3.4 13.8H5" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                        <path d="M11 13.8H12.6C13.26 13.8 13.8 13.26 13.8 12.6V11" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                        <rect x="4.4" y="4.6" width="7.2" height="6.8" rx="1.6" fill="#ffffff" />
-                                    </svg>
-                                </span>
-                                <span className="framefic-wm-text">Made with</span>
-                                <span className="framefic-wm-brand">Framefic</span>
-                            </a>
+                        })}
+
+                        {Boolean(mobileCapChannels ?? true) && channels.length > 4 ? (
+                            (() => {
+                                const moreItemStyle: React.CSSProperties = {
+                                    flexDirection: isRight ? "row-reverse" : "row",
+                                }
+                                const moreBtnStyle: React.CSSProperties = {
+                                    borderRadius: radius,
+                                }
+                                return (
+                                    <div
+                                        className="cf-canvas-channel-item cf-canvas-more-item"
+                                        style={moreItemStyle}
+                                    >
+                                        <button
+                                            type="button"
+                                            className={"cf-canvas-more-btn" + (mobileExpanded ? " is-expanded" : "")}
+                                            style={moreBtnStyle}
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                setMobileExpanded(!mobileExpanded)
+                                            }}
+                                            aria-label={mobileExpanded ? "Show less channels" : "Show more channels"}
+                                        >
+                                            {mobileExpanded ? "−" : "+" + (channels.length - 4)}
+                                        </button>
+                                        {showLabels ? (
+                                            <span className="cf-canvas-channel-label">
+                                                {mobileExpanded ? "Show Less" : "+" + (channels.length - 4) + " More"}
+                                            </span>
+                                        ) : null}
+                                    </div>
+                                )
+                            })()
+                        ) : null}
+                        {runtimeIsTrial && !isLocked ? (
+                            <div className="cf-canvas-wm-wrap cf-canvas-wm-buttons">
+                                <a
+                                    href="https://framefic.com"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="framefic-wm-link"
+                                >
+                                    <span className="framefic-wm-icon">
+                                        <svg width="10" height="10" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M2.2 5V3.4C2.2 2.74 2.74 2.2 3.4 2.2H5" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                            <path d="M11 2.2H12.6C13.26 2.2 13.8 2.74 13.8 3.4V5" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                            <path d="M2.2 11V12.6C2.2 13.26 2.74 13.8 3.4 13.8H5" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                            <path d="M11 13.8H12.6C13.26 13.8 13.8 13.26 13.8 12.6V11" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                            <rect x="4.4" y="4.6" width="7.2" height="6.8" rx="1.6" fill="#ffffff" />
+                                        </svg>
+                                    </span>
+                                    <span className="framefic-wm-text">Made with</span>
+                                    <span className="framefic-wm-brand">Framefic</span>
+                                </a>
+                            </div>
+                        ) : null}
+                    </div>
+
+                    {isLocked ? (
+                        <div className="cf-canvas-pro-locked-overlay" style={proLockedButtonsOverlayStyle}>
+                            <div style={proLockedIconWrapStyle}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#708AFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                </svg>
+                            </div>
+                            <div style={proLockedTitleStyle}>PRO Feature Locked</div>
+                            <div style={proLockedDescStyle}>
+                                Upgrade this site to a PRO plan in the Chat Bubbles plugin to activate.
+                            </div>
                         </div>
                     ) : null}
                 </div>
@@ -3001,8 +3055,8 @@ export function buildControlPayload(config: ChatConfig) {
         customLabel: config.channels.find((c) => c.id === "custom")?.label || "Custom",
         agentsData: JSON.stringify(config.agents || []),
         scheduleDaysData: JSON.stringify(config.scheduleDays || [1, 2, 3, 4, 5]),
-        isPro: Boolean(cachedIsPaid && !cachedIsTrial),
-        isTrial: Boolean(cachedIsPaid && cachedIsTrial),
+        isPro: Boolean(cachedHasAccess && !cachedIsTrial),
+        isTrial: Boolean(cachedHasAccess && cachedIsTrial),
     }
 }
 
@@ -3020,7 +3074,7 @@ export function scheduleDebouncedCodeFileSync(config: ChatConfig) {
                 config,
                 siteInfo?.siteId,
                 siteInfo?.siteUrl,
-                cachedIsPaid,
+                cachedHasAccess,
                 cachedIsTrial,
                 cachedApiBaseUrl
             )
@@ -3082,17 +3136,17 @@ export async function syncCanvasInstance(config: ChatConfig): Promise<boolean> {
 
 export async function insertCanvasComponent(
     config: ChatConfig,
-    isPaid: boolean = cachedIsPaid,
+    hasAccess: boolean = cachedHasAccess,
     isTrial: boolean = cachedIsTrial
 ): Promise<{ success: boolean; message: string }> {
-    cachedIsPaid = isPaid
+    cachedHasAccess = hasAccess
     cachedIsTrial = isTrial
     const siteInfo = await getSiteInfo().catch(() => null)
     const code = generateComponentCode(
         config,
         siteInfo?.siteId,
         siteInfo?.siteUrl,
-        isPaid,
+        hasAccess,
         isTrial,
         cachedApiBaseUrl
     )

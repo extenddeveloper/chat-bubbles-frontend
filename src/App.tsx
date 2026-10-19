@@ -269,13 +269,9 @@ export function App() {
         )
     }, [hasActiveAccess, paymentFlow.planDetails])
 
-    const isActualPaid = useMemo(() => {
-        return Boolean(hasActiveAccess && !isTrialActive)
-    }, [hasActiveAccess, isTrialActive])
-
     useEffect(() => {
-        setCanvasLicensingState(isActualPaid, isTrialActive, BACKEND_BASE_URL)
-    }, [isActualPaid, isTrialActive])
+        setCanvasLicensingState(hasActiveAccess, isTrialActive, BACKEND_BASE_URL)
+    }, [hasActiveAccess, isTrialActive])
 
     const handleTabClick = useCallback(
         (targetTab: Tab) => {
@@ -762,7 +758,7 @@ export function App() {
         try {
             const normalized = normalizeConfig(config)
             await saveConfig(normalized)
-            const result = await insertCanvasComponent(normalized, isActualPaid, isTrialActive)
+            const result = await insertCanvasComponent(normalized, hasActiveAccess, isTrialActive)
             setMessage({
                 type: result.success ? "success" : "error",
                 text: result.message,
