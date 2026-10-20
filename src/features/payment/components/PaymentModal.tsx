@@ -162,7 +162,7 @@ export function PaymentModal({
         <p>
           Total Amount is: ${showAmount} ({showType})
         </p>
-        <Elements stripe={stripePromise} options={paymentElementOptions}>
+        <Elements key={clientSecret} stripe={stripePromise} options={paymentElementOptions}>
           <CheckoutForm
             onClose={onClose}
             onSuccess={onSuccess}

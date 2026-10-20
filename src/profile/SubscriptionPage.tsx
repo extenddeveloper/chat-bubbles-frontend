@@ -95,7 +95,8 @@ export function SubscriptionPage({
   const isAutoRenew = (plan: string | null | undefined, status: string | null | undefined): string => {
     if (planDetails?.isTrial) return "No"
     if (plan === "lifetime") return "Never"
-    if (status === "active" || status === "trialing") return "Automatically"
+    if (status === "Scheduled to cancel" || status === "canceled" || status === "cancelled") return "No"
+    if (status === "active" || status === "paid" || status === "trialing") return "Automatically"
     return "No"
   }
 
