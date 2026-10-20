@@ -535,6 +535,51 @@ function cancelPendingChime() {
     pendingChimeExpireTime = 0
 }
 
+function resolveBreakpointKey(el: HTMLElement | null): string {
+    if (!el || typeof window === "undefined") return "desktop"
+    try {
+        let cur: HTMLElement | null = el.parentElement
+        while (cur && cur !== document.body) {
+            const nameAttr = (cur.getAttribute("data-framer-name") || cur.getAttribute("name") || "").toLowerCase().trim()
+            if (nameAttr.includes("phone") || nameAttr.includes("mobile") || nameAttr.includes("iphone") || nameAttr.includes("android")) {
+                return "phone"
+            }
+            if (nameAttr.includes("tablet") || nameAttr.includes("ipad")) {
+                return "tablet"
+            }
+            if (nameAttr.includes("desktop") || nameAttr.includes("laptop") || nameAttr.includes("screen") || nameAttr.includes("macbook")) {
+                return "desktop"
+            }
+            const bpAttr = (cur.getAttribute("data-framer-breakpoint") || cur.getAttribute("data-breakpoint") || "").toLowerCase().trim()
+            if (bpAttr) {
+                if (bpAttr.includes("phone") || bpAttr.includes("mobile")) return "phone"
+                if (bpAttr.includes("tablet")) return "tablet"
+                if (bpAttr.includes("desktop")) return "desktop"
+                return bpAttr
+            }
+            cur = cur.parentElement
+        }
+
+        cur = el.parentElement
+        while (cur && cur !== document.body) {
+            const rect = cur.getBoundingClientRect()
+            if (rect.width >= 100 && rect.width < 10000) {
+                if (rect.width < 600) return "phone"
+                if (rect.width < 1000) return "tablet"
+                return "desktop"
+            }
+            cur = cur.parentElement
+        }
+
+        const winW = window.innerWidth
+        if (winW < 600) return "phone"
+        if (winW < 1000) return "tablet"
+        return "desktop"
+    } catch {
+        return "desktop"
+    }
+}
+
 export default function ChatBubbles(props: ChatBubblesProps) {
     const {
         style,
@@ -638,25 +683,48 @@ export default function ChatBubbles(props: ChatBubblesProps) {
     const [customMessage, setCustomMessage] = React.useState("")
     const [mobileExpanded, setMobileExpanded] = React.useState(false)
 
-    // Single-instance duplicate protection: prevents duplicating via Ctrl+C / Ctrl+V or Alt+Drag
+    // Single-instance duplicate protection: allows 1 instance per responsive breakpoint (Desktop, Tablet, Mobile)
     const instanceId = React.useMemo(() => Math.random().toString(36).slice(2, 9), [])
     const [isDuplicate, setIsDuplicate] = React.useState(false)
 
     React.useEffect(() => {
         if (typeof window === "undefined") return
         const w = window as any
-        w.__chat_bubbles_instances__ = w.__chat_bubbles_instances__ || []
-        const reg: string[] = w.__chat_bubbles_instances__
-        if (reg.indexOf(instanceId) === -1) {
-            reg.push(instanceId)
+        w.__chat_bubbles_instances_by_bp__ = w.__chat_bubbles_instances_by_bp__ || {}
+
+        let registeredBp = ""
+        function register() {
+            const el = containerRef.current
+            const bpKey = resolveBreakpointKey(el)
+            if (registeredBp && registeredBp !== bpKey) {
+                const oldArr = w.__chat_bubbles_instances_by_bp__[registeredBp]
+                if (oldArr) {
+                    const idx = oldArr.indexOf(instanceId)
+                    if (idx >= 0) oldArr.splice(idx, 1)
+                }
+            }
+            registeredBp = bpKey
+            w.__chat_bubbles_instances_by_bp__[bpKey] = w.__chat_bubbles_instances_by_bp__[bpKey] || []
+            const reg: string[] = w.__chat_bubbles_instances_by_bp__[bpKey]
+            if (reg.indexOf(instanceId) === -1) {
+                reg.push(instanceId)
+            }
+            setIsDuplicate(reg.indexOf(instanceId) > 0)
         }
-        // If this instance is not the first registered instance, mark it as duplicate
-        setIsDuplicate(reg.indexOf(instanceId) > 0)
+
+        register()
+        const timer1 = setTimeout(register, 50)
+        const timer2 = setTimeout(register, 250)
 
         return () => {
-            const idx = reg.indexOf(instanceId)
-            if (idx >= 0) {
-                reg.splice(idx, 1)
+            clearTimeout(timer1)
+            clearTimeout(timer2)
+            if (registeredBp && w.__chat_bubbles_instances_by_bp__ && w.__chat_bubbles_instances_by_bp__[registeredBp]) {
+                const arr: string[] = w.__chat_bubbles_instances_by_bp__[registeredBp]
+                const idx = arr.indexOf(instanceId)
+                if (idx >= 0) {
+                    arr.splice(idx, 1)
+                }
             }
         }
     }, [instanceId])
@@ -1584,6 +1652,9 @@ export default function ChatBubbles(props: ChatBubblesProps) {
     }
 
     if (isDuplicate) {
+        if (!isCanvas) {
+            return null
+        }
         return (
             <div
                 className="framefic-duplicate-limit-container"
@@ -1599,7 +1670,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                     Duplicate Component Detected
                 </div>
                 <div style={duplicateDescStyle}>
-                    Chat Bubbles cannot be copied or duplicated via Ctrl+C / Ctrl+V or Alt+Drag. Only 1 floating widget instance is supported.
+                    Chat Bubbles cannot be copied or duplicated via Ctrl+C / Ctrl+V or Alt+Drag within the same layout. Only 1 floating widget instance is supported per breakpoint.
                 </div>
             </div>
         )
