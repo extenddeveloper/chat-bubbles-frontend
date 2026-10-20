@@ -150,13 +150,24 @@ function checkSubscriptionFromServer(siteId: string, apiUrl: string) {
   }).catch(function () { return null })
 }
 
-function useSubscriptionCheck() {
+function useSubscriptionCheck(props?: any) {
   var initialSub = !!(IS_SUBSCRIBED || IS_TRIAL)
   var initialTrial = !!IS_TRIAL
+  if (props && typeof props.isPro === "boolean" && typeof props.isTrial === "boolean") {
+    initialSub = !!(props.isPro || props.isTrial)
+    initialTrial = !!(!props.isPro && props.isTrial)
+  }
   var [isSubscribed, setIsSubscribed] = React.useState(initialSub)
   var [secondsLeft, setSecondsLeft] = React.useState(0)
   var [isTrial, setIsTrial] = React.useState(initialTrial)
   var checkedRef = React.useRef(false)
+
+  React.useEffect(function () {
+    if (props && typeof props.isPro === "boolean" && typeof props.isTrial === "boolean") {
+      setIsSubscribed(!!(props.isPro || props.isTrial))
+      setIsTrial(!!(!props.isPro && props.isTrial))
+    }
+  }, [props ? props.isPro : null, props ? props.isTrial : null])
 
   React.useEffect(function () {
     if (checkedRef.current) return
@@ -171,8 +182,13 @@ function useSubscriptionCheck() {
 
     checkSubscriptionFromServer(__CHAT_BUBBLES_SITE_ID__, __CHAT_BUBBLES_API_URL__).then(function (data: any) {
       if (data === null) {
-        setIsSubscribed(!!(IS_SUBSCRIBED || IS_TRIAL))
-        setIsTrial(!!(!IS_SUBSCRIBED && IS_TRIAL))
+        if (props && typeof props.isPro === "boolean" && typeof props.isTrial === "boolean") {
+          setIsSubscribed(!!(props.isPro || props.isTrial))
+          setIsTrial(!!(!props.isPro && props.isTrial))
+        } else {
+          setIsSubscribed(!!(IS_SUBSCRIBED || IS_TRIAL))
+          setIsTrial(!!(!IS_SUBSCRIBED && IS_TRIAL))
+        }
         return
       }
       var isPaid = !!data.isPaid
@@ -603,7 +619,13 @@ export default function ChatBubbles(props: ChatBubblesProps) {
     } = props
 
     const isCanvas = typeof RenderTarget !== "undefined" && typeof RenderTarget.current === "function" && RenderTarget.current() === RenderTarget.canvas
-    const { isSubscribed: runtimeSubscribed, isTrial: runtimeIsTrial } = useSubscriptionCheck()
+    const subInfo = useSubscriptionCheck(props)
+    const runtimeSubscribed = isCanvas
+        ? Boolean((props && (props.isPro || props.isTrial)) || subInfo.isSubscribed)
+        : subInfo.isSubscribed
+    const runtimeIsTrial = isCanvas
+        ? Boolean(!(props && props.isPro) && ((props && props.isTrial) || subInfo.isTrial))
+        : subInfo.isTrial
     const containerRef = React.useRef<HTMLDivElement>(null)
     const [isOpen, setIsOpen] = React.useState(isCanvas ? canvasPreview !== "closed" : false)
     const [greetingDismissed, setGreetingDismissed] = React.useState(false)
@@ -1338,6 +1360,17 @@ export default function ChatBubbles(props: ChatBubblesProps) {
         fontWeight: 600,
     }
 
+    const launcherWatermarkWrapStyle: React.CSSProperties = {
+        position: "relative",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 50,
+        userSelect: "none",
+        width: btnWidth,
+        height: btnHeight,
+    }
+
     const modalStyle: React.CSSProperties = {
         position: "absolute",
         bottom: isBottom ? 70 : "auto",
@@ -1987,44 +2020,40 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                 }
               }
 
-              /* Framefic Watermark Badge */
+              /* Framefic Watermark Badge - Under Toggle Button */
               .cf-canvas-wm-wrap {
+                position: absolute !important;
+                top: calc(100% + 5px) !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
                 display: flex !important;
                 align-items: center !important;
                 justify-content: center !important;
-                padding: 6px 12px 6px !important;
-                width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                width: max-content !important;
+                max-width: max-content !important;
                 box-sizing: border-box !important;
                 background: transparent !important;
                 user-select: none !important;
                 pointer-events: auto !important;
-                flex-shrink: 0 !important;
-                grid-column: 1 / -1 !important;
                 overflow: visible !important;
-              }
-              .cf-canvas-wm-buttons {
-                padding: 0 !important;
-                margin: 0 !important;
-                width: 100% !important;
-                align-self: center !important;
-                justify-content: center !important;
-                overflow: visible !important;
+                z-index: 60 !important;
               }
               .framefic-wm-link {
                 display: inline-flex !important;
                 align-items: center !important;
                 justify-content: center !important;
                 gap: 3.5px !important;
-                padding: 2px 7px 2px 4.5px !important;
+                padding: 2.5px 7px 2.5px 5px !important;
                 border-radius: 999px !important;
-                background: #0f172a !important;
-                border: 1px solid rgba(255, 255, 255, 0.16) !important;
+                background: transparent !important;
+                border: 1px solid rgba(120, 120, 130, 0.28) !important;
                 text-decoration: none !important;
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', Helvetica, Arial, sans-serif !important;
                 font-size: 9.5px !important;
                 line-height: 1 !important;
                 cursor: pointer !important;
-                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22) !important;
                 transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
                 white-space: nowrap !important;
                 flex-shrink: 0 !important;
@@ -2032,11 +2061,14 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                 width: max-content !important;
                 max-width: max-content !important;
                 overflow: visible !important;
+                backdrop-filter: blur(4px) !important;
+                -webkit-backdrop-filter: blur(4px) !important;
               }
               .framefic-wm-link:hover {
                 transform: translateY(-1px) scale(1.02) !important;
-                border-color: rgba(82, 113, 255, 0.5) !important;
-                box-shadow: 0 2px 8px rgba(82, 113, 255, 0.28) !important;
+                border-color: rgba(82, 113, 255, 0.55) !important;
+                background: rgba(82, 113, 255, 0.08) !important;
+                box-shadow: 0 2px 8px rgba(82, 113, 255, 0.2) !important;
               }
               .framefic-wm-icon {
                 width: 11px !important;
@@ -2068,7 +2100,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                 padding: 0 !important;
               }
               .framefic-wm-text {
-                color: #94a3b8 !important;
+                color: #64748b !important;
                 font-size: 9.5px !important;
                 font-weight: 500 !important;
                 letter-spacing: 0.1px !important;
@@ -2078,12 +2110,13 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                 display: inline-block !important;
                 flex-shrink: 0 !important;
                 transition: color 0.2s ease !important;
+                text-shadow: 0 0.5px 1px rgba(255, 255, 255, 0.5) !important;
               }
               .framefic-wm-link:hover .framefic-wm-text {
-                color: rgba(255, 255, 255, 0.9) !important;
+                color: #3b82f6 !important;
               }
               .framefic-wm-brand {
-                color: #ffffff !important;
+                color: #0f172a !important;
                 font-size: 9.5px !important;
                 font-weight: 600 !important;
                 letter-spacing: 0.15px !important;
@@ -2092,44 +2125,119 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                 line-height: 1 !important;
                 display: inline-block !important;
                 flex-shrink: 0 !important;
+                transition: color 0.2s ease !important;
+                text-shadow: 0 0.5px 1px rgba(255, 255, 255, 0.5) !important;
+              }
+              .framefic-wm-link:hover .framefic-wm-brand {
+                color: #1d4ed8 !important;
+              }
+
+              /* Dark Mode Compatibility */
+              @media (prefers-color-scheme: dark) {
+                .framefic-wm-link {
+                  border-color: rgba(255, 255, 255, 0.2) !important;
+                }
+                .framefic-wm-text {
+                  color: #94a3b8 !important;
+                  text-shadow: 0 0.5px 1px rgba(0, 0, 0, 0.6) !important;
+                }
+                .framefic-wm-brand {
+                  color: #f8fafc !important;
+                  text-shadow: 0 0.5px 1px rgba(0, 0, 0, 0.6) !important;
+                }
+                .framefic-wm-link:hover .framefic-wm-text {
+                  color: #93c5fd !important;
+                }
+                .framefic-wm-link:hover .framefic-wm-brand {
+                  color: #ffffff !important;
+                }
+              }
+
+              body[data-framer-theme="dark"] .framefic-wm-link,
+              [data-theme="dark"] .framefic-wm-link,
+              .dark .framefic-wm-link {
+                border-color: rgba(255, 255, 255, 0.2) !important;
+              }
+
+              body[data-framer-theme="dark"] .framefic-wm-text,
+              [data-theme="dark"] .framefic-wm-text,
+              .dark .framefic-wm-text {
+                color: #94a3b8 !important;
+                text-shadow: 0 0.5px 1px rgba(0, 0, 0, 0.6) !important;
+              }
+
+              body[data-framer-theme="dark"] .framefic-wm-brand,
+              [data-theme="dark"] .framefic-wm-brand,
+              .dark .framefic-wm-brand {
+                color: #f8fafc !important;
+                text-shadow: 0 0.5px 1px rgba(0, 0, 0, 0.6) !important;
               }
             \`}</style>
-            <button
-                type="button"
-                className="cf-main-btn"
-                style={mainBtnStyle}
-                onClick={(e) => {
-                    e.stopPropagation()
-                    flushPendingChimeIfQueued()
-                    const nextOpen = !isOpen
-                    setIsOpen(nextOpen)
-                    if (isOpen) {
-                        setSelectedAgent(null)
-                        setNavDirection("forward")
-                    }
-                }}
-                aria-label={ariaLabel}
-                aria-expanded={isOpen}
-            >
-                <div
-                    className={"cf-icon-rotator" + (isOpen ? " is-open" : "")}
-                    dangerouslySetInnerHTML={{
-                        __html: isOpen
-                            ? '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'
-                            : activeLauncherIconSvg,
+            <div className="cf-launcher-watermark-wrap" style={launcherWatermarkWrapStyle}>
+                <button
+                    type="button"
+                    className="cf-main-btn"
+                    style={mainBtnStyle}
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        flushPendingChimeIfQueued()
+                        const nextOpen = !isOpen
+                        setIsOpen(nextOpen)
+                        if (isOpen) {
+                            setSelectedAgent(null)
+                            setNavDirection("forward")
+                        }
                     }}
-                />
-                {hasPillLabel ? (
-                    <span className="cf-pill-text">
-                        {isOpen ? "Close" : launcherText}
-                    </span>
+                    aria-label={ariaLabel}
+                    aria-expanded={isOpen}
+                >
+                    <div
+                        className={"cf-icon-rotator" + (isOpen ? " is-open" : "")}
+                        dangerouslySetInnerHTML={{
+                            __html: isOpen
+                                ? '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'
+                                : activeLauncherIconSvg,
+                        }}
+                    />
+                    {hasPillLabel ? (
+                        <span className="cf-pill-text">
+                            {isOpen ? "Close" : launcherText}
+                        </span>
+                    ) : null}
+                    {showBadge && !isOpen ? (
+                        <span className="cf-badge-counter">
+                            {badgeText}
+                        </span>
+                    ) : null}
+                </button>
+
+                {runtimeIsTrial && !isLocked ? (
+                    <div
+                        className="cf-canvas-wm-wrap"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <a
+                            href="https://framefic.com"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="framefic-wm-link"
+                            title="Made with Framefic"
+                        >
+                            <span className="framefic-wm-icon">
+                                <svg width="7" height="7" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M2.2 5V3.4C2.2 2.74 2.74 2.2 3.4 2.2H5" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                                    <path d="M11 2.2H12.6C13.26 2.2 13.8 2.74 13.8 3.4V5" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                                    <path d="M2.2 11V12.6C2.2 13.26 2.74 13.8 3.4 13.8H5" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                                    <path d="M11 13.8H12.6C13.26 13.8 13.8 13.26 13.8 12.6V11" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                                    <rect x="4.4" y="4.6" width="7.2" height="6.8" rx="1.6" fill="#ffffff" />
+                                </svg>
+                            </span>
+                            <span className="framefic-wm-text">Made with</span>
+                            <span className="framefic-wm-brand">Framefic</span>
+                        </a>
+                    </div>
                 ) : null}
-                {showBadge && !isOpen ? (
-                    <span className="cf-badge-counter">
-                        {badgeText}
-                    </span>
-                ) : null}
-            </button>
+            </div>
 
             {!isLocked && greetingEnabled && greetingVisible && !greetingDismissed && !isOpen ? (
                 <div
@@ -2362,28 +2470,6 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                                 </a>
                             </div>
                         )}
-                        {runtimeIsTrial && !isLocked ? (
-                            <div className="cf-canvas-wm-wrap">
-                                <a
-                                    href="https://framefic.com"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="framefic-wm-link"
-                                >
-                                    <span className="framefic-wm-icon">
-                                        <svg width="7" height="7" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M2.2 5V3.4C2.2 2.74 2.74 2.2 3.4 2.2H5" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                                            <path d="M11 2.2H12.6C13.26 2.2 13.8 2.74 13.8 3.4V5" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                                            <path d="M2.2 11V12.6C2.2 13.26 2.74 13.8 3.4 13.8H5" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                                            <path d="M11 13.8H12.6C13.26 13.8 13.8 13.26 13.8 12.6V11" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                                            <rect x="4.4" y="4.6" width="7.2" height="6.8" rx="1.6" fill="#ffffff" />
-                                        </svg>
-                                    </span>
-                                    <span className="framefic-wm-text">Made with</span>
-                                    <span className="framefic-wm-brand">Framefic</span>
-                                </a>
-                            </div>
-                        ) : null}
                     </div>
 
                     {isLocked ? (
@@ -2492,28 +2578,6 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                                 )
                             })()
                         ) : null}
-                        {runtimeIsTrial && !isLocked ? (
-                            <div className="cf-canvas-wm-wrap cf-canvas-wm-buttons">
-                                <a
-                                    href="https://framefic.com"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="framefic-wm-link"
-                                >
-                                    <span className="framefic-wm-icon">
-                                        <svg width="7" height="7" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M2.2 5V3.4C2.2 2.74 2.74 2.2 3.4 2.2H5" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                                            <path d="M11 2.2H12.6C13.26 2.2 13.8 2.74 13.8 3.4V5" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                                            <path d="M2.2 11V12.6C2.2 13.26 2.74 13.8 3.4 13.8H5" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                                            <path d="M11 13.8H12.6C13.26 13.8 13.8 13.26 13.8 12.6V11" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                                            <rect x="4.4" y="4.6" width="7.2" height="6.8" rx="1.6" fill="#ffffff" />
-                                        </svg>
-                                    </span>
-                                    <span className="framefic-wm-text">Made with</span>
-                                    <span className="framefic-wm-brand">Framefic</span>
-                                </a>
-                            </div>
-                        ) : null}
                     </div>
 
                     {isLocked ? (
@@ -2534,6 +2598,13 @@ export default function ChatBubbles(props: ChatBubblesProps) {
             ) : null}
         </div>
     )
+}
+
+function isComponentSubscribed(props?: any): boolean {
+    if (props && typeof props.isPro === "boolean" && typeof props.isTrial === "boolean") {
+        return Boolean(props.isPro || props.isTrial)
+    }
+    return Boolean(IS_SUBSCRIBED || IS_TRIAL)
 }
 
 ChatBubbles.defaultProps = {
@@ -2565,8 +2636,8 @@ addPropertyControls(ChatBubbles, {
         options: ["locked"],
         optionTitles: ["Upgrade to PRO to customize"],
         title: "Status",
-        hidden() {
-            return !!(IS_SUBSCRIBED || IS_TRIAL)
+        hidden(props: any) {
+            return isComponentSubscribed(props)
         },
     },
     canvasPreview: {
@@ -2575,6 +2646,9 @@ addPropertyControls(ChatBubbles, {
         options: ["modal", "chat", "closed"],
         optionTitles: ["Open Modal", "Agent Chat", "Launcher Button"],
         defaultValue: "modal",
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     widgetMode: {
         type: ControlType.Enum,
@@ -2582,6 +2656,9 @@ addPropertyControls(ChatBubbles, {
         options: ["modal", "buttons"],
         optionTitles: ["Live Chat Modal", "Icon Buttons"],
         defaultValue: ${JSON.stringify(config.widgetMode || "modal")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     modalTheme: {
         type: ControlType.Enum,
@@ -2590,7 +2667,7 @@ addPropertyControls(ChatBubbles, {
         optionTitles: ["WhatsApp Green", "Messenger Blue", "Telegram Sky", "Instagram Gradient", "TikTok Dark", "WeChat Green", "Modern Dark", "Custom"],
         defaultValue: ${JSON.stringify(config.modalTheme || "whatsapp")},
         hidden(props: any) {
-            return props.widgetMode === "buttons"
+            return !isComponentSubscribed(props) || props.widgetMode === "buttons"
         },
     },
     modalCustomGradient: {
@@ -2598,7 +2675,7 @@ addPropertyControls(ChatBubbles, {
         title: "Custom Gradient",
         defaultValue: ${JSON.stringify(config.modalCustomGradient || "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)")},
         hidden(props: any) {
-            return props.widgetMode === "buttons" || props.modalTheme !== "custom"
+            return !isComponentSubscribed(props) || props.widgetMode === "buttons" || props.modalTheme !== "custom"
         },
     },
     modalTitle: {
@@ -2606,7 +2683,7 @@ addPropertyControls(ChatBubbles, {
         title: "Modal Title",
         defaultValue: ${JSON.stringify(config.modalTitle || "Hi there!")},
         hidden(props: any) {
-            return props.widgetMode === "buttons"
+            return !isComponentSubscribed(props) || props.widgetMode === "buttons"
         },
     },
     modalSubtitle: {
@@ -2614,7 +2691,7 @@ addPropertyControls(ChatBubbles, {
         title: "Subtitle",
         defaultValue: ${JSON.stringify(config.modalSubtitle || "Welcome to our live chat! Feel free to ask any questions.")},
         hidden(props: any) {
-            return props.widgetMode === "buttons"
+            return !isComponentSubscribed(props) || props.widgetMode === "buttons"
         },
     },
     modalResponseTime: {
@@ -2622,7 +2699,7 @@ addPropertyControls(ChatBubbles, {
         title: "Response Tag",
         defaultValue: ${JSON.stringify(config.modalResponseTime || "We typically reply within a few minutes")},
         hidden(props: any) {
-            return props.widgetMode === "buttons"
+            return !isComponentSubscribed(props) || props.widgetMode === "buttons"
         },
     },
     modalChatBubble: {
@@ -2630,7 +2707,7 @@ addPropertyControls(ChatBubbles, {
         title: "Greeting Msg",
         defaultValue: ${JSON.stringify(config.modalChatBubble || "We typically reply within a few minutes. How can we help you today?")},
         hidden(props: any) {
-            return props.widgetMode === "buttons"
+            return !isComponentSubscribed(props) || props.widgetMode === "buttons"
         },
     },
     modalStartChatText: {
@@ -2638,7 +2715,7 @@ addPropertyControls(ChatBubbles, {
         title: "Button Text",
         defaultValue: ${JSON.stringify(config.modalStartChatText || "Start chat")},
         hidden(props: any) {
-            return props.widgetMode === "buttons"
+            return !isComponentSubscribed(props) || props.widgetMode === "buttons"
         },
     },
     position: {
@@ -2647,6 +2724,9 @@ addPropertyControls(ChatBubbles, {
         options: ["bottom-right", "bottom-left", "top-right", "top-left"],
         optionTitles: ["Bottom Right", "Bottom Left", "Top Right", "Top Left"],
         defaultValue: ${JSON.stringify(config.position || "bottom-right")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     layout: {
         type: ControlType.Enum,
@@ -2655,7 +2735,7 @@ addPropertyControls(ChatBubbles, {
         optionTitles: ["Stack (Vertical)", "Grid (2 Columns)", "Horizontal"],
         defaultValue: ${JSON.stringify(config.layout || "stack")},
         hidden(props: any) {
-            return props.widgetMode === "modal"
+            return !isComponentSubscribed(props) || props.widgetMode === "modal"
         },
     },
     animation: {
@@ -2664,11 +2744,17 @@ addPropertyControls(ChatBubbles, {
         options: ["pop", "bounce", "slide", "pulse", "none"],
         optionTitles: ["Pop In", "Bounce", "Slide Up", "Pulse Glow", "None"],
         defaultValue: ${JSON.stringify(config.animation || "pop")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     buttonColor: {
         type: ControlType.Color,
         title: "Launcher Color",
         defaultValue: ${JSON.stringify(config.buttonColor || "#25D366")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     buttonShape: {
         type: ControlType.Enum,
@@ -2676,13 +2762,16 @@ addPropertyControls(ChatBubbles, {
         options: ["circle", "rounded", "pill"],
         optionTitles: ["Circle", "Rounded", "Pill"],
         defaultValue: ${JSON.stringify(config.buttonShape || "circle")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     launcherText: {
         type: ControlType.String,
         title: "Button Label",
         defaultValue: "Chat",
         hidden(props: any) {
-            return props.buttonShape !== "pill"
+            return !isComponentSubscribed(props) || props.buttonShape !== "pill"
         },
     },
     launcherIcon: {
@@ -2691,13 +2780,16 @@ addPropertyControls(ChatBubbles, {
         options: ["chat", "whatsapp", "messenger", "telegram", "instagram", "phone", "email", "support"],
         optionTitles: ["Live Chat", "WhatsApp", "Messenger", "Telegram", "Instagram", "Phone", "Email", "Headset Support"],
         defaultValue: ${JSON.stringify(config.launcherIcon || "chat")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     showLabels: {
         type: ControlType.Boolean,
         title: "Show Labels",
         defaultValue: ${Boolean(config.showLabels)},
         hidden(props: any) {
-            return props.widgetMode === "modal"
+            return !isComponentSubscribed(props) || props.widgetMode === "modal"
         },
     },
     mobileCapChannels: {
@@ -2705,28 +2797,40 @@ addPropertyControls(ChatBubbles, {
         title: "Mobile Cap (4+)",
         defaultValue: ${Boolean(config.mobileCapChannels ?? true)},
         hidden(props: any) {
-            return props.widgetMode === "modal"
+            return !isComponentSubscribed(props) || props.widgetMode === "modal"
         },
     },
     closeOnOutsideClick: {
         type: ControlType.Boolean,
         title: "Outside Click",
         defaultValue: ${Boolean(config.closeOnOutsideClick ?? true)},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     closeOnEscape: {
         type: ControlType.Boolean,
         title: "Escape Key",
         defaultValue: ${Boolean(config.closeOnEscape ?? true)},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     closeAfterClick: {
         type: ControlType.Boolean,
         title: "Close on Click",
         defaultValue: ${Boolean(config.closeAfterClick ?? true)},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     autoOpen: {
         type: ControlType.Boolean,
         title: "Auto Open",
         defaultValue: ${Boolean(config.autoOpen)},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     autoOpenDelay: {
         type: ControlType.Number,
@@ -2736,41 +2840,56 @@ addPropertyControls(ChatBubbles, {
         max: 30000,
         step: 500,
         hidden(props: any) {
-            return !props.autoOpen
+            return !isComponentSubscribed(props) || !props.autoOpen
         },
     },
     ariaLabel: {
         type: ControlType.String,
         title: "Aria Label",
         defaultValue: ${JSON.stringify(config.ariaLabel || "Open chat options")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     showBadge: {
         type: ControlType.Boolean,
         title: "Badge",
         defaultValue: ${Boolean(config.showBadge)},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     badgeText: {
         type: ControlType.String,
         title: "Badge Text",
         defaultValue: ${JSON.stringify(config.badgeText || "1")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props) || !props.showBadge
+        },
     },
     greetingEnabled: {
         type: ControlType.Boolean,
         title: "Greeting Bubble",
         defaultValue: ${Boolean(config.greetingEnabled)},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     greetingText: {
         type: ControlType.String,
         title: "Greeting Text",
         defaultValue: ${JSON.stringify(config.greetingText || "Need help? Chat with us.")},
         hidden(props: any) {
-            return !props.greetingEnabled
+            return !isComponentSubscribed(props) || !props.greetingEnabled
         },
     },
     enableSound: {
         type: ControlType.Boolean,
         title: "Notification Sound",
         defaultValue: ${Boolean(config.enableSound)},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     greetingDelay: {
         type: ControlType.Number,
@@ -2779,160 +2898,238 @@ addPropertyControls(ChatBubbles, {
         max: 30000,
         step: 500,
         defaultValue: ${Number(config.greetingDelay ?? 2000)},
-        hidden: (props: any) => !props.greetingEnabled,
+        hidden: (props: any) => !isComponentSubscribed(props) || !props.greetingEnabled,
     },
     whatsapp: {
         type: ControlType.String,
         title: "WhatsApp",
         placeholder: "+1234567890",
         defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "whatsapp")?.value || "")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     whatsappMessage: {
         type: ControlType.String,
         title: "WA Message",
         defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "whatsapp")?.message || "Hello! I would like to know more.")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     messenger: {
         type: ControlType.String,
         title: "Messenger",
         placeholder: "username",
         defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "messenger")?.value || "")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     telegram: {
         type: ControlType.String,
         title: "Telegram",
         placeholder: "username",
         defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "telegram")?.value || "")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     telegramMessage: {
         type: ControlType.String,
         title: "TG Message",
         defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "telegram")?.message || "Hello!")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     instagram: {
         type: ControlType.String,
         title: "Instagram",
         placeholder: "username",
         defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "instagram")?.value || "")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     tiktok: {
         type: ControlType.String,
         title: "TikTok",
         placeholder: "username",
         defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "tiktok")?.value || "")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     wechat: {
         type: ControlType.String,
         title: "WeChat",
         placeholder: "wechat_id",
         defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "wechat")?.value || "")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     viber: {
         type: ControlType.String,
         title: "Viber",
         placeholder: "+1234567890",
         defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "viber")?.value || "")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     line: {
         type: ControlType.String,
         title: "LINE",
         placeholder: "line_id",
         defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "line")?.value || "")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     signal: {
         type: ControlType.String,
         title: "Signal",
         placeholder: "username or link",
         defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "signal")?.value || "")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     phone: {
         type: ControlType.String,
         title: "Phone",
         placeholder: "+1234567890",
         defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "phone")?.value || "")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     sms: {
         type: ControlType.String,
         title: "SMS",
         placeholder: "+1234567890",
         defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "sms")?.value || "")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     smsMessage: {
         type: ControlType.String,
         title: "SMS Default Text",
         placeholder: "Hello! I have a question.",
         defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "sms")?.message || "")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     email: {
         type: ControlType.String,
         title: "Email",
         placeholder: "hello@example.com",
         defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "email")?.value || "")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     emailSubject: {
         type: ControlType.String,
         title: "Email Subject",
         placeholder: "Inquiry from website",
         defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "email")?.emailSubject || "")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     emailMessage: {
         type: ControlType.String,
         title: "Email Message",
         placeholder: "Hello! I have a question...",
         defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "email")?.message || "")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     discord: {
         type: ControlType.String,
         title: "Discord",
         placeholder: "https://discord.gg/yourserver",
         defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "discord")?.value || "")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     slack: {
         type: ControlType.String,
         title: "Slack",
         placeholder: "https://join.slack.com/...",
         defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "slack")?.value || "")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     teams: {
         type: ControlType.String,
         title: "Teams",
         placeholder: "user@company.com",
         defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "teams")?.value || "")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     x: {
         type: ControlType.String,
         title: "X (Twitter)",
         placeholder: "username",
         defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "x")?.value || "")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     linkedin: {
         type: ControlType.String,
         title: "LinkedIn",
         placeholder: "in/username or company/name",
         defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "linkedin")?.value || "")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     maps: {
         type: ControlType.String,
         title: "Google Maps",
         placeholder: "Store address or maps link",
         defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "maps")?.value || "")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     custom: {
         type: ControlType.String,
         title: "Custom URL",
         placeholder: "https://example.com/chat",
         defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "custom")?.value || "")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     customLabel: {
         type: ControlType.String,
         title: "Custom Label",
         placeholder: "Custom",
         defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "custom")?.label || "Custom")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     scrollTriggerEnabled: {
         type: ControlType.Boolean,
         title: "Scroll Trigger",
         defaultValue: ${Boolean(config.scrollTriggerEnabled)},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     scrollTriggerPercent: {
         type: ControlType.Number,
@@ -2941,7 +3138,7 @@ addPropertyControls(ChatBubbles, {
         max: 95,
         step: 5,
         defaultValue: ${Number(config.scrollTriggerPercent ?? 25)},
-        hidden: (props: any) => !props.scrollTriggerEnabled,
+        hidden: (props: any) => !isComponentSubscribed(props) || !props.scrollTriggerEnabled,
     },
     scrollTriggerTarget: {
         type: ControlType.Enum,
@@ -2949,12 +3146,15 @@ addPropertyControls(ChatBubbles, {
         options: ["launcher", "greeting"],
         optionTitles: ["Reveal Launcher", "Reveal Greeting"],
         defaultValue: ${JSON.stringify(config.scrollTriggerTarget || "launcher")},
-        hidden: (props: any) => !props.scrollTriggerEnabled,
+        hidden: (props: any) => !isComponentSubscribed(props) || !props.scrollTriggerEnabled,
     },
     exitIntentEnabled: {
         type: ControlType.Boolean,
         title: "Exit-Intent (Desktop)",
         defaultValue: ${Boolean(config.exitIntentEnabled)},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     exitIntentAction: {
         type: ControlType.Enum,
@@ -2962,24 +3162,27 @@ addPropertyControls(ChatBubbles, {
         options: ["modal", "greeting"],
         optionTitles: ["Pop Open Chat", "Show Greeting"],
         defaultValue: ${JSON.stringify(config.exitIntentAction || "modal")},
-        hidden: (props: any) => !props.exitIntentEnabled,
+        hidden: (props: any) => !isComponentSubscribed(props) || !props.exitIntentEnabled,
     },
     scheduleEnabled: {
         type: ControlType.Boolean,
         title: "Operating Hours",
         defaultValue: ${Boolean(config.scheduleEnabled)},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     scheduleStart: {
         type: ControlType.String,
         title: "Opening Time",
         defaultValue: ${JSON.stringify(config.scheduleStart || "09:00")},
-        hidden: (props: any) => !props.scheduleEnabled,
+        hidden: (props: any) => !isComponentSubscribed(props) || !props.scheduleEnabled,
     },
     scheduleEnd: {
         type: ControlType.String,
         title: "Closing Time",
         defaultValue: ${JSON.stringify(config.scheduleEnd || "18:00")},
-        hidden: (props: any) => !props.scheduleEnabled,
+        hidden: (props: any) => !isComponentSubscribed(props) || !props.scheduleEnabled,
     },
     scheduleOfflineAction: {
         type: ControlType.Enum,
@@ -2987,18 +3190,21 @@ addPropertyControls(ChatBubbles, {
         options: ["badge", "hide"],
         optionTitles: ["Offline Badge", "Hide Widget"],
         defaultValue: ${JSON.stringify(config.scheduleOfflineAction || "badge")},
-        hidden: (props: any) => !props.scheduleEnabled,
+        hidden: (props: any) => !isComponentSubscribed(props) || !props.scheduleEnabled,
     },
     scheduleOfflineText: {
         type: ControlType.String,
         title: "Offline Message",
         defaultValue: ${JSON.stringify(config.scheduleOfflineText || "Back tomorrow at 9:00 AM")},
-        hidden: (props: any) => !props.scheduleEnabled || props.scheduleOfflineAction === "hide",
+        hidden: (props: any) => !isComponentSubscribed(props) || !props.scheduleEnabled || props.scheduleOfflineAction === "hide",
     },
     showOn: {
         type: ControlType.String,
         title: "Where To Show",
         defaultValue: ${JSON.stringify(config.showOn || "Every page")},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
     canvasPagePath: {
         type: ControlType.String,
@@ -3012,14 +3218,14 @@ addPropertyControls(ChatBubbles, {
         options: ["show", "hide"],
         optionTitles: ["Show Only on Paths", "Hide on Paths"],
         defaultValue: ${JSON.stringify(config.targetingMode || "show")},
-        hidden: (props: any) => props.showOn !== "custom",
+        hidden: (props: any) => !isComponentSubscribed(props) || props.showOn !== "custom",
     },
     targetingRules: {
         type: ControlType.String,
         title: "Targeting Paths",
         placeholder: "/pricing, /checkout, /blog/*",
         defaultValue: ${JSON.stringify(config.targetingRules || "")},
-        hidden: (props: any) => props.showOn !== "custom",
+        hidden: (props: any) => !isComponentSubscribed(props) || props.showOn !== "custom",
     },
     agentsData: {
         type: ControlType.String,
@@ -3037,6 +3243,20 @@ addPropertyControls(ChatBubbles, {
         type: ControlType.Boolean,
         title: "Widget Analytics",
         defaultValue: ${Boolean(config.enableAnalytics !== false)},
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
+    },
+    customizationNote: {
+        type: ControlType.Enum,
+        title: "Note",
+        options: ["explore"],
+        optionTitles: ["Explore more customization with our plugin editor panel"],
+        defaultValue: "explore",
+        description: "Explore more customization with our plugin editor panel",
+        hidden(props: any) {
+            return !isComponentSubscribed(props)
+        },
     },
 })
 `
@@ -3125,35 +3345,43 @@ let debouncedCodeFileTimer: any = null
 export function scheduleDebouncedCodeFileSync(config: ChatConfig) {
     if (debouncedCodeFileTimer) clearTimeout(debouncedCodeFileTimer)
     debouncedCodeFileTimer = setTimeout(async () => {
-        try {
-            if (typeof (framer as any).isAllowedTo === "function") {
-                const allowed = await (framer as any).isAllowedTo("setCodeFileContent", "CodeFile.setFileContent")
-                if (!allowed) return
-            }
-            const siteInfo = await getSiteInfo().catch(() => null)
-            const code = generateComponentCode(
-                config,
-                siteInfo?.siteId,
-                siteInfo?.siteUrl,
-                cachedHasAccess,
-                cachedIsTrial,
-                cachedApiBaseUrl
-            )
-            const files = await framer.getCodeFiles()
-            const file = files.find((f) => f.name === "ChatBubbles.tsx" || f.name === "ChatBubbles" || f.name === "Chatfic")
-            if (file) {
-                await file.setFileContent(code)
-            }
-        } catch {}
+        await syncCodeFileNow(config)
     }, 2000)
+}
+
+export async function syncCodeFileNow(config: ChatConfig): Promise<void> {
+    if (debouncedCodeFileTimer) {
+        clearTimeout(debouncedCodeFileTimer)
+        debouncedCodeFileTimer = null
+    }
+    try {
+        if (typeof (framer as any).isAllowedTo === "function") {
+            const allowed = await (framer as any).isAllowedTo("setCodeFileContent", "CodeFile.setFileContent")
+            if (!allowed) return
+        }
+        const siteInfo = await getSiteInfo().catch(() => null)
+        const code = generateComponentCode(
+            config,
+            siteInfo?.siteId,
+            siteInfo?.siteUrl,
+            cachedHasAccess,
+            cachedIsTrial,
+            cachedApiBaseUrl
+        )
+        const files = await framer.getCodeFiles()
+        const file = files.find((f) => f.name === "ChatBubbles.tsx" || f.name === "ChatBubbles" || f.name === "Chatfic")
+        if (file) {
+            await file.setFileContent(code)
+        }
+    } catch {}
 }
 
 /**
  * Live synchronizes changes made in the plugin shell immediately to existing canvas instances.
  * Crucial: Updates property controls via node.setAttributes for instant zero-flash sync,
- * and debounces code file update so published code is always in sync!
+ * and debounces or immediately syncs code file so published code is always in sync!
  */
-export async function syncCanvasInstance(config: ChatConfig): Promise<boolean> {
+export async function syncCanvasInstance(config: ChatConfig, immediateCodeSync: boolean = false): Promise<boolean> {
     try {
         if (typeof (framer as any).isAllowedTo === "function") {
             try {
@@ -3162,33 +3390,39 @@ export async function syncCanvasInstance(config: ChatConfig): Promise<boolean> {
         }
         const instances = (await framer.getNodesWithType("ComponentInstanceNode")) as any[]
         const chatBubblesNodes = instances?.filter(isChatBubblesInstance) || []
-        if (chatBubblesNodes.length === 0) return true
 
         const controlPayload = buildControlPayload(config)
 
-        for (const node of chatBubblesNodes) {
-            if (typeof node.setAttributes === "function") {
-                let currentId = node.id
-                let pagePath = "/"
-                while (currentId) {
-                    const parentNode = (await framer.getNode(currentId)) as any
-                    if (!parentNode) break
-                    if (parentNode.type === "WebPageNode" || parentNode.type === "DesignPageNode") {
-                        pagePath = ("path" in parentNode && parentNode.path) ? parentNode.path : ("/" + (parentNode.name || "").replace(/^\/+/, ""))
-                        break
+        if (chatBubblesNodes.length > 0) {
+            for (const node of chatBubblesNodes) {
+                if (typeof node.setAttributes === "function") {
+                    let currentId = node.id
+                    let pagePath = "/"
+                    while (currentId) {
+                        const parentNode = (await framer.getNode(currentId)) as any
+                        if (!parentNode) break
+                        if (parentNode.type === "WebPageNode" || parentNode.type === "DesignPageNode") {
+                            pagePath = ("path" in parentNode && parentNode.path) ? parentNode.path : ("/" + (parentNode.name || "").replace(/^\/+/, ""))
+                            break
+                        }
+                        currentId = parentNode.parentId
                     }
-                    currentId = parentNode.parentId
-                }
 
-                await node.setAttributes({
-                    controls: {
-                        ...controlPayload,
-                        canvasPagePath: pagePath,
-                    },
-                })
+                    await node.setAttributes({
+                        controls: {
+                            ...controlPayload,
+                            canvasPagePath: pagePath,
+                        },
+                    })
+                }
             }
         }
-        scheduleDebouncedCodeFileSync(config)
+
+        if (immediateCodeSync) {
+            await syncCodeFileNow(config)
+        } else {
+            scheduleDebouncedCodeFileSync(config)
+        }
         return true
     } catch {
         return false

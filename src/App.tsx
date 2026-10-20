@@ -269,9 +269,24 @@ export function App() {
         )
     }, [hasActiveAccess, paymentFlow.planDetails])
 
+    const prevLicensingRef = useRef<{ hasActiveAccess: boolean; isTrialActive: boolean } | null>(null)
     useEffect(() => {
         setCanvasLicensingState(hasActiveAccess, isTrialActive, BACKEND_BASE_URL)
-    }, [hasActiveAccess, isTrialActive])
+        if (!prevLicensingRef.current) {
+            prevLicensingRef.current = { hasActiveAccess, isTrialActive }
+            if (hasActiveAccess && config) {
+                void syncCanvasInstance(config, true)
+            }
+        } else if (
+            prevLicensingRef.current.hasActiveAccess !== hasActiveAccess ||
+            prevLicensingRef.current.isTrialActive !== isTrialActive
+        ) {
+            prevLicensingRef.current = { hasActiveAccess, isTrialActive }
+            if (config) {
+                void syncCanvasInstance(config, true)
+            }
+        }
+    }, [hasActiveAccess, isTrialActive, config])
 
     const handleTabClick = useCallback(
         (targetTab: Tab) => {

@@ -20,7 +20,7 @@ export function PaymentSuccessModal({ isOpen }: PaymentSuccessModalProps) {
           </svg>
         </div>
         <h3>Payment Completed</h3>
-        <p>Your payment was successful.</p>
+        <p>Your payment was successful. The watermark has been removed!</p>
         <div className="success-loader-container">
           <div className="success-loader-spinner" />
           <span>Updating your subscription...</span>
