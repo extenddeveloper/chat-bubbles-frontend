@@ -262,18 +262,20 @@ export function buildWidgetCode(config: ChatConfig): string {
             siteUrl: window.location.href,
             eventType: "view"
           });
-          fetch("http://localhost:3000/api/analytics/track", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: payload,
-            mode: "cors"
-          }).catch(function(){});
-          fetch("https://app.framefic.com/chat-bubbles/api/analytics/track", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: payload,
-            mode: "cors"
-          }).catch(function(){});
+          var isLocalhost = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+          var targetEndpoint = isLocalhost
+            ? "http://localhost:3000/api/analytics/track"
+            : "https://app.framefic.com/chat-bubbles/api/analytics/track";
+          if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
+            navigator.sendBeacon(targetEndpoint, new Blob([payload], { type: "application/json" }));
+          } else {
+            fetch(targetEndpoint, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: payload,
+              mode: "cors"
+            }).catch(function(){});
+          }
         } catch(e){}
       }
     } catch(e) {}
@@ -540,18 +542,20 @@ export function buildWidgetCode(config: ChatConfig): string {
         eventType: "click",
         channelId: channelId || ""
       });
-      fetch("http://localhost:3000/api/analytics/track", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: clickPayload,
-        mode: "cors"
-      }).catch(function(){});
-      fetch("https://app.framefic.com/chat-bubbles/api/analytics/track", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: clickPayload,
-        mode: "cors"
-      }).catch(function(){});
+      var isLocalhost = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+      var targetEndpoint = isLocalhost
+        ? "http://localhost:3000/api/analytics/track"
+        : "https://app.framefic.com/chat-bubbles/api/analytics/track";
+      if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
+        navigator.sendBeacon(targetEndpoint, new Blob([clickPayload], { type: "application/json" }));
+      } else {
+        fetch(targetEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: clickPayload,
+          mode: "cors"
+        }).catch(function(){});
+      }
     } catch(e){}
   }
 
@@ -559,7 +563,6 @@ export function buildWidgetCode(config: ChatConfig): string {
   var navDirection = "forward";
 
   function openDirectChat(agent){
-    trackClick(agent.channelId, agent.channelId, agent.name, agent.url);
     navDirection = "forward";
     activeAgent = agent;
     render();

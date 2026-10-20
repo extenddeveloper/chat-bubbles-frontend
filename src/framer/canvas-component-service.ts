@@ -35,6 +35,7 @@ export function generateComponentCode(
         : MODAL_THEME_GRADIENTS[config.modalTheme] || MODAL_THEME_GRADIENTS.whatsapp
 
     const embeddedSiteDomain = siteUrl ? (function() { try { return new URL(siteUrl).hostname } catch { return "" } })() : ""
+    const embeddedApiUrl = apiBaseUrl && !/^https?:\/\/(localhost|127\.0\.0\.1)/i.test(apiBaseUrl) ? apiBaseUrl : "https://app.framefic.com/chat-bubbles"
 
     const defaultAgentsJson = JSON.stringify(
         config.agents && config.agents.length > 0
@@ -76,7 +77,7 @@ const EMBEDDED_SITE_DOMAIN = ${JSON.stringify(embeddedSiteDomain)}
 const IS_SUBSCRIBED = ${isActualPaid ? "true" : "false"};
 const IS_TRIAL = ${isActualTrial ? "true" : "false"};
 const __CHAT_BUBBLES_SITE_ID__ = ${JSON.stringify(siteId || "")};
-const __CHAT_BUBBLES_API_URL__ = ${JSON.stringify(apiBaseUrl || "")};
+const __CHAT_BUBBLES_API_URL__ = ${JSON.stringify(embeddedApiUrl)};
 
 var SUBSCRIPTION_CACHE_KEY = "cf_sub_" + __CHAT_BUBBLES_SITE_ID__;
 var SUBSCRIPTION_CACHE_TTL = 10 * 1000;
@@ -113,11 +114,13 @@ function checkSubscriptionFromServer(siteId: string, apiUrl: string) {
     }).catch(function () { return null })
   }
 
-  return fetchStatus(apiUrl).then(function (data) {
+  var isLocalhost = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+  var targetApiUrl = isLocalhost
+    ? (apiUrl || "http://localhost:3000")
+    : (apiUrl && !/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?/i.test(apiUrl) ? apiUrl : "https://app.framefic.com/chat-bubbles")
+
+  return fetchStatus(targetApiUrl).then(function (data) {
     if (data && typeof data.isPaid === "boolean") return data
-    if (apiUrl && !/^https?:\\/\\/app\\.framefic\\.com/i.test(apiUrl)) {
-      return fetchStatus("https://app.framefic.com/chat-bubbles")
-    }
     return null
   }).then(function (data) {
     if (!data || typeof data.isPaid !== "boolean") return null
@@ -245,30 +248,26 @@ function sendTrackingEvent(eventType: "view" | "click", channelId?: string) {
       channelId: channelId || "",
     })
 
-    // 1. Send to local dev server (works when running in local dev/Framer desktop or localhost)
-    try {
-      fetch("http://localhost:3000/api/analytics/track", {
+    const isLocalhost = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+    const base = isLocalhost
+      ? (__CHAT_BUBBLES_API_URL__ || "http://localhost:3000")
+      : (__CHAT_BUBBLES_API_URL__ && !/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?/i.test(__CHAT_BUBBLES_API_URL__)
+          ? __CHAT_BUBBLES_API_URL__
+          : "https://app.framefic.com/chat-bubbles")
+    const cleanBase = base.replace(/\/+$/, "")
+    const targetUrl = cleanBase + "/api/analytics/track"
+
+    if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
+      const blob = new Blob([payload], { type: "application/json" })
+      navigator.sendBeacon(targetUrl, blob)
+    } else {
+      fetch(targetUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: payload,
         mode: "cors",
       }).catch(() => {})
-    } catch {}
-
-    // 2. Also send to production server (supports sendBeacon for background delivery)
-    try {
-      if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
-        const blob = new Blob([payload], { type: "application/json" })
-        navigator.sendBeacon("https://app.framefic.com/chat-bubbles/api/analytics/track", blob)
-      } else {
-        fetch("https://app.framefic.com/chat-bubbles/api/analytics/track", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: payload,
-          mode: "cors",
-        }).catch(() => {})
-      }
-    } catch {}
+    }
   } catch {}
 }
 
@@ -620,12 +619,17 @@ export default function ChatBubbles(props: ChatBubblesProps) {
 
     const isCanvas = typeof RenderTarget !== "undefined" && typeof RenderTarget.current === "function" && RenderTarget.current() === RenderTarget.canvas
     const subInfo = useSubscriptionCheck(props)
-    const runtimeSubscribed = isCanvas
-        ? Boolean((props && (props.isPro || props.isTrial)) || subInfo.isSubscribed)
-        : subInfo.isSubscribed
-    const runtimeIsTrial = isCanvas
-        ? Boolean(!(props && props.isPro) && ((props && props.isTrial) || subInfo.isTrial))
-        : subInfo.isTrial
+    const runtimeSubscribed = Boolean(
+        (props && (props.isPro || props.isTrial)) ||
+        IS_SUBSCRIBED ||
+        IS_TRIAL ||
+        subInfo.isSubscribed
+    )
+    const runtimeIsTrial = Boolean(
+        !(props && props.isPro) &&
+        !IS_SUBSCRIBED &&
+        ((props && props.isTrial) || IS_TRIAL || subInfo.isTrial)
+    )
     const containerRef = React.useRef<HTMLDivElement>(null)
     const [isOpen, setIsOpen] = React.useState(isCanvas ? canvasPreview !== "closed" : false)
     const [greetingDismissed, setGreetingDismissed] = React.useState(false)
