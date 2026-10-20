@@ -254,7 +254,8 @@ function sendTrackingEvent(eventType: "view" | "click", channelId?: string) {
       : (__CHAT_BUBBLES_API_URL__ && !/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?/i.test(__CHAT_BUBBLES_API_URL__)
           ? __CHAT_BUBBLES_API_URL__
           : "https://app.framefic.com/chat-bubbles")
-    const cleanBase = base.replace(/\/+$/, "")
+    let cleanBase = base || ""
+    while (cleanBase.endsWith("/")) cleanBase = cleanBase.slice(0, -1)
     const targetUrl = cleanBase + "/api/analytics/track"
 
     if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
