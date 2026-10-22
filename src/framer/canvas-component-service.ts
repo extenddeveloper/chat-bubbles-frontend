@@ -114,10 +114,9 @@ function checkSubscriptionFromServer(siteId: string, apiUrl: string) {
     }).catch(function () { return null })
   }
 
-  var isLocalhost = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
-  var targetApiUrl = isLocalhost
-    ? (apiUrl || "http://localhost:3000")
-    : (apiUrl && !/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?/i.test(apiUrl) ? apiUrl : "https://app.framefic.com/chat-bubbles")
+  var targetApiUrl = (apiUrl && !/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?/i.test(apiUrl))
+    ? apiUrl
+    : "https://app.framefic.com/chat-bubbles"
 
   return fetchStatus(targetApiUrl).then(function (data) {
     if (data && typeof data.isPaid === "boolean") return data
@@ -248,12 +247,9 @@ function sendTrackingEvent(eventType: "view" | "click", channelId?: string) {
       channelId: channelId || "",
     })
 
-    const isLocalhost = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
-    const base = isLocalhost
-      ? (__CHAT_BUBBLES_API_URL__ || "http://localhost:3000")
-      : (__CHAT_BUBBLES_API_URL__ && !/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?/i.test(__CHAT_BUBBLES_API_URL__)
-          ? __CHAT_BUBBLES_API_URL__
-          : "https://app.framefic.com/chat-bubbles")
+    const base = (__CHAT_BUBBLES_API_URL__ && !/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?/i.test(__CHAT_BUBBLES_API_URL__))
+      ? __CHAT_BUBBLES_API_URL__
+      : "https://app.framefic.com/chat-bubbles"
     let cleanBase = base || ""
     while (cleanBase.endsWith("/")) cleanBase = cleanBase.slice(0, -1)
     const targetUrl = cleanBase + "/api/analytics/track"

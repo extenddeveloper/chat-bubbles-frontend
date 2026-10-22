@@ -1,7 +1,8 @@
+/// <reference types="vite/client" />
+
 export const BACKEND_BASE_URL: string =
-    typeof window !== "undefined" &&
-    (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
-        ? "http://localhost:3000"
+    (typeof import.meta !== "undefined" && (import.meta as any)?.env?.VITE_BACKEND_URL)
+        ? (import.meta as any).env.VITE_BACKEND_URL
         : "https://app.framefic.com/chat-bubbles"
 
 export const buildBackendUrl = (path: string): string => {
