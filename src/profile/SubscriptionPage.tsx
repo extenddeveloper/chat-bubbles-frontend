@@ -145,6 +145,12 @@ export function SubscriptionPage({
     }
   }
 
+  const isSubscriptionEnded =
+    !hasSubscription ||
+    planDetails?.status === "cancelled" ||
+    planDetails?.status === "canceled" ||
+    (planDetails?.expiresAt ? new Date(planDetails.expiresAt) <= new Date() && planDetails.plan !== "lifetime" : false)
+
   const handleChangePlan = async (targetPlan: string): Promise<void> => {
     try {
       setIsChangingPlan(true)
@@ -158,6 +164,25 @@ export function SubscriptionPage({
       })
     } catch (error: any) {
       console.error("Error changing subscription plan:", error)
+      const errorMsg = String(error?.message || "")
+      const requiresNewCheckout =
+        error?.requiresNewCheckout ||
+        errorMsg.includes("canceled subscription") ||
+        errorMsg.includes("cancelled subscription") ||
+        errorMsg.includes("has ended") ||
+        errorMsg.includes("cannot be updated")
+
+      if (requiresNewCheckout) {
+        setUpgradePreviewPlan(null)
+        setShowPlans(false)
+        void notify?.({
+          type: "Success",
+          message: "Please enter your payment details to start your new subscription.",
+        })
+        onPay(null, targetPlan)
+        return
+      }
+
       setBillingError(error.message || "Failed to change plan. Please try again.")
       void notify?.({
         type: "Error",
@@ -189,7 +214,7 @@ export function SubscriptionPage({
             payingPlan={payingPlan}
             lifetimeAvailability={lifetimeAvailability}
             onPay={(e, planKey) => {
-              if (hasSubscription && !planDetails?.isTrial && (planKey === "monthly" || planKey === "yearly" || planKey === "lifetime")) {
+              if (hasSubscription && !isSubscriptionEnded && !planDetails?.isTrial && (planKey === "monthly" || planKey === "yearly" || planKey === "lifetime")) {
                 setUpgradePreviewPlan(planKey)
               } else {
                 onPay(e, planKey)
