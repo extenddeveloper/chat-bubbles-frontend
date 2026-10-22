@@ -434,7 +434,7 @@ button.cf-tab {
     height: 100% !important;
     padding: 0 2px !important;
     font-family: var(--font-sans, "Inter", sans-serif) !important;
-    font-size: 13px !important;
+    font-size: 12px !important;
     font-weight: 500 !important;
     color: var(--cf-text-secondary, #94a3b8) !important;
     background: transparent !important;
@@ -4672,7 +4672,7 @@ button.cf-btn-view-analytics:hover {
     overflow: hidden !important;
 }
 
-.content.cf-content-blurred > *:not(.cf-tab-blur-overlay):not(.cf-notice) {
+.content.cf-content-blurred>*:not(.cf-tab-blur-overlay):not(.cf-notice) {
     filter: blur(8px);
     -webkit-filter: blur(8px);
     opacity: 0.35;

@@ -183,7 +183,7 @@ export function App() {
             if (saved === "light" || saved === "dark" || saved === "auto") {
                 return saved
             }
-        } catch {}
+        } catch { }
         return "auto"
     })
     const [canvasTheme, setCanvasTheme] = useState<"light" | "dark">(() => {
@@ -231,9 +231,9 @@ export function App() {
         })
         try {
             if (typeof (framer as any).notify === "function") {
-                ;(framer as any).notify(payload.message)
+                ; (framer as any).notify(payload.message)
             }
-        } catch {}
+        } catch { }
     }, [])
 
     const paymentFlow = usePaymentFlow({
@@ -539,7 +539,7 @@ export function App() {
                         return mode
                     }
                 }
-            } catch {}
+            } catch { }
 
             // 3. Fallback to dark (Framer canvas default)
             return "dark"
@@ -604,7 +604,7 @@ export function App() {
         setThemePreference(preference)
         try {
             localStorage.setItem("chatfic_theme_pref_v4", preference)
-        } catch {}
+        } catch { }
     }
 
     useEffect(() => {
@@ -1309,8 +1309,8 @@ export function App() {
                                                                                     {!c.enabled
                                                                                         ? " (Disabled in Channels)"
                                                                                         : c.value
-                                                                                        ? ` (${c.value})`
-                                                                                        : " (Active, no default)"}
+                                                                                            ? ` (${c.value})`
+                                                                                            : " (Active, no default)"}
                                                                                 </option>
                                                                             ))
                                                                         })()}
@@ -1688,336 +1688,336 @@ export function App() {
                         {/* DESIGN TAB */}
                         {tab === "design" && (
                             <>
-                                        <Section
-                                            title="Chat Window Header &amp; Theme"
-                                            description="Customize the top header gradient, greeting, and response time."
-                                        >
-                                            <Field label="Header Theme Gradient">
-                                                <div className="cf-theme-grid">
-                                                    {(
-                                                        [
-                                                            ["whatsapp", "WhatsApp"],
-                                                            ["messenger", "Messenger"],
-                                                            ["telegram", "Telegram"],
-                                                            ["instagram", "Instagram"],
-                                                            ["tiktok", "TikTok"],
-                                                            ["wechat", "WeChat"],
-                                                            ["dark", "Modern Dark"],
-                                                            ["custom", "Custom"],
-                                                        ] as const
-                                                    ).map(([themeId, label]) => (
-                                                        <div
-                                                            key={themeId}
-                                                            className={"cf-theme-card " + (config.modalTheme === themeId ? "active" : "")}
-                                                            onClick={() => updateConfig({ modalTheme: themeId as ModalTheme })}
-                                                        >
-                                                            <div className={"cf-theme-swatch cf-theme-grad-" + themeId} />
-                                                            <span className="cf-theme-name">{label}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </Field>
-
-                                            {config.modalTheme === "custom" && (
-                                                <Field label="Custom Gradient &amp; Color Palette" hint="Choose from curated presets, pick start &amp; end colors, or rotate the angle">
-                                                    <GradientColorPicker
-                                                        value={config.modalCustomGradient || "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)"}
-                                                        onChange={(modalCustomGradient) => updateConfig({ modalCustomGradient })}
-                                                    />
-                                                </Field>
-                                            )}
-
-                                            <div className="cf-field-grid">
-                                                <Field label="Header Title">
-                                                    <input
-                                                        className="cf-input"
-                                                        maxLength={100}
-                                                        value={config.modalTitle}
-                                                        onChange={(e) => updateConfig({ modalTitle: e.target.value })}
-                                                        placeholder="Hi there!"
-                                                    />
-                                                </Field>
-                                                <Field label="Response Time Badge">
-                                                    <input
-                                                        className="cf-input"
-                                                        maxLength={60}
-                                                        value={config.modalResponseTime}
-                                                        onChange={(e) => updateConfig({ modalResponseTime: e.target.value })}
-                                                        placeholder="Typically replies in minutes"
-                                                    />
-                                                </Field>
-                                            </div>
-
-                                            <Field label="Header Subtitle">
-                                                <input
-                                                    className="cf-input"
-                                                    maxLength={250}
-                                                    value={config.modalSubtitle}
-                                                    onChange={(e) => updateConfig({ modalSubtitle: e.target.value })}
-                                                    placeholder="Welcome to our live chat! Feel free to ask any questions."
-                                                />
-                                            </Field>
-                                        </Section>
-
-                                        <Section
-                                            title="Widget Experience Mode"
-                                            description="Choose how visitors interact when clicking your floating button."
-                                        >
-                                            <div className="cf-field-grid">
+                                <Section
+                                    title="Chat Window Header &amp; Theme"
+                                    description="Customize the top header gradient, greeting, and response time."
+                                >
+                                    <Field label="Header Theme Gradient">
+                                        <div className="cf-theme-grid">
+                                            {(
+                                                [
+                                                    ["whatsapp", "WhatsApp"],
+                                                    ["messenger", "Messenger"],
+                                                    ["telegram", "Telegram"],
+                                                    ["instagram", "Instagram"],
+                                                    ["tiktok", "TikTok"],
+                                                    ["wechat", "WeChat"],
+                                                    ["dark", "Modern Dark"],
+                                                    ["custom", "Custom"],
+                                                ] as const
+                                            ).map(([themeId, label]) => (
                                                 <div
-                                                    className={"cf-theme-card cf-mode-card " + (config.widgetMode === "modal" ? "active" : "")}
-                                                    onClick={() => updateConfig({ widgetMode: "modal" })}
+                                                    key={themeId}
+                                                    className={"cf-theme-card " + (config.modalTheme === themeId ? "active" : "")}
+                                                    onClick={() => updateConfig({ modalTheme: themeId as ModalTheme })}
                                                 >
-                                                    <div className="cf-mode-card-header">
-                                                        <span className="cf-mode-card-icon">
-                                                            <IconLayoutModal size={16} />
-                                                        </span>
-                                                        <strong className="cf-mode-card-title">Live Chat Modal</strong>
-                                                    </div>
-                                                    <span className="cf-mode-card-desc">
-                                                        Popup chat window with support team and preview.
-                                                    </span>
+                                                    <div className={"cf-theme-swatch cf-theme-grad-" + themeId} />
+                                                    <span className="cf-theme-name">{label}</span>
                                                 </div>
-                                                <div
-                                                    className={"cf-theme-card cf-mode-card " + (config.widgetMode === "buttons" ? "active" : "")}
-                                                    onClick={() => updateConfig({ widgetMode: "buttons" })}
-                                                >
-                                                    <div className="cf-mode-card-header">
-                                                        <span className="cf-mode-card-icon">
-                                                            <IconLayoutButtons size={16} />
-                                                        </span>
-                                                        <strong className="cf-mode-card-title">Icon Buttons</strong>
-                                                    </div>
-                                                    <span className="cf-mode-card-desc">
-                                                        Classic floating icon list opening direct channel URLs.
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </Section>
+                                            ))}
+                                        </div>
+                                    </Field>
 
-                                        <Section
-                                            title="Chat Preview &amp; Start CTA"
-                                            description="Configure the simulated incoming message and the action button."
+                                    {config.modalTheme === "custom" && (
+                                        <Field label="Custom Gradient &amp; Color Palette" hint="Choose from curated presets, pick start &amp; end colors, or rotate the angle">
+                                            <GradientColorPicker
+                                                value={config.modalCustomGradient || "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)"}
+                                                onChange={(modalCustomGradient) => updateConfig({ modalCustomGradient })}
+                                            />
+                                        </Field>
+                                    )}
+
+                                    <div className="cf-field-grid">
+                                        <Field label="Header Title">
+                                            <input
+                                                className="cf-input"
+                                                maxLength={100}
+                                                value={config.modalTitle}
+                                                onChange={(e) => updateConfig({ modalTitle: e.target.value })}
+                                                placeholder="Hi there!"
+                                            />
+                                        </Field>
+                                        <Field label="Response Time Badge">
+                                            <input
+                                                className="cf-input"
+                                                maxLength={60}
+                                                value={config.modalResponseTime}
+                                                onChange={(e) => updateConfig({ modalResponseTime: e.target.value })}
+                                                placeholder="Typically replies in minutes"
+                                            />
+                                        </Field>
+                                    </div>
+
+                                    <Field label="Header Subtitle">
+                                        <input
+                                            className="cf-input"
+                                            maxLength={250}
+                                            value={config.modalSubtitle}
+                                            onChange={(e) => updateConfig({ modalSubtitle: e.target.value })}
+                                            placeholder="Welcome to our live chat! Feel free to ask any questions."
+                                        />
+                                    </Field>
+                                </Section>
+
+                                <Section
+                                    title="Widget Experience Mode"
+                                    description="Choose how visitors interact when clicking your floating button."
+                                >
+                                    <div className="cf-field-grid">
+                                        <div
+                                            className={"cf-theme-card cf-mode-card " + (config.widgetMode === "modal" ? "active" : "")}
+                                            onClick={() => updateConfig({ widgetMode: "modal" })}
                                         >
-                                            <Field label="Welcome Chat Bubble Message">
-                                                <textarea
-                                                    className="cf-input"
-                                                    rows={2}
-                                                    maxLength={500}
-                                                    value={config.modalChatBubble}
-                                                    onChange={(e) => updateConfig({ modalChatBubble: e.target.value })}
-                                                    placeholder="We typically reply within a few minutes. How can we help you today?"
-                                                />
-                                            </Field>
-                                            <Field label="CTA Button Text">
-                                                <input
-                                                    className="cf-input"
-                                                    maxLength={50}
-                                                    value={config.modalStartChatText}
-                                                    onChange={(e) => updateConfig({ modalStartChatText: e.target.value })}
-                                                    placeholder="Start chat"
-                                                />
-                                            </Field>
-                                        </Section>
-
-                                        <Section
-                                            title="Floating Launcher Design"
-                                            description="Customize the floating button shape, size, layout, animation, and responsive offsets."
+                                            <div className="cf-mode-card-header">
+                                                <span className="cf-mode-card-icon">
+                                                    <IconLayoutModal size={16} />
+                                                </span>
+                                                <strong className="cf-mode-card-title">Live Chat Modal</strong>
+                                            </div>
+                                            <span className="cf-mode-card-desc">
+                                                Popup chat window with support team and preview.
+                                            </span>
+                                        </div>
+                                        <div
+                                            className={"cf-theme-card cf-mode-card " + (config.widgetMode === "buttons" ? "active" : "")}
+                                            onClick={() => updateConfig({ widgetMode: "buttons" })}
                                         >
-                                            <div className="cf-field-grid">
-                                                <Field label="Toggle Button Icon" hint="Icon displayed on the main floating toggle button">
-                                                    <select
-                                                        className="cf-input"
-                                                        value={config.launcherIcon || "chat"}
-                                                        onChange={(e) => updateConfig({ launcherIcon: e.target.value as any })}
-                                                    >
-                                                        <option value="chat">Live Chat (Speech Bubble)</option>
-                                                        <option value="whatsapp">WhatsApp</option>
-                                                        <option value="messenger">Messenger</option>
-                                                        <option value="telegram">Telegram</option>
-                                                        <option value="instagram">Instagram</option>
-                                                        <option value="phone">Phone Call</option>
-                                                        <option value="email">Email</option>
-                                                        <option value="support">Customer Support (Headset)</option>
-                                                    </select>
-                                                </Field>
-                                                <Field label="Button Shape">
-                                                    <select
-                                                        className="cf-input"
-                                                        value={config.buttonShape}
-                                                        onChange={(e) => updateConfig({ buttonShape: e.target.value as any })}
-                                                    >
-                                                        <option value="circle">Circle</option>
-                                                        <option value="rounded">Rounded Square</option>
-                                                        <option value="pill">Pill</option>
-                                                    </select>
-                                                </Field>
+                                            <div className="cf-mode-card-header">
+                                                <span className="cf-mode-card-icon">
+                                                    <IconLayoutButtons size={16} />
+                                                </span>
+                                                <strong className="cf-mode-card-title">Icon Buttons</strong>
                                             </div>
+                                            <span className="cf-mode-card-desc">
+                                                Classic floating icon list opening direct channel URLs.
+                                            </span>
+                                        </div>
+                                    </div>
+                                </Section>
 
-                                            <div className="cf-field-grid">
-                                                <Field label="Button Menu Layout" hint="Arrange channel buttons in vertical stack, 2-column grid, or horizontal row">
-                                                    <select
-                                                        className="cf-input"
-                                                        value={config.layout}
-                                                        onChange={(e) => updateConfig({ layout: e.target.value as any })}
-                                                    >
-                                                        <option value="stack">Stack (Vertical)</option>
-                                                        <option value="grid">Grid (2 Columns)</option>
-                                                        <option value="horizontal">Horizontal Row</option>
-                                                    </select>
-                                                </Field>
-                                                <Field label="Entrance Animation" hint="Motion preset when launcher/window opens">
-                                                    <select
-                                                        className="cf-input"
-                                                        value={config.animation}
-                                                        onChange={(e) => updateConfig({ animation: e.target.value as any })}
-                                                    >
-                                                        <option value="pop">Pop In</option>
-                                                        <option value="bounce">Playful Bounce</option>
-                                                        <option value="slide">Slide Up</option>
-                                                        <option value="pulse">Pulse Glow</option>
-                                                        <option value="none">None (Instant)</option>
-                                                    </select>
-                                                </Field>
+                                <Section
+                                    title="Chat Preview &amp; Start CTA"
+                                    description="Configure the simulated incoming message and the action button."
+                                >
+                                    <Field label="Welcome Chat Bubble Message">
+                                        <textarea
+                                            className="cf-input"
+                                            rows={2}
+                                            maxLength={500}
+                                            value={config.modalChatBubble}
+                                            onChange={(e) => updateConfig({ modalChatBubble: e.target.value })}
+                                            placeholder="We typically reply within a few minutes. How can we help you today?"
+                                        />
+                                    </Field>
+                                    <Field label="CTA Button Text">
+                                        <input
+                                            className="cf-input"
+                                            maxLength={50}
+                                            value={config.modalStartChatText}
+                                            onChange={(e) => updateConfig({ modalStartChatText: e.target.value })}
+                                            placeholder="Start chat"
+                                        />
+                                    </Field>
+                                </Section>
+
+                                <Section
+                                    title="Floating Launcher Design"
+                                    description="Customize the floating button shape, size, layout, animation, and responsive offsets."
+                                >
+                                    <div className="cf-field-grid">
+                                        <Field label="Toggle Button Icon" hint="Icon displayed on the main floating toggle button">
+                                            <select
+                                                className="cf-input"
+                                                value={config.launcherIcon || "chat"}
+                                                onChange={(e) => updateConfig({ launcherIcon: e.target.value as any })}
+                                            >
+                                                <option value="chat">Live Chat (Speech Bubble)</option>
+                                                <option value="whatsapp">WhatsApp</option>
+                                                <option value="messenger">Messenger</option>
+                                                <option value="telegram">Telegram</option>
+                                                <option value="instagram">Instagram</option>
+                                                <option value="phone">Phone Call</option>
+                                                <option value="email">Email</option>
+                                                <option value="support">Customer Support (Headset)</option>
+                                            </select>
+                                        </Field>
+                                        <Field label="Button Shape">
+                                            <select
+                                                className="cf-input"
+                                                value={config.buttonShape}
+                                                onChange={(e) => updateConfig({ buttonShape: e.target.value as any })}
+                                            >
+                                                <option value="circle">Circle</option>
+                                                <option value="rounded">Rounded Square</option>
+                                                <option value="pill">Pill</option>
+                                            </select>
+                                        </Field>
+                                    </div>
+
+                                    <div className="cf-field-grid">
+                                        <Field label="Button Menu Layout" hint="Arrange channel buttons in vertical stack, 2-column grid, or horizontal row">
+                                            <select
+                                                className="cf-input"
+                                                value={config.layout}
+                                                onChange={(e) => updateConfig({ layout: e.target.value as any })}
+                                            >
+                                                <option value="stack">Stack (Vertical)</option>
+                                                <option value="grid">Grid (2 Columns)</option>
+                                                <option value="horizontal">Horizontal Row</option>
+                                            </select>
+                                        </Field>
+                                        <Field label="Entrance Animation" hint="Motion preset when launcher/window opens">
+                                            <select
+                                                className="cf-input"
+                                                value={config.animation}
+                                                onChange={(e) => updateConfig({ animation: e.target.value as any })}
+                                            >
+                                                <option value="pop">Pop In</option>
+                                                <option value="bounce">Playful Bounce</option>
+                                                <option value="slide">Slide Up</option>
+                                                <option value="pulse">Pulse Glow</option>
+                                                <option value="none">None (Instant)</option>
+                                            </select>
+                                        </Field>
+                                    </div>
+
+                                    <div className="cf-field-grid">
+                                        <Field label="Button Size">
+                                            <select
+                                                className="cf-input"
+                                                value={config.buttonSize}
+                                                onChange={(e) => updateConfig({ buttonSize: Number(e.target.value) })}
+                                            >
+                                                <option value={46}>Small (46px)</option>
+                                                <option value={56}>Medium (56px)</option>
+                                                <option value={64}>Large (64px)</option>
+                                            </select>
+                                        </Field>
+                                        <Field label="Launcher Default Color">
+                                            <CustomColorPicker
+                                                value={config.buttonColor || "#5271FF"}
+                                                fallback="#5271FF"
+                                                onChange={(buttonColor) => updateConfig({ buttonColor })}
+                                                ariaLabel="Launcher Default Color"
+                                            />
+                                        </Field>
+                                    </div>
+
+                                    <div className="cf-field-grid">
+                                        <Field label="Desktop Offset X (px)">
+                                            <input
+                                                type="number"
+                                                className="cf-input"
+                                                min={0}
+                                                max={300}
+                                                value={config.offsetX}
+                                                onChange={(e) => updateConfig({ offsetX: Number(e.target.value) || 0 })}
+                                            />
+                                        </Field>
+                                        <Field label="Desktop Offset Y (px)">
+                                            <input
+                                                type="number"
+                                                className="cf-input"
+                                                min={0}
+                                                max={300}
+                                                value={config.offsetY}
+                                                onChange={(e) => updateConfig({ offsetY: Number(e.target.value) || 0 })}
+                                            />
+                                        </Field>
+                                    </div>
+
+                                    <div className="cf-field-grid">
+                                        <Field label="Mobile Offset X (px)" hint="Distance from screen edge on mobile (<640px)">
+                                            <input
+                                                type="number"
+                                                className="cf-input"
+                                                min={0}
+                                                max={200}
+                                                value={config.mobileOffsetX}
+                                                onChange={(e) => updateConfig({ mobileOffsetX: Number(e.target.value) || 0 })}
+                                            />
+                                        </Field>
+                                        <Field label="Mobile Offset Y (px)" hint="Distance from screen edge on mobile (<640px)">
+                                            <input
+                                                type="number"
+                                                className="cf-input"
+                                                min={0}
+                                                max={200}
+                                                value={config.mobileOffsetY}
+                                                onChange={(e) => updateConfig({ mobileOffsetY: Number(e.target.value) || 0 })}
+                                            />
+                                        </Field>
+                                    </div>
+
+                                    <div className="cf-flex-between">
+                                        <div className="cf-setting-info">
+                                            <div className="cf-text-sm-semibold">
+                                                Mobile Layout Constraint (Cap 4+)
                                             </div>
-
-                                            <div className="cf-field-grid">
-                                                <Field label="Button Size">
-                                                    <select
-                                                        className="cf-input"
-                                                        value={config.buttonSize}
-                                                        onChange={(e) => updateConfig({ buttonSize: Number(e.target.value) })}
-                                                    >
-                                                        <option value={46}>Small (46px)</option>
-                                                        <option value={56}>Medium (56px)</option>
-                                                        <option value={64}>Large (64px)</option>
-                                                    </select>
-                                                </Field>
-                                                <Field label="Launcher Default Color">
-                                                    <CustomColorPicker
-                                                        value={config.buttonColor || "#5271FF"}
-                                                        fallback="#5271FF"
-                                                        onChange={(buttonColor) => updateConfig({ buttonColor })}
-                                                        ariaLabel="Launcher Default Color"
-                                                    />
-                                                </Field>
+                                            <div className="cf-text-xs-secondary">
+                                                When 5+ channels are enabled, caps visible mobile buttons (&lt;640px) to the top 4 channels with an expandable '+ More' button to prevent screen clutter.
                                             </div>
+                                        </div>
+                                        <Switch
+                                            checked={config.mobileCapChannels ?? true}
+                                            onChange={(mobileCapChannels) => updateConfig({ mobileCapChannels })}
+                                        />
+                                    </div>
 
-                                            <div className="cf-field-grid">
-                                                <Field label="Desktop Offset X (px)">
-                                                    <input
-                                                        type="number"
-                                                        className="cf-input"
-                                                        min={0}
-                                                        max={300}
-                                                        value={config.offsetX}
-                                                        onChange={(e) => updateConfig({ offsetX: Number(e.target.value) || 0 })}
-                                                    />
-                                                </Field>
-                                                <Field label="Desktop Offset Y (px)">
-                                                    <input
-                                                        type="number"
-                                                        className="cf-input"
-                                                        min={0}
-                                                        max={300}
-                                                        value={config.offsetY}
-                                                        onChange={(e) => updateConfig({ offsetY: Number(e.target.value) || 0 })}
-                                                    />
-                                                </Field>
-                                            </div>
+                                    <Field label="Accessibility ARIA Label" hint="Screen reader text describing the floating launcher button">
+                                        <input
+                                            className="cf-input"
+                                            maxLength={80}
+                                            value={config.ariaLabel}
+                                            onChange={(e) => updateConfig({ ariaLabel: e.target.value })}
+                                            placeholder="Open chat options"
+                                        />
+                                    </Field>
 
-                                            <div className="cf-field-grid">
-                                                <Field label="Mobile Offset X (px)" hint="Distance from screen edge on mobile (<640px)">
-                                                    <input
-                                                        type="number"
-                                                        className="cf-input"
-                                                        min={0}
-                                                        max={200}
-                                                        value={config.mobileOffsetX}
-                                                        onChange={(e) => updateConfig({ mobileOffsetX: Number(e.target.value) || 0 })}
-                                                    />
-                                                </Field>
-                                                <Field label="Mobile Offset Y (px)" hint="Distance from screen edge on mobile (<640px)">
-                                                    <input
-                                                        type="number"
-                                                        className="cf-input"
-                                                        min={0}
-                                                        max={200}
-                                                        value={config.mobileOffsetY}
-                                                        onChange={(e) => updateConfig({ mobileOffsetY: Number(e.target.value) || 0 })}
-                                                    />
-                                                </Field>
-                                            </div>
-
-                                            <div className="cf-flex-between">
-                                                <div className="cf-setting-info">
-                                                    <div className="cf-text-sm-semibold">
-                                                        Mobile Layout Constraint (Cap 4+)
-                                                    </div>
-                                                    <div className="cf-text-xs-secondary">
-                                                        When 5+ channels are enabled, caps visible mobile buttons (&lt;640px) to the top 4 channels with an expandable '+ More' button to prevent screen clutter.
-                                                    </div>
-                                                </div>
+                                    <div className="cf-field-grid">
+                                        <Field label="Unread Notification Badge">
+                                            <div className="cf-flex-center-gap-10">
                                                 <Switch
-                                                    checked={config.mobileCapChannels ?? true}
-                                                    onChange={(mobileCapChannels) => updateConfig({ mobileCapChannels })}
+                                                    checked={config.showBadge}
+                                                    onChange={(showBadge) => updateConfig({ showBadge })}
                                                 />
-                                            </div>
-
-                                            <Field label="Accessibility ARIA Label" hint="Screen reader text describing the floating launcher button">
-                                                <input
-                                                    className="cf-input"
-                                                    maxLength={80}
-                                                    value={config.ariaLabel}
-                                                    onChange={(e) => updateConfig({ ariaLabel: e.target.value })}
-                                                    placeholder="Open chat options"
-                                                />
-                                            </Field>
-
-                                            <div className="cf-field-grid">
-                                                <Field label="Unread Notification Badge">
-                                                    <div className="cf-flex-center-gap-10">
-                                                        <Switch
-                                                            checked={config.showBadge}
-                                                            onChange={(showBadge) => updateConfig({ showBadge })}
-                                                        />
-                                                        {config.showBadge && (
-                                                            <input
-                                                                className="cf-input cf-input-w60"
-                                                                maxLength={10}
-                                                                value={config.badgeText}
-                                                                onChange={(e) => updateConfig({ badgeText: e.target.value })}
-                                                                placeholder="1"
-                                                            />
-                                                        )}
-                                                    </div>
-                                                </Field>
-
-                                                <Field label="Greeting Bubble Preview">
-                                                    <div className="cf-flex-center-gap-10">
-                                                        <Switch
-                                                            checked={config.greetingEnabled}
-                                                            onChange={(greetingEnabled) => updateConfig({ greetingEnabled })}
-                                                        />
-                                                        <span className="cf-text-xs-secondary">
-                                                            {config.greetingEnabled ? "Visible" : "Hidden"}
-                                                        </span>
-                                                    </div>
-                                                </Field>
-                                            </div>
-
-                                            {config.greetingEnabled && (
-                                                <Field label="Greeting Bubble Text">
+                                                {config.showBadge && (
                                                     <input
-                                                        className="cf-input"
-                                                        maxLength={200}
-                                                        value={config.greetingText}
-                                                        onChange={(e) => updateConfig({ greetingText: e.target.value })}
-                                                        placeholder="Need help? Chat with us."
+                                                        className="cf-input cf-input-w60"
+                                                        maxLength={10}
+                                                        value={config.badgeText}
+                                                        onChange={(e) => updateConfig({ badgeText: e.target.value })}
+                                                        placeholder="1"
                                                     />
-                                                </Field>
-                                            )}
-                                        </Section>
+                                                )}
+                                            </div>
+                                        </Field>
+
+                                        <Field label="Greeting Bubble Preview">
+                                            <div className="cf-flex-center-gap-10">
+                                                <Switch
+                                                    checked={config.greetingEnabled}
+                                                    onChange={(greetingEnabled) => updateConfig({ greetingEnabled })}
+                                                />
+                                                <span className="cf-text-xs-secondary">
+                                                    {config.greetingEnabled ? "Visible" : "Hidden"}
+                                                </span>
+                                            </div>
+                                        </Field>
+                                    </div>
+
+                                    {config.greetingEnabled && (
+                                        <Field label="Greeting Bubble Text">
+                                            <input
+                                                className="cf-input"
+                                                maxLength={200}
+                                                value={config.greetingText}
+                                                onChange={(e) => updateConfig({ greetingText: e.target.value })}
+                                                placeholder="Need help? Chat with us."
+                                            />
+                                        </Field>
+                                    )}
+                                </Section>
                             </>
                         )}
 
@@ -2413,35 +2413,32 @@ export function App() {
                                                         <div className="cf-day-presets">
                                                             <button
                                                                 type="button"
-                                                                className={`cf-preset-pill ${
-                                                                    (config.scheduleDays || [1, 2, 3, 4, 5]).length === 5 &&
-                                                                    [1, 2, 3, 4, 5].every((d) => (config.scheduleDays || [1, 2, 3, 4, 5]).includes(d))
+                                                                className={`cf-preset-pill ${(config.scheduleDays || [1, 2, 3, 4, 5]).length === 5 &&
+                                                                        [1, 2, 3, 4, 5].every((d) => (config.scheduleDays || [1, 2, 3, 4, 5]).includes(d))
                                                                         ? "is-active"
                                                                         : ""
-                                                                }`}
+                                                                    }`}
                                                                 onClick={() => updateConfig({ scheduleDays: [1, 2, 3, 4, 5] })}
                                                             >
                                                                 Weekdays (Mon-Fri)
                                                             </button>
                                                             <button
                                                                 type="button"
-                                                                className={`cf-preset-pill ${
-                                                                    (config.scheduleDays || [1, 2, 3, 4, 5]).length === 2 &&
-                                                                    [6, 0].every((d) => (config.scheduleDays || [1, 2, 3, 4, 5]).includes(d))
+                                                                className={`cf-preset-pill ${(config.scheduleDays || [1, 2, 3, 4, 5]).length === 2 &&
+                                                                        [6, 0].every((d) => (config.scheduleDays || [1, 2, 3, 4, 5]).includes(d))
                                                                         ? "is-active"
                                                                         : ""
-                                                                }`}
+                                                                    }`}
                                                                 onClick={() => updateConfig({ scheduleDays: [6, 0] })}
                                                             >
                                                                 Weekends
                                                             </button>
                                                             <button
                                                                 type="button"
-                                                                className={`cf-preset-pill ${
-                                                                    (config.scheduleDays || [1, 2, 3, 4, 5]).length === 7
+                                                                className={`cf-preset-pill ${(config.scheduleDays || [1, 2, 3, 4, 5]).length === 7
                                                                         ? "is-active"
                                                                         : ""
-                                                                }`}
+                                                                    }`}
                                                                 onClick={() => updateConfig({ scheduleDays: [1, 2, 3, 4, 5, 6, 0] })}
                                                             >
                                                                 All 7 Days
@@ -2608,7 +2605,7 @@ export function App() {
                             <span>@Framefic</span>
                             <IconExternalLink size={12} />
                         </a>
-                        <span className="cf-shell-version">v0.1.0 · Framefic</span>
+                        <span className="cf-shell-version">v1.0.0</span>
                     </div>
                 </footer>
             )}
@@ -2627,7 +2624,7 @@ export function App() {
                         framerUserId = info.userId || null
                         framerSiteName = info.siteName || null
                         framerSiteUrl = info.siteUrl || null
-                    } catch {}
+                    } catch { }
                     await auth.register({ ...data, siteId, framerUserId, framerSiteName, framerSiteUrl })
                 }}
                 onVerifySignup={async (email, code) => {

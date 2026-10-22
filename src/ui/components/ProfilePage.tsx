@@ -105,7 +105,7 @@ export function ProfilePage({ onBack, onManageSubscription }: ProfilePageProps) 
             </div>
 
             <div className="cf-profile-footer-info">
-                <span>Chat Bubbles Plugin · v0.1.0 · Framefic</span>
+                <span>Chat Bubbles Plugin · v1.0.0</span>
             </div>
         </div>
     )
