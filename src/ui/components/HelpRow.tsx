@@ -52,7 +52,7 @@ export function HelpRow({
                     </svg>
                 }
                 onClick={onOpenGuide}
-                href="https://framefic.com/docs/"
+                href="https://framefic.com/docs/chat-bubbles/"
             />
             <HelpCard
                 label="Get Support"
