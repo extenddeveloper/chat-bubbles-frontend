@@ -693,23 +693,29 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                 ) {
                     return true
                 }
-                let el: HTMLElement | null = containerRef.current?.parentElement || null
+                let el = containerRef.current ? containerRef.current.parentElement : null
                 while (el && el !== document.body && el !== document.documentElement) {
                     const bg = window.getComputedStyle(el).backgroundColor
                     if (bg && bg !== "transparent" && bg !== "rgba(0, 0, 0, 0)") {
-                        const m = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/)
-                        if (m) {
-                            const lum = 0.2126 * parseInt(m[1], 10) + 0.7152 * parseInt(m[2], 10) + 0.0722 * parseInt(m[3], 10)
-                            return lum < 128
+                        const digits = bg.replace(/[^0-9,]/g, "").split(",")
+                        if (digits.length >= 3) {
+                            const r = parseInt(digits[0], 10) || 0
+                            const g = parseInt(digits[1], 10) || 0
+                            const b = parseInt(digits[2], 10) || 0
+                            return (0.2126 * r + 0.7152 * g + 0.0722 * b) < 128
                         }
                     }
                     el = el.parentElement
                 }
                 const bodyBg = window.getComputedStyle(document.body).backgroundColor
-                const bm = bodyBg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/)
-                if (bm && bodyBg !== "transparent" && bodyBg !== "rgba(0, 0, 0, 0)") {
-                    const lum = 0.2126 * parseInt(bm[1], 10) + 0.7152 * parseInt(bm[2], 10) + 0.0722 * parseInt(bm[3], 10)
-                    return lum < 128
+                if (bodyBg && bodyBg !== "transparent" && bodyBg !== "rgba(0, 0, 0, 0)") {
+                    const digits = bodyBg.replace(/[^0-9,]/g, "").split(",")
+                    if (digits.length >= 3) {
+                        const r = parseInt(digits[0], 10) || 0
+                        const g = parseInt(digits[1], 10) || 0
+                        const b = parseInt(digits[2], 10) || 0
+                        return (0.2126 * r + 0.7152 * g + 0.0722 * b) < 128
+                    }
                 }
             } catch (e) {}
             return false
