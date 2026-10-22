@@ -853,7 +853,7 @@ export function App() {
                     title="Account & Profile"
                     aria-label="Account & Profile"
                 >
-                    <IconUser size={14} />
+                    <IconUser size={18} />
                 </button>
             </nav>
 
@@ -931,7 +931,7 @@ export function App() {
                                         <button
                                             type="button"
                                             className="cf-hero-config-item"
-                                            onClick={() => handleTabClick("builder")}
+                                            onClick={() => handleTabClick("design")}
                                             title="Current widget mode"
                                         >
                                             <span className="cf-hero-config-label">Mode</span>
@@ -965,42 +965,6 @@ export function App() {
                                         </button>
                                     </div>
                                 </HeroCard>
-
-                                <Section
-                                    title="Widget Experience Mode"
-                                    description="Choose how visitors interact when clicking your floating button."
-                                >
-                                    <div className="cf-field-grid">
-                                        <div
-                                            className={"cf-theme-card cf-mode-card " + (config.widgetMode === "modal" ? "active" : "")}
-                                            onClick={() => updateConfig({ widgetMode: "modal" })}
-                                        >
-                                            <div className="cf-mode-card-header">
-                                                <span className="cf-mode-card-icon">
-                                                    <IconLayoutModal size={16} />
-                                                </span>
-                                                <strong className="cf-mode-card-title">Live Chat Modal</strong>
-                                            </div>
-                                            <span className="cf-mode-card-desc">
-                                                Popup chat window with support team and preview.
-                                            </span>
-                                        </div>
-                                        <div
-                                            className={"cf-theme-card cf-mode-card " + (config.widgetMode === "buttons" ? "active" : "")}
-                                            onClick={() => updateConfig({ widgetMode: "buttons" })}
-                                        >
-                                            <div className="cf-mode-card-header">
-                                                <span className="cf-mode-card-icon">
-                                                    <IconLayoutButtons size={16} />
-                                                </span>
-                                                <strong className="cf-mode-card-title">Icon Buttons</strong>
-                                            </div>
-                                            <span className="cf-mode-card-desc">
-                                                Classic floating icon list opening direct channel URLs.
-                                            </span>
-                                        </div>
-                                    </div>
-                                </Section>
 
                                 <HelpRow />
 
@@ -1793,6 +1757,42 @@ export function App() {
                                                     placeholder="Welcome to our live chat! Feel free to ask any questions."
                                                 />
                                             </Field>
+                                        </Section>
+
+                                        <Section
+                                            title="Widget Experience Mode"
+                                            description="Choose how visitors interact when clicking your floating button."
+                                        >
+                                            <div className="cf-field-grid">
+                                                <div
+                                                    className={"cf-theme-card cf-mode-card " + (config.widgetMode === "modal" ? "active" : "")}
+                                                    onClick={() => updateConfig({ widgetMode: "modal" })}
+                                                >
+                                                    <div className="cf-mode-card-header">
+                                                        <span className="cf-mode-card-icon">
+                                                            <IconLayoutModal size={16} />
+                                                        </span>
+                                                        <strong className="cf-mode-card-title">Live Chat Modal</strong>
+                                                    </div>
+                                                    <span className="cf-mode-card-desc">
+                                                        Popup chat window with support team and preview.
+                                                    </span>
+                                                </div>
+                                                <div
+                                                    className={"cf-theme-card cf-mode-card " + (config.widgetMode === "buttons" ? "active" : "")}
+                                                    onClick={() => updateConfig({ widgetMode: "buttons" })}
+                                                >
+                                                    <div className="cf-mode-card-header">
+                                                        <span className="cf-mode-card-icon">
+                                                            <IconLayoutButtons size={16} />
+                                                        </span>
+                                                        <strong className="cf-mode-card-title">Icon Buttons</strong>
+                                                    </div>
+                                                    <span className="cf-mode-card-desc">
+                                                        Classic floating icon list opening direct channel URLs.
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </Section>
 
                                         <Section

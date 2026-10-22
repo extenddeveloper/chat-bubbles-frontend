@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Chat Bubbles for Framer - Complete User Documentation</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #1f2937;
+    background-color: #ffffff;
+    line-height: 1.65;
+    max-width: 860px;
+    margin: 40px auto;
+    padding: 0 24px;
+  }
+  h1 {
+    font-size: 28px;
+    color: #0f172a;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 12px;
+    margin-top: 40px;
+  }
+  h2 {
+    font-size: 22px;
+    color: #1e293b;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 8px;
+    margin-top: 32px;
+  }
+  h3 {
+    font-size: 18px;
+    color: #334155;
+    margin-top: 24px;
+  }
+  h4 {
+    font-size: 15px;
+    color: #475569;
+  }
+  p {
+    margin: 12px 0;
+  }
+  ul, ol {
+    padding-left: 24px;
+    margin: 12px 0;
+  }
+  li {
+    margin: 6px 0;
+  }
+  strong {
+    color: #0f172a;
+  }
+  code {
+    background-color: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 13px;
+    color: #0369a1;
+  }
+  pre {
+    background-color: #0f172a;
+    color: #f8fafc;
+    padding: 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+  }
+  pre code {
+    background: transparent;
+    color: inherit;
+    padding: 0;
+  }
+  hr {
+    border: none;
+    border-top: 1px solid #e2e8f0;
+    margin: 32px 0;
+  }
+  .placeholder {
+    margin: 16px 0;
+    padding: 14px 18px;
+    border-radius: 8px;
+    font-size: 14px;
+    display: block;
+  }
+  .placeholder.screenshot {
+    background-color: #eff6ff;
+    border: 1px dashed #3b82f6;
+    color: #1d4ed8;
+  }
+  .placeholder.video {
+    background-color: #fdf4ff;
+    border: 1px dashed #c084fc;
+    color: #7e22ce;
+  }
+  a {
+    color: #2563eb;
+    text-decoration: none;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
+</style>
+</head>
+<body>
+<h1>Chat Bubbles for Framer - Complete User Documentation & Feature Guide</h1>
+
+<p>A complete, step-by-step user manual and feature reference for Chat Bubbles, the multi-channel live chat and social contact button plugin for Framer.</p>
+
+<hr/>
+
+<h2>Table of Contents</h2>
+
+<ul>
+<li>[Terms Used in These Docs](#terms-used-in-these-docs)</li>
+<li>[Part 1: Highlighted Features for App Store & Landing Page](#part-1-highlighted-features-for-app-store--landing-page)</li>
+<li>[Part 2: Step-by-Step User Guides](#part-2-step-by-step-user-guides)</li>
+<li>[1. How to Get Started with Chat Bubbles](#1-how-to-get-started-with-chat-bubbles)</li>
+<li>[2. How to Configure Messaging Channels](#2-how-to-configure-messaging-channels)</li>
+<li>[3. How to Add Support Team Agents](#3-how-to-add-support-team-agents)</li>
+<li>[4. How to Customize Widget Design](#4-how-to-customize-widget-design)</li>
+<li>[5. How to Configure Greetings and Sound Alerts](#5-how-to-configure-greetings-and-sound-alerts)</li>
+<li>[6. How to Configure Smart Triggers and Scheduling](#6-how-to-configure-smart-triggers-and-scheduling)</li>
+<li>[7. How to Configure Page Targeting Rules](#7-how-to-configure-page-targeting-rules)</li>
+<li>[8. How to Track Conversion Analytics](#8-how-to-track-conversion-analytics)</li>
+<li>[9. How to Manage Plans and Billing](#9-how-to-manage-plans-and-billing)</li>
+<li>[10. How to Troubleshoot Common Issues and Frequently Asked Questions](#10-how-to-troubleshoot-common-issues-and-frequently-asked-questions)</li>
+</ul>
+
+<hr/>
+
+<h2>Terms Used in These Docs</h2>
+
+<p>To keep these guides clear and consistent, the same words are used throughout every page:</p>
+
+<ul>
+<li><strong>Floating launcher:</strong> The circular, rounded, or pill button that stays anchored to a corner of your website so visitors can open your chat options at any time.</li>
+<li><strong>Live Chat Modal:</strong> The popup chat window that displays your header gradient, support team members, greeting speech bubble, and conversation start button.</li>
+<li><strong>Icon Buttons:</strong> The classic menu mode that expands your active messaging platforms into a vertical stack, horizontal row, or two-column grid.</li>
+<li><strong>Channel:</strong> Any of the 19 supported communication services, such as WhatsApp, Messenger, Telegram, Phone, SMS, or Email.</li>
+<li><strong>Agent:</strong> An individual team member shown in your live chat modal with a personal avatar photo, department role, online status dot, and assigned direct contact channel.</li>
+<li><strong>Greeting bubble:</strong> The small floating message preview that appears beside your launcher button after a short delay to invite visitors into a conversation.</li>
+<li><strong>Smart trigger:</strong> An automated condition, such as visitor scroll depth or mouse exit intent, that displays your chat widget at the most effective moment.</li>
+<li><strong>Operating schedule:</strong> Your configured business hours and active days of the week, which automatically manage online badges and offline notices.</li>
+<li><strong>Canvas component:</strong> The native Framer code component that Chat Bubbles generates and places directly onto your project canvas.</li>
+</ul>
+
+<hr/>
+
+<hr/>
+
+<h1>Part 1: Highlighted Features for App Store & Landing Page</h1>
+
+<p>A curated list of features for the Chat Bubbles app store listing and landing page, ordered from most important to least important.</p>
+
+<hr/>
+
+<h3>Multi-Channel Floating Chat Widget</h3>
+
+<ul>
+<li><strong>One-line summary:</strong> Connect with visitors across 19 popular messaging apps and direct contact channels from one floating button.</li>
+<li><strong>Description:</strong> You can turn casual site visitors into paying customers by letting them reach you on their favorite messaging apps, including WhatsApp, Messenger, Telegram, Instagram, and email. Every channel connects directly to your verified profiles without requiring visitors to fill out slow contact forms. This direct connection speeds up response times and helps you close sales while interest is high.</li>
+<li><strong>Plan:</strong> Free Trial, Monthly, Yearly, Lifetime</li>
+<li><strong>Where to find it in the app:</strong> Open the <strong>Builder</strong> tab, click <strong>Channels</strong>, and toggle on your preferred platforms under <strong>Messaging Channels</strong>.</li>
+</ul>
+
+<hr/>
+
+<h3>Interactive Support Team Roster</h3>
+
+<ul>
+<li><strong>One-line summary:</strong> Introduce your real team members with custom avatars, department titles, and personal direct chat links.</li>
+<li><strong>Description:</strong> You can build instant trust with your site visitors by presenting a welcoming team roster inside a live chat modal. Each team member can feature a custom profile photo, job title, and dedicated direct contact handle or phone number. Visitors can choose the right specialist for their question, which creates a personal shopping experience that increases conversions.</li>
+<li><strong>Plan:</strong> Free Trial, Monthly, Yearly, Lifetime</li>
+<li><strong>Where to find it in the app:</strong> Open the <strong>Builder</strong> tab, click <strong>Support Team</strong>, and manage your agents under <strong>Support Team / Agents</strong>.</li>
+</ul>
+
+<hr/>
+
+<h3>Smart Behavioral Triggers</h3>
+
+<ul>
+<li><strong>One-line summary:</strong> Catch visitors at the perfect moment using scroll depth detection and desktop exit-intent triggers.</li>
+<li><strong>Description:</strong> You can present your chat prompt when visitors are most likely to respond rather than interrupting them immediately upon page load. The widget can wait until a visitor scrolls past a specific percentage of your page, or pop open the chat window right as their mouse cursor moves toward the browser tab bar to exit. These smart timing rules capture leaving visitors and recover lost inquiries automatically.</li>
+<li><strong>Plan:</strong> Free Trial, Monthly, Yearly, Lifetime</li>
+<li><strong>Where to find it in the app:</strong> Open the <strong>Settings</strong> tab and configure options under <strong>Behavioral Triggers & Smart Display</strong>.</li>
+</ul>
+
+<hr/>
+
+<h3>Business Operating Hours and Schedule</h3>
+
+<ul>
+<li><strong>One-line summary:</strong> Set your active office hours and automatically display offline notices or hide the widget outside work times.</li>
+<li><strong>Description:</strong> You can set realistic expectations for your visitors by matching your chat widget visibility to your team schedule. When your team is off duty, the widget can automatically display an offline status notice with the time you return, or hide itself completely until your next working day. This automated schedule prevents missed expectations while keeping your customer communication honest and reliable.</li>
+<li><strong>Plan:</strong> Free Trial, Monthly, Yearly, Lifetime</li>
+<li><strong>Where to find it in the app:</strong> Open the <strong>Settings</strong> tab and turn on the schedule under <strong>Operating Hours & Days Schedule</strong>.</li>
+</ul>
+
+<hr/>
+
+<h3>Real-Time Conversion Analytics Dashboard</h3>
+
+<ul>
+<li><strong>One-line summary:</strong> Track views, channel clicks, and overall conversion rates to see which messaging apps deliver the best results.</li>
+<li><strong>Description:</strong> You can understand visitor behavior and measure your marketing return on investment with built-in interaction tracking. The dashboard shows daily impression counts, total clicks across all channels, and an interactive volume chart broken down by 7 days, 30 days, or 6 months. A channel performance breakdown reveals exactly which platforms your audience prefers so you can focus your attention on your most profitable channels.</li>
+<li><strong>Plan:</strong> Free Trial, Monthly, Yearly, Lifetime</li>
+<li><strong>Where to find it in the app:</strong> Click the <strong>Analytics</strong> tab in the top navigation bar to open the <strong>Widget Analytics</strong> dashboard.</li>
+</ul>
+
+<hr/>
+
+<h3>Flexible Launcher and Menu Layouts</h3>
+
+<ul>
+<li><strong>One-line summary:</strong> Choose between a full Live Chat Modal or direct Icon Buttons with custom shapes, icons, and animations.</li>
+<li><strong>Description:</strong> You can match your chat launcher to your brand style using circle, rounded square, or pill button shapes with entrance animations like pop, bounce, and pulse. Choose the <strong>Live Chat Modal</strong> mode for an interactive team window, or select the <strong>Icon Buttons</strong> mode to arrange your channels in a clean vertical stack, two-column grid, or horizontal row. Every element adapts to your page layout for a cohesive look.</li>
+<li><strong>Plan:</strong> Free Trial, Monthly, Yearly, Lifetime</li>
+<li><strong>Where to find it in the app:</strong> Choose your mode on the <strong>Design</strong> tab under <strong>Widget Experience Mode</strong>, then adjust button geometry under <strong>Floating Launcher Design</strong>.</li>
+</ul>
+
+<hr/>
+
+<h3>Mobile-Optimized Clean Display</h3>
+
+<ul>
+<li><strong>One-line summary:</strong> Keep mobile screens clutter-free with custom corner offsets and an automatic four-channel expansion cap.</li>
+<li><strong>Description:</strong> You can protect your mobile user experience from crowded buttons that block product details or checkout controls. The mobile layout constraint caps visible buttons to your top four channels and tucks additional channels behind a clean expandable button. Independent mobile corner offset controls let you position the launcher cleanly above native mobile navigation bars.</li>
+<li><strong>Plan:</strong> Free Trial, Monthly, Yearly, Lifetime</li>
+<li><strong>Where to find it in the app:</strong> Open the <strong>Design</strong> tab and adjust settings under <strong>Mobile Layout Constraint (Cap 4+)</strong> and <strong>Mobile Offset X / Y</strong>.</li>
+</ul>
+
+<hr/>
+
+<h3>Custom Header Gradients and Color Styling</h3>
+
+<ul>
+<li><strong>One-line summary:</strong> Style your chat window with curated social brand themes or build your own multi-stop color gradients.</li>
+<li><strong>Description:</strong> You can blend the chat modal into your website color scheme using preset themes inspired by WhatsApp, Messenger, Telegram, and Instagram, or design your own custom multi-color gradient. Custom color pickers give you precise control over button shades, launcher accents, and label backgrounds so your chat experience feels native to your site.</li>
+<li><strong>Plan:</strong> Free Trial, Monthly, Yearly, Lifetime</li>
+<li><strong>Where to find it in the app:</strong> Open the <strong>Design</strong> tab and choose your palette under <strong>Chat Window Header & Theme</strong>.</li>
+</ul>
+
+<hr/>
+
+<h3>Pre-filled Dynamic Messages and Inquiries</h3>
+
+<ul>
+<li><strong>One-line summary:</strong> Help visitors start conversations faster with pre-filled greeting text and automatic page title variables.</li>
+<li><strong>Description:</strong> You can remove friction for potential buyers by greeting them with ready-to-send messages when they tap WhatsApp, Telegram, SMS, or email. Dynamic placeholder tags automatically pull in the current page title and web address so you know exactly which product or article the visitor was looking at when they reached out.</li>
+<li><strong>Plan:</strong> Free Trial, Monthly, Yearly, Lifetime</li>
+<li><strong>Where to find it in the app:</strong> Open the <strong>Builder</strong> tab, click <strong>Channels</strong>, and enter your message in the <strong>Pre-filled Welcome Message</strong> field.</li>
+</ul>
+
+<hr/>
+
+<h3>Floating Greeting Bubbles with Notification Chimes</h3>
+
+<ul>
+<li><strong>One-line summary:</strong> Catch visitor attention with subtle speech bubbles, unread notification badges, and gentle audio chimes.</li>
+<li><strong>Description:</strong> You can invite visitors to chat without opening the entire modal by displaying a floating speech bubble after a brief browsing delay. An unread badge counter signals an active conversation, while an optional audio chime plays a gentle prompt when the bubble appears. Visitors can easily close the greeting bubble or click it to view your team.</li>
+<li><strong>Plan:</strong> Free Trial, Monthly, Yearly, Lifetime</li>
+<li><strong>Where to find it in the app:</strong> Open the <strong>Design</strong> tab for bubble text, and open the <strong>Settings</strong> tab to adjust delays and the <strong>Greeting Bubble Sound</strong> toggle.</li>
+</ul>
+
+<hr/>
+
+<h3>Advanced Page and URL Path Targeting</h3>
+
+<ul>
+<li><strong>One-line summary:</strong> Control exactly where your chat widget appears using page dropdowns or custom URL wildcard rules.</li>
+<li><strong>Description:</strong> You can deliver targeted customer service by displaying specific chat buttons on high-intent pages such as pricing and checkout, while hiding them on distraction-free landing pages. Flexible path filtering supports both inclusion and exclusion lists with wildcard matching so you can manage entire sections of your site with simple rules.</li>
+<li><strong>Plan:</strong> Free Trial, Monthly, Yearly, Lifetime</li>
+<li><strong>Where to find it in the app:</strong> Open the <strong>Settings</strong> tab and configure your display rules under <strong>Page / URL Targeting Filter</strong>.</li>
+</ul>
+
+<hr/>
+
+<h3>Native Framer Canvas Integration</h3>
+
+<ul>
+<li><strong>One-line summary:</strong> Insert a production-ready component onto your Framer canvas and publish with zero coding required.</li>
+<li><strong>Description:</strong> You can design your chat experience inside the plugin interface, click one button to generate a clean Framer component, and position it directly on your project canvas. The component updates whenever you modify settings in the plugin, runs at 60 frames per second on published sites, and produces zero third-party script bloat.</li>
+<li><strong>Plan:</strong> Free Trial, Monthly, Yearly, Lifetime</li>
+<li><strong>Where to find it in the app:</strong> Click the <strong>Insert into Canvas</strong> or <strong>Update Component</strong> button located in the bottom action bar.</li>
+</ul>
+
+<hr/>
+
+<h2>Top 5 for the listing</h2>
+
+<p>These five features represent the strongest selling points for your app store listing bullets:</p>
+
+<ol>
+<li><strong>Multi-Channel Floating Chat Widget:</strong> Connect with visitors across 19 popular messaging apps and direct contact channels from one floating button.</li>
+<li><strong>Interactive Support Team Roster:</strong> Introduce your real team members with custom avatars, department titles, and personal direct chat links.</li>
+<li><strong>Smart Behavioral Triggers:</strong> Catch visitors at the perfect moment using scroll depth detection and desktop exit-intent triggers.</li>
+<li><strong>Real-Time Conversion Analytics Dashboard:</strong> Track views, channel clicks, and overall conversion rates to see which messaging apps deliver the best results.</li>
+<li><strong>Business Operating Hours and Schedule:</strong> Set your active office hours and automatically display offline notices or hide the widget outside work times.</li>
+</ol>
+
+
+<hr/>
+
+<h1>Part 2: Step-by-Step User Guides</h1>
+
+
+
+<hr/>
+
+<h1>How to get started with Chat Bubbles</h1>
+
+<p>This guide walks you through setting up your first floating chat button in Framer, connecting your favorite messaging apps, and publishing the widget to your live website in just a few minutes.</p>
+
+<h2>Before you start</h2>
+
+<p>Make sure you have an active project open in your Framer desktop app or web browser, because you will insert your chat component directly onto your project canvas.</p>
+
+<h2>Video tutorial</h2>
+
+<div class="placeholder video"><strong>[Video Tutorial Placeholder: Getting Started]</strong></div>
+
+<h2>Step 1: Open the Chat Bubbles plugin in Framer</h2>
+
+<p>Open your Framer project, click the <strong>Plugins</strong> icon in the top toolbar or press <code>Shift + I</code>, and search for <strong>Chat Bubbles</strong>. Click the plugin name to launch the configuration window.</p>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Plugin Launch Window]</strong></div>
+
+<p>When the window opens, you will see the <strong>Home</strong> tab with an overview card showing your active widget mode, your active channel count, and your support team count.</p>
+
+<h2>Step 2: Choose your widget experience mode</h2>
+
+<p>Click the <strong>Design</strong> tab in the top navigation bar and look under <strong>Widget Experience Mode</strong> to decide how your visitors will interact when clicking your floating button:</p>
+
+<ul>
+<li>Select <strong>Live Chat Modal</strong> if you want a modern chat popup with your team member avatars, a custom header gradient, and an introductory greeting bubble.</li>
+<li>Select <strong>Icon Buttons</strong> if you prefer a classic floating menu that expands directly into a list of social platform buttons.</li>
+</ul>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Widget Experience Mode Selection]</strong></div>
+
+<p>Clicking either card updates your widget mode immediately so you can preview the layout as you work.</p>
+
+<h2>Step 3: Enter your primary messaging details</h2>
+
+<p>Click the <strong>Builder</strong> tab in the top navigation bar, then make sure the <strong>Channels</strong> sub-tab is selected. You will see a list of 19 supported communication platforms with <strong>WhatsApp</strong>, <strong>Messenger</strong>, and <strong>Telegram</strong> enabled by default.</p>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Channels Tab Overview]</strong></div>
+
+<p>Find your preferred platform and enter your contact information:</p>
+
+<ol>
+<li>For <strong>WhatsApp</strong>, enter your phone number with your international country code in the input field, such as <code>+1 234 567 8900</code>.</li>
+<li>Expand the card to add a <strong>Pre-filled Welcome Message</strong> if you want your visitors to start conversations with a ready-made greeting.</li>
+<li>Use the toggle switch on the right side of any channel card to enable or disable that platform.</li>
+</ol>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: WhatsApp Channel Configuration]</strong></div>
+
+<h2>Step 4: Insert the component onto your Framer canvas</h2>
+
+<p>Once your contact details are in place, scroll to the bottom of the plugin window and click the <strong>Insert into Canvas</strong> button.</p>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Insert into Canvas Button]</strong></div>
+
+<p>The plugin will generate a clean Framer component and place it on your active canvas. A notification banner will confirm that your component has been created. You can drag the component into your main layout frame or leave it anchored to your page.</p>
+
+<h2>Step 5: Publish your site and test the live chat</h2>
+
+<p>Click the <strong>Publish</strong> button in the top right corner of your Framer interface, then open your live website URL in a new browser tab.</p>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Published Site Preview]</strong></div>
+
+<p>You will see your floating chat button anchored cleanly to the bottom right corner of your screen. Click the button to confirm that your messaging modal opens and that clicking your channel launches the correct conversation.</p>
+
+<h2>Check that it works</h2>
+
+<p>To verify that your setup is working properly:</p>
+
+<ol>
+<li>Visit your published site on both desktop and mobile devices.</li>
+<li>Click the floating chat button to open the modal or button menu.</li>
+<li>Click your <strong>WhatsApp</strong> or social channel button. Your browser should open the corresponding chat app with your phone number or profile pre-loaded.</li>
+<li>If you have analytics enabled in <strong>Settings</strong>, reopen the plugin after testing and click the <strong>Analytics</strong> tab to see your test clicks recorded in real time.</li>
+</ol>
+
+<h2>Troubleshooting</h2>
+
+<ul>
+<li><strong>The button does not appear after publishing:</strong> Check your Framer layers panel to ensure the Chat Bubbles component is inside your primary page frame rather than positioned off-canvas.</li>
+<li><strong>WhatsApp shows an invalid phone number error:</strong> Verify that your phone number includes your international country code without any special symbols, brackets, or leading zeros.</li>
+<li><strong>You want to change your colors or button position:</strong> Reopen the plugin, adjust your settings in the <strong>Design</strong> or <strong>Settings</strong> tabs, and click <strong>Update Component</strong> to refresh your canvas instance without replacing it.</li>
+</ul>
+
+<h2>What to read next</h2>
+
+<ul>
+<li>[Configuring Messaging Channels](configure-messaging-channels.md)</li>
+<li>[Adding Support Team Agents](add-support-team-agents.md)</li>
+<li>[Customizing Widget Design](customize-widget-design.md)</li>
+<li>[Tracking Conversion Analytics](track-conversion-analytics.md)</li>
+</ul>
+
+
+
+<hr/>
+
+<h1>How to configure messaging channels</h1>
+
+<p>This guide helps you connect, customize, and organize your communication channels so your visitors can reach you through the messaging apps they already use and trust.</p>
+
+<h2>Before you start</h2>
+
+<p>Gather your official social handles, customer support phone numbers, email addresses, and community invite links before you begin, because having these on hand makes entering your channel details quick and effortless.</p>
+
+<h2>Video tutorial</h2>
+
+<div class="placeholder video"><strong>[Video Tutorial Placeholder: Configuring Messaging Channels]</strong></div>
+
+<h2>Step 1: Open the Channels builder</h2>
+
+<p>Click the <strong>Builder</strong> tab in the top navigation bar, then select the <strong>Channels</strong> sub-tab. You will see a list of 19 supported platforms with their official brand icons, descriptive hints, and status toggles.</p>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Channels List Overview]</strong></div>
+
+<p>Channels that are already enabled display an <strong>Active</strong> pill next to their title. You can click the arrow icon on the right side of any active card to expand or minimize its configuration options.</p>
+
+<h2>Step 2: Enable your preferred platforms</h2>
+
+<p>Browse the list of supported channels and use the toggle switch on the right side of any platform to turn it on:</p>
+
+<ul>
+<li><strong>WhatsApp:</strong> Direct chat via web or mobile app.</li>
+<li><strong>Messenger:</strong> Direct chat through Facebook page or username.</li>
+<li><strong>Instagram:</strong> Direct profile messaging.</li>
+<li><strong>Telegram:</strong> Instant messaging via username or channel.</li>
+<li><strong>TikTok:</strong> Profile connection for social engagement.</li>
+<li><strong>WeChat:</strong> WeChat ID or QR code profile link.</li>
+<li><strong>Viber:</strong> Direct messaging via verified phone number.</li>
+<li><strong>LINE:</strong> Official or personal LINE account connection.</li>
+<li><strong>Signal:</strong> Secure communication via profile handle or link.</li>
+<li><strong>Phone:</strong> Direct phone dialer link for mobile and desktop callers.</li>
+<li><strong>SMS:</strong> Mobile text messaging with ready-to-send messages.</li>
+<li><strong>Email:</strong> Direct email client link with subject and body pre-filled.</li>
+<li><strong>Discord:</strong> Community or server invite link.</li>
+<li><strong>Slack:</strong> Team workspace or community channel invite URL.</li>
+<li><strong>Microsoft Teams:</strong> Direct chat email or meeting link.</li>
+<li><strong>X (Twitter):</strong> Profile link or direct message handle.</li>
+<li><strong>LinkedIn:</strong> Personal profile or company page link.</li>
+<li><strong>Google Maps:</strong> Direct link to your physical storefront or office location.</li>
+<li><strong>Custom URL Link:</strong> Any external web address, booking page, or custom link protocol.</li>
+</ul>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Enable Channel Toggle]</strong></div>
+
+<h2>Step 3: Enter your contact handle or number</h2>
+
+<p>In each enabled channel card, enter your handle or number in the primary input field. The placeholder text gives you a clear example of the expected format:</p>
+
+<ul>
+<li>For phone-based channels like <strong>WhatsApp</strong>, <strong>Viber</strong>, <strong>Phone</strong>, and <strong>SMS</strong>, enter your complete phone number including your country code, such as <code>+1 234 567 8900</code>.</li>
+<li>For handle-based platforms like <strong>Instagram</strong>, <strong>Telegram</strong>, and <strong>TikTok</strong>, enter your username without the <code>@</code> symbol.</li>
+<li>For <strong>Messenger</strong>, enter your public Facebook page name or profile username.</li>
+</ul>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Channel Handle Input]</strong></div>
+
+<h2>Step 4: Customize your channel button colors</h2>
+
+<p>Every platform comes with its official brand color by default, but you can change any button color to match your website theme. Click the color circle in the <strong>Button Color</strong> field to open the color picker.</p>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Custom Color Picker]</strong></div>
+
+<p>You can choose from the curated color palette, enter a custom HEX code, or use the interactive color gradient slider to find your ideal shade.</p>
+
+<h2>Step 5: Add pre-filled messages and email subjects</h2>
+
+<p>For <strong>WhatsApp</strong>, <strong>Telegram</strong>, and <strong>SMS</strong>, you can fill in the <strong>Pre-filled Welcome Message</strong> field so that when visitors click the button, their chat window opens with a draft message already written for them.</p>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Pre-filled Welcome Message]</strong></div>
+
+<p>You can make your messages dynamic by using two automatic placeholder tags:</p>
+
+<ul>
+<li><code>{title}</code>: Inserts the title of the page the visitor is currently viewing.</li>
+<li><code>{url}</code>: Inserts the full web address of the current page.</li>
+</ul>
+
+<p>For example, typing <code>Hello! I have a question about {title} at {url}.</code> will automatically substitute your product or article name when the visitor clicks the button.</p>
+
+<p>If you enable <strong>Email</strong>, you can enter a default <strong>Email Subject</strong> such as <code>Inquiry from website</code>, and write a template in the <strong>Pre-filled Email Message Body</strong> field so inquiries reach your inbox with structured context.</p>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Email Channel Configuration]</strong></div>
+
+<h2>Step 6: Create custom links for external tools</h2>
+
+<p>If you use a third-party booking calendar, a knowledge base, or a custom web app, enable the <strong>Custom URL Link</strong> platform at the bottom of the list.</p>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Custom Channel Configuration]</strong></div>
+
+<p>When configuring a custom link:</p>
+
+<ol>
+<li>Enter your destination address in the <strong>Custom URL Link</strong> field, such as <code>https://calendly.com/your-team/30min</code>.</li>
+<li>Enter a friendly name in the <strong>Channel / Button Label</strong> field, such as <code>Book a Call</code> or <code>Help Docs</code>.</li>
+<li>Pick a custom <strong>Button Color</strong> to distinguish it from standard chat icons.</li>
+<li>Use the <strong>Open Link In</strong> toggle to choose whether the link opens in a <strong>New browser tab</strong> or stays in the <strong>Same browser tab</strong>.</li>
+</ol>
+
+<h2>Check that it works</h2>
+
+<p>After configuring your channels, click <strong>Update Component</strong> or <strong>Insert into Canvas</strong> in the bottom action bar. Publish your Framer site and test your buttons:</p>
+
+<ol>
+<li>Click your floating chat button to open your channel list or modal.</li>
+<li>Click each enabled channel to verify that it directs visitors to the correct profile, phone dialer, or messaging app.</li>
+<li>Check that your pre-filled welcome text appears correctly in WhatsApp and that the <code>{title}</code> tag displays your page title.</li>
+</ol>
+
+<h2>Troubleshooting</h2>
+
+<ul>
+<li><strong>WhatsApp opens a blank chat without your pre-filled message:</strong> Ensure you entered text into the <strong>Pre-filled Welcome Message</strong> field and updated your canvas component before publishing.</li>
+<li><strong>Your custom link does not open when clicked:</strong> Check that your link begins with <code>https://</code> or <code>http://</code> so the browser recognizes it as a valid web destination.</li>
+<li><strong>You enabled a channel but it does not appear in the floating menu:</strong> Verify that the channel has both its toggle turned on and a non-empty handle or URL entered into its primary field.</li>
+</ul>
+
+<h2>What to read next</h2>
+
+<ul>
+<li>[Adding Support Team Agents](add-support-team-agents.md)</li>
+<li>[Customizing Widget Design](customize-widget-design.md)</li>
+<li>[Greetings and Sound Alerts](greetings-and-sound-alerts.md)</li>
+<li>[Tracking Conversion Analytics](track-conversion-analytics.md)</li>
+</ul>
+
+
+
+<hr/>
+
+<h1>How to add support team agents</h1>
+
+<p>This guide explains how to build a welcoming team roster inside your live chat modal so visitors can choose the right person or department for their inquiry.</p>
+
+<h2>Before you start</h2>
+
+<p>Make sure your widget experience mode is set to <strong>Live Chat Modal</strong> on the <strong>Design</strong> tab, because team agents appear specifically inside the interactive modal window. Also ensure you have enabled at least one channel on the <strong>Channels</strong> tab so your agents have platforms to receive messages.</p>
+
+<h2>Video tutorial</h2>
+
+<div class="placeholder video"><strong>[Video Tutorial Placeholder: Adding Support Team Agents]</strong></div>
+
+<h2>Step 1: Open the Support Team builder</h2>
+
+<p>Click the <strong>Builder</strong> tab in the top navigation bar, then click the <strong>Support Team</strong> sub-tab. You will see your active team roster with preset agents, along with their avatar photos, names, department roles, and assigned communication channels.</p>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Support Team Overview]</strong></div>
+
+<p>Each agent card includes a gear icon to configure detailed settings, and a remove icon to delete the agent if needed.</p>
+
+<h2>Step 2: Add a new team member</h2>
+
+<p>Click the <strong>Add Team Member</strong> button at the bottom of the list to open the new agent form.</p>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Add Team Member Form]</strong></div>
+
+<p>Enter the basic details for your team member:</p>
+
+<ol>
+<li><strong>Agent Name:</strong> Enter the full name or display name of the specialist, such as <code>Emma Watson</code>.</li>
+<li><strong>Role / Department:</strong> Enter their job title or area of expertise, such as <code>Sales Specialist</code> or <code>Billing Support</code>.</li>
+<li><strong>Assigned Channel:</strong> Pick from your enabled channels in the dropdown menu so incoming messages route to the right platform.</li>
+</ol>
+
+<h2>Step 3: Choose or upload an avatar photo</h2>
+
+<p>You can provide a friendly face for every agent using any of three avatar options in the <strong>Avatar Photo</strong> section:</p>
+
+<ul>
+<li><strong>Upload Image:</strong> Click <strong>Choose Image File</strong> to upload a JPG, PNG, WebP, or SVG file from your computer. The photo uploads securely to the Framer content delivery network for fast global loading.</li>
+<li><strong>Presets:</strong> Click the <strong>Presets</strong> tab and select one of ten professionally illustrated avatar icons for a polished look without taking your own photos.</li>
+<li><strong>Image URL:</strong> Click the <strong>Image URL</strong> tab and paste a public image link if your team photos are already hosted online.</li>
+</ul>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Avatar Selection Options]</strong></div>
+
+<p>Click <strong>Add to Team</strong> when finished to insert your new agent into the roster.</p>
+
+<h2>Step 4: Configure direct numbers and custom greetings</h2>
+
+<p>To customize an agent's individual contact details, click the gear icon on their card to expand their advanced settings.</p>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Agent Advanced Settings]</strong></div>
+
+<p>You can configure several personalized options:</p>
+
+<ul>
+<li><strong>Direct Channel Number or Handle:</strong> If an agent has their own phone extension, WhatsApp number, or Telegram username, enter it here. Leaving this field blank means the agent will inherit the default number configured in the <strong>Channels</strong> tab.</li>
+<li><strong>Direct Pre-filled Message:</strong> Write a personal greeting that pre-fills when visitors choose this specific agent, such as <code>Hi there! Emma here from billing. How can I help you today?</code>.</li>
+<li><strong>Direct Email Subject:</strong> If the agent is assigned to email, you can customize the subject line for inquiries directed to them.</li>
+</ul>
+
+<h2>Step 5: Set online and offline availability</h2>
+
+<p>Every agent card features an <strong>Active / Online</strong> toggle switch.</p>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Agent Online Status Toggle]</strong></div>
+
+<ul>
+<li>When toggled on, a vibrant green status dot appears on the agent avatar in your live chat modal, signaling to visitors that this team member is available to respond quickly.</li>
+<li>When toggled off, the status dot switches to an away indicator, letting visitors know the agent is currently offline.</li>
+</ul>
+
+<p>Click <strong>Done</strong> at the bottom of the expanded card to collapse the settings once your changes are complete.</p>
+
+<h2>Check that it works</h2>
+
+<p>After configuring your team, click <strong>Update Component</strong> in the bottom action bar, publish your Framer site, and open your live page:</p>
+
+<ol>
+<li>Click the floating launcher button to open your live chat modal.</li>
+<li>Verify that all team members appear in the roster with their correct avatars, names, roles, and status indicators.</li>
+<li>Click an agent to verify that the conversation opens directly to their assigned channel and includes their custom greeting text.</li>
+</ol>
+
+<h2>Troubleshooting</h2>
+
+<ul>
+<li><strong>A channel does not appear in the Assigned Channel dropdown:</strong> Make sure the channel is enabled on the <strong>Channels</strong> sub-tab first, because only active platforms appear in the team assignment menu.</li>
+<li><strong>An uploaded avatar does not display properly:</strong> Verify that your image file is a valid JPG, PNG, or WebP format under 5 megabytes in size so that Framer can process the upload cleanly.</li>
+<li><strong>Changes to agent names do not appear on your published site:</strong> Remember to click <strong>Update Component</strong> in the bottom bar and re-publish your Framer project to push your latest edits live.</li>
+</ul>
+
+<h2>What to read next</h2>
+
+<ul>
+<li>[Configuring Messaging Channels](configure-messaging-channels.md)</li>
+<li>[Customizing Widget Design](customize-widget-design.md)</li>
+<li>[Greetings and Sound Alerts](greetings-and-sound-alerts.md)</li>
+<li>[Smart Triggers and Scheduling](smart-triggers-and-scheduling.md)</li>
+</ul>
+
+
+
+<hr/>
+
+<h1>How to customize widget design</h1>
+
+<p>This guide walks you through styling every visual element of your chat widget, including the floating launcher button, menu layout, header gradients, entrance animations, and responsive mobile spacing.</p>
+
+<h2>Before you start</h2>
+
+<p>Review your website color palette and typography so you can match your chat widget seamlessly to your existing design language.</p>
+
+<h2>Video tutorial</h2>
+
+<div class="placeholder video"><strong>[Video Tutorial Placeholder: Customizing Widget Design]</strong></div>
+
+<h2>Step 1: Select your widget mode</h2>
+
+<p>On the <strong>Design</strong> tab, review the <strong>Widget Experience Mode</strong> section:</p>
+
+<ul>
+<li>Choose <strong>Live Chat Modal</strong> to display an interactive popup window containing your header gradient, team member roster, speech bubble preview, and start chat action button.</li>
+<li>Choose <strong>Icon Buttons</strong> to expand your active channels as a floating icon list without opening a larger window.</li>
+</ul>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Widget Mode Switcher]</strong></div>
+
+<p>Your selection here determines which design options appear in the <strong>Design</strong> tab.</p>
+
+<h2>Step 2: Customize the modal header and theme gradient</h2>
+
+<p>Click the <strong>Design</strong> tab in the top navigation bar. Look under <strong>Chat Window Header & Theme</strong> to style your modal:</p>
+
+<ol>
+<li><strong>Header Theme Gradient:</strong> Select one of the curated brand gradients, such as <strong>WhatsApp</strong>, <strong>Messenger</strong>, <strong>Telegram</strong>, <strong>Instagram</strong>, <strong>TikTok</strong>, <strong>WeChat</strong>, or <strong>Modern Dark</strong>.</li>
+<li><strong>Custom Gradient:</strong> Select <strong>Custom</strong> to open the interactive gradient builder. You can pick your starting color, ending color, and rotation angle, or select from curated gradient swatches.</li>
+<li><strong>Header Title:</strong> Enter your main greeting, such as <code>Hi there!</code>.</li>
+<li><strong>Response Time Badge:</strong> Enter an encouraging turnaround time, such as <code>Typically replies in minutes</code> or <code>Online now</code>.</li>
+<li><strong>Header Subtitle:</strong> Enter a welcoming prompt that invites visitors to ask questions.</li>
+</ol>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Header Theme Gradient]</strong></div>
+
+<h2>Step 3: Style the chat preview and call to action</h2>
+
+<p>Scroll down to the <strong>Chat Preview & Start CTA</strong> section:</p>
+
+<ul>
+<li><strong>Welcome Chat Bubble Message:</strong> Enter the friendly message that appears inside the simulated chat bubble in your modal window, such as <code>Hello! How can someone assist today?</code>.</li>
+<li><strong>CTA Button Text:</strong> Enter the label for the primary action button at the bottom of the modal, such as <code>Start chat</code> or <code>Send a message</code>.</li>
+</ul>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Chat Preview and CTA Settings]</strong></div>
+
+<h2>Step 4: Configure the floating launcher button</h2>
+
+<p>In the <strong>Floating Launcher Design</strong> section, tailor the appearance of the button that sits permanently on your visitor screen:</p>
+
+<ol>
+<li><strong>Toggle Button Icon:</strong> Choose the icon that represents your business best, such as <strong>Live Chat (Speech Bubble)</strong>, <strong>WhatsApp</strong>, <strong>Messenger</strong>, <strong>Telegram</strong>, <strong>Instagram</strong>, <strong>Phone Call</strong>, <strong>Email</strong>, or <strong>Customer Support (Headset)</strong>.</li>
+<li><strong>Button Shape:</strong> Choose <strong>Circle</strong>, <strong>Rounded Square</strong>, or <strong>Pill</strong> to match the border radii of other buttons on your site.</li>
+<li><strong>Button Size:</strong> Choose <strong>Small (46px)</strong> for compact pages, <strong>Medium (56px)</strong> for standard layouts, or <strong>Large (64px)</strong> for high visibility.</li>
+<li><strong>Launcher Default Color:</strong> Select your brand accent color using the custom color picker.</li>
+</ol>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Floating Launcher Shape and Icon]</strong></div>
+
+<h2>Step 5: Choose menu layout and entrance animations</h2>
+
+<p>If you use the <strong>Icon Buttons</strong> mode or want to adjust transition effects:</p>
+
+<ul>
+<li><strong>Button Menu Layout:</strong> Choose <strong>Stack (Vertical)</strong> to display channels in an upright column, <strong>Grid (2 Columns)</strong> to save vertical space, or <strong>Horizontal Row</strong> to stretch buttons across the bottom.</li>
+<li><strong>Entrance Animation:</strong> Select <strong>Pop In</strong> for a spring effect, <strong>Playful Bounce</strong> for a lively arrival, <strong>Slide Up</strong> for a smooth upward reveal, <strong>Pulse Glow</strong> for an eye-catching heartbeat, or <strong>None (Instant)</strong> for an immediate appearance.</li>
+</ul>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Menu Layout and Animation Settings]</strong></div>
+
+<h2>Step 6: Adjust desktop and mobile corner offsets</h2>
+
+<p>Control the exact pixel distance between your floating button and the edges of the browser window:</p>
+
+<ol>
+<li><strong>Desktop Offset X (px)</strong> and <strong>Desktop Offset Y (px):</strong> Set horizontal and vertical margins for desktop screens, with default values of 24 pixels each.</li>
+<li><strong>Mobile Offset X (px)</strong> and <strong>Mobile Offset Y (px):</strong> Set separate margins for mobile screens under 640 pixels wide, with default values of 16 pixels each.</li>
+<li><strong>Mobile Layout Constraint (Cap 4+):</strong> Keep this toggle enabled if you have five or more channels active. It automatically limits visible mobile buttons to your top four channels and adds an expandable <code>+ More</code> button, keeping your mobile layout clean and uncluttered.</li>
+</ol>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Mobile Spacing and Cap Settings]</strong></div>
+
+<h2>Step 7: Configure unread badges and accessibility labels</h2>
+
+<p>Add finishing touches for visitor engagement and accessibility:</p>
+
+<ul>
+<li><strong>Unread Notification Badge:</strong> Turn on this toggle and enter a number such as <code>1</code> in the <strong>Badge Text</strong> field to display a red notification dot that catches the visitor eye.</li>
+<li><strong>Accessibility ARIA Label:</strong> Enter clear screen reader text, such as <code>Open chat options</code>, so visitors using assistive technology can navigate your chat widget effortlessly.</li>
+</ul>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Notification Badge and ARIA Settings]</strong></div>
+
+<h2>Check that it works</h2>
+
+<p>Click <strong>Update Component</strong> in the bottom action bar, publish your Framer site, and review your design:</p>
+
+<ol>
+<li>Open your live site on desktop and resize your browser window to test mobile responsive breakpoints.</li>
+<li>Check that your launcher button displays the correct icon, shape, color, and entrance animation.</li>
+<li>Click the launcher to verify that your header gradient, title, response badge, and mobile four-channel constraint render smoothly.</li>
+</ol>
+
+<h2>Troubleshooting</h2>
+
+<ul>
+<li><strong>The launcher overlaps your sticky mobile footer:</strong> Increase the <strong>Mobile Offset Y (px)</strong> value in the <strong>Floating Launcher Design</strong> section, then update your component and re-publish your site.</li>
+<li><strong>The custom gradient does not display:</strong> Make sure you selected the <strong>Custom</strong> swatch in the <strong>Header Theme Gradient</strong> grid before adjusting colors in the gradient color picker.</li>
+<li><strong>Button labels do not appear on mobile:</strong> Check the <strong>Settings</strong> tab and turn on the <strong>Labels on Mobile</strong> toggle if you want text labels displayed beside channel icons on smaller screens.</li>
+</ul>
+
+<h2>What to read next</h2>
+
+<ul>
+<li>[Configuring Messaging Channels](configure-messaging-channels.md)</li>
+<li>[Greetings and Sound Alerts](greetings-and-sound-alerts.md)</li>
+<li>[Smart Triggers and Scheduling](smart-triggers-and-scheduling.md)</li>
+<li>[Page Targeting Rules](page-targeting-rules.md)</li>
+</ul>
+
+
+
+<hr/>
+
+<h1>How to configure greetings and sound alerts</h1>
+
+<p>This guide shows you how to greet site visitors with proactive speech bubbles, audio chimes, and automatic timers that draw attention to your chat button without feeling intrusive.</p>
+
+<h2>Before you start</h2>
+
+<p>Decide on a brief, welcoming message that encourages visitors to start a conversation, such as asking if they need help finding a product or choosing a pricing plan.</p>
+
+<h2>Video tutorial</h2>
+
+<div class="placeholder video"><strong>[Video Tutorial Placeholder: Greetings and Sound Alerts]</strong></div>
+
+<h2>Step 1: Enable the floating greeting bubble</h2>
+
+<p>Click the <strong>Design</strong> tab in the top navigation bar, scroll to the bottom of the <strong>Floating Launcher Design</strong> section, and locate <strong>Greeting Bubble Preview</strong>.</p>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Greeting Bubble Preview Toggle]</strong></div>
+
+<p>Toggle on <strong>Greeting Bubble Preview</strong> to activate the feature. A new text input field labeled <strong>Greeting Bubble Text</strong> will appear below the toggle.</p>
+
+<h2>Step 2: Write your greeting message</h2>
+
+<p>In the <strong>Greeting Bubble Text</strong> field, type a friendly, inviting sentence:</p>
+
+<ul>
+<li>For ecommerce stores: <code>Have a question about sizing or shipping? Start a live chat!</code></li>
+<li>For agencies and service providers: <code>Looking for a custom quote? Talk to a specialist.</code></li>
+<li>For general help: <code>Need help? Tap here to start chatting.</code></li>
+</ul>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Greeting Bubble Text Field]</strong></div>
+
+<p>This message appears in a small speech bubble next to your floating launcher button after visitors arrive on your website.</p>
+
+<h2>Step 3: Set greeting appearance delay</h2>
+
+<p>Click the <strong>Settings</strong> tab in the top navigation bar and scroll down to the <strong>Interaction & Behavior</strong> section.</p>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Interaction and Behavior Section]</strong></div>
+
+<p>Find the field labeled <strong>Greeting Appearance Delay (Seconds)</strong>. Enter the number of seconds you want the widget to wait after a page loads before popping up the speech bubble:</p>
+
+<ul>
+<li>Enter <code>2</code> or <code>3</code> seconds if you want visitors to see the prompt almost immediately.</li>
+<li>Enter <code>5</code> to <code>10</code> seconds if you prefer giving visitors time to start reading your page first.</li>
+</ul>
+
+<h2>Step 4: Turn on the notification sound chime</h2>
+
+<p>In the same <strong>Interaction & Behavior</strong> section, find the setting labeled <strong>Greeting Bubble Sound</strong>.</p>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Greeting Bubble Sound Toggle]</strong></div>
+
+<ol>
+<li>Click the toggle switch to enable sound alerts.</li>
+<li>Click the <strong>Test Sound</strong> button beside the toggle to hear an instant preview of the synthesized notification chime.</li>
+</ol>
+
+<p>When enabled, this subtle, pleasant audio chime plays at the exact moment your greeting bubble appears, attracting the visitor attention even if they are focused on reading another part of the page.</p>
+
+<h2>Step 5: Configure auto-open and closing behavior</h2>
+
+<p>You can fine-tune how the chat widget responds to visitor interactions in the <strong>Interaction & Behavior</strong> section:</p>
+
+<ul>
+<li><strong>Auto-open on Load:</strong> Turn on this toggle if you want your live chat modal or button menu to pop open automatically. When enabled, enter an <strong>Auto-open Delay (Seconds)</strong> to control the timing.</li>
+<li><strong>Close on Outside Click:</strong> Keep this enabled so the widget closes whenever a visitor clicks anywhere outside the chat window.</li>
+<li><strong>Close on Escape Key:</strong> Keep this enabled to allow visitors using desktop keyboards to dismiss the chat by pressing the <code>Escape</code> key.</li>
+<li><strong>Close After Clicking Channel:</strong> Keep this enabled so the menu collapses cleanly after a visitor clicks a communication channel.</li>
+<li><strong>Open Channels in New Tab:</strong> Keep this enabled so that when visitors click WhatsApp or Messenger, the app opens in a fresh browser tab while keeping your site open in the original tab.</li>
+</ul>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Auto-open and Close Settings]</strong></div>
+
+<h2>Check that it works</h2>
+
+<p>Click <strong>Update Component</strong> in the bottom action bar, publish your Framer site, and open your live page:</p>
+
+<ol>
+<li>Wait for the configured delay period without clicking anything.</li>
+<li>Confirm that the greeting bubble appears beside the floating button with your custom text.</li>
+<li>If sound is enabled, confirm that you hear the notification chime as the bubble appears.</li>
+<li>Click outside the bubble or click your launcher to verify that opening and closing behaviors work as expected.</li>
+</ol>
+
+<h2>Troubleshooting</h2>
+
+<ul>
+<li><strong>The sound chime does not play on mobile devices:</strong> Modern mobile web browsers such as Safari on iOS and Chrome on Android block audio until the visitor performs their first tap or scroll on the page. Once the visitor interacts with your site, audio plays normally.</li>
+<li><strong>The greeting bubble does not show up:</strong> Check the <strong>Design</strong> tab to ensure the <strong>Greeting Bubble Preview</strong> toggle is turned on, and confirm in <strong>Settings</strong> that your appearance delay is set to a reasonable number of seconds.</li>
+<li><strong>The chat opens immediately when you load the page:</strong> Check whether <strong>Auto-open on Load</strong> is enabled in the <strong>Settings</strong> tab. Turn it off if you only want the speech bubble to appear without expanding the full modal.</li>
+</ul>
+
+<h2>What to read next</h2>
+
+<ul>
+<li>[Customizing Widget Design](customize-widget-design.md)</li>
+<li>[Smart Triggers and Scheduling](smart-triggers-and-scheduling.md)</li>
+<li>[Page Targeting Rules](page-targeting-rules.md)</li>
+<li>[Tracking Conversion Analytics](track-conversion-analytics.md)</li>
+</ul>
+
+
+
+<hr/>
+
+<h1>How to configure smart triggers and scheduling</h1>
+
+<p>This guide explains how to show your chat widget at high-converting moments using scroll depth and desktop exit-intent triggers, and how to set automated business hours to manage customer expectations.</p>
+
+<h2>Before you start</h2>
+
+<p>Review your visitor habits and team availability so you can choose appropriate scroll percentages, exit actions, and office hours.</p>
+
+<h2>Video tutorial</h2>
+
+<div class="placeholder video"><strong>[Video Tutorial Placeholder: Smart Triggers and Scheduling]</strong></div>
+
+<h2>Step 1: Open Behavioral Triggers in Settings</h2>
+
+<p>Click the <strong>Settings</strong> tab in the top navigation bar, then scroll down to the section titled <strong>Behavioral Triggers & Smart Display</strong>.</p>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Behavioral Triggers Section Overview]</strong></div>
+
+<p>You will find three independent automation tools: the <strong>Scroll Depth Trigger</strong>, the <strong>Exit-Intent Trigger (Desktop)</strong>, and the <strong>Operating Hours & Days Schedule</strong>.</p>
+
+<h2>Step 2: Configure the scroll depth trigger</h2>
+
+<p>Locate the <strong>Scroll Depth Trigger</strong> card and turn on the toggle switch on the right side of the card header.</p>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Scroll Depth Trigger Card]</strong></div>
+
+<p>When enabled, two configuration controls appear:</p>
+
+<ol>
+<li><strong>Scroll Percentage Threshold:</strong> Drag the slider between 5% and 95% to set how far down the page a visitor must scroll before triggering an action. A setting of 25% to 50% is effective for blogs and long product pages.</li>
+<li><strong>Trigger Target:</strong> Choose what happens when the visitor reaches that depth:</li>
+<ul>
+<li>Select <strong>Floating Launcher (Reveal Entire Widget)</strong> to keep the chat button completely hidden until the visitor scrolls to your threshold.</li>
+<li>Select <strong>Greeting Bubble Only (Launcher Stays Visible)</strong> to keep the launcher button visible immediately, but delay showing the speech bubble until the visitor scrolls down.</li>
+</ul>
+</ol>
+
+<h2>Step 3: Enable the desktop exit-intent trigger</h2>
+
+<p>Locate the <strong>Exit-Intent Trigger (Desktop)</strong> card and turn on the toggle switch.</p>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Exit-Intent Trigger Card]</strong></div>
+
+<p>This trigger uses mouse tracking technology on desktop computers to detect when a visitor cursor moves rapidly toward the browser tab bar or window close button:</p>
+
+<ul>
+<li><strong>Exit-Intent Action:</strong> Choose the response that fits your marketing strategy:</li>
+<li>Select <strong>Pop Open Chat Window (High Conversion)</strong> to open the full live chat modal and give leaving visitors an immediate opportunity to ask questions or request assistance before leaving.</li>
+<li>Select <strong>Display Greeting Bubble (Subtle Notice)</strong> to pop up the smaller speech bubble with a parting question without covering the page.</li>
+</ul>
+
+<h2>Step 4: Set your business operating hours and days</h2>
+
+<p>Locate the <strong>Operating Hours & Days Schedule</strong> card and turn on the toggle switch.</p>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Operating Hours Schedule Card]</strong></div>
+
+<p>Configure your active work schedule using the controls:</p>
+
+<ol>
+<li><strong>Operating Days:</strong> Click individual day pills (<strong>Mon</strong>, <strong>Tue</strong>, <strong>Wed</strong>, <strong>Thu</strong>, <strong>Fri</strong>, <strong>Sat</strong>, <strong>Sun</strong>) to toggle active days, or click one of the quick preset buttons:</li>
+<ul>
+<li><strong>Weekdays (Mon-Fri)</strong> for standard office hours.</li>
+<li><strong>Weekends</strong> for Saturday and Sunday operations.</li>
+<li><strong>All 7 Days</strong> for continuous coverage.</li>
+<li><strong>Opening Time</strong> and <strong>Closing Time:</strong> Set the times when your team starts and finishes work each day, such as <code>09:00</code> and <code>18:00</code>.</li>
+<li><strong>Outside Hours Action:</strong> Decide what the widget does outside your operating hours:</li>
+<li>Select <strong>Show "Offline" Badge & Notice</strong> to keep the widget available for messages while displaying an offline notice in the modal header.</li>
+<li>Select <strong>Hide Widget Completely</strong> if you do not want visitors attempting to start chats when no team members are available to answer.</li>
+<li><strong>Offline Badge Notice:</strong> Enter a helpful note for visitors outside hours, such as <code>Back tomorrow at 9:00 AM</code>.</li>
+</ul>
+</ol>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Schedule Times and Offline Action]</strong></div>
+
+<h2>Check that it works</h2>
+
+<p>Click <strong>Update Component</strong> in the bottom action bar, publish your Framer site, and test your triggers:</p>
+
+<ol>
+<li>To test the <strong>Scroll Depth Trigger</strong>, open your live page and scroll slowly. Confirm that the launcher button or greeting bubble appears when you cross your configured scroll threshold.</li>
+<li>To test the <strong>Exit-Intent Trigger</strong>, open your page on a desktop computer, wait three seconds, then move your mouse cursor smoothly toward the top browser tab bar. Confirm that your modal or speech bubble appears instantly.</li>
+<li>To test the <strong>Operating Hours Schedule</strong>, temporarily set your closing time to five minutes in the past and reload your page to confirm that the offline notice or hiding rule takes effect.</li>
+</ol>
+
+<h2>Troubleshooting</h2>
+
+<ul>
+<li><strong>The exit-intent trigger does not fire on mobile phones:</strong> Mobile devices do not have mouse cursors, so exit-intent detection runs exclusively on desktop browsers. Use the <strong>Scroll Depth Trigger</strong> or appearance delay timers for mobile visitors instead.</li>
+<li><strong>The widget hides during business hours:</strong> Check that the time on your computer matches the opening and closing hours you entered, and confirm that the current day of the week is highlighted among your active operating days.</li>
+<li><strong>The scroll trigger fires too early:</strong> Increase the <strong>Scroll Percentage Threshold</strong> slider to a higher number, such as 50% or 75%, so visitors have to read further down your page before seeing the widget.</li>
+</ul>
+
+<h2>What to read next</h2>
+
+<ul>
+<li>[Greetings and Sound Alerts](greetings-and-sound-alerts.md)</li>
+<li>[Page Targeting Rules](page-targeting-rules.md)</li>
+<li>[Tracking Conversion Analytics](track-conversion-analytics.md)</li>
+<li>[Troubleshooting and FAQ](troubleshooting-and-faq.md)</li>
+</ul>
+
+
+
+<hr/>
+
+<h1>How to configure page targeting rules</h1>
+
+<p>This guide walks you through controlling where your chat widget appears across your website, from showing it on every page to targeting specific product sections or hiding it on checkout flows.</p>
+
+<h2>Before you start</h2>
+
+<p>List the pages on your site where you want visitors to see chat assistance, such as high-intent pricing or support pages, and note any pages where you prefer an uncluttered view, such as minimal landing pages.</p>
+
+<h2>Video tutorial</h2>
+
+<div class="placeholder video"><strong>[Video Tutorial Placeholder: Page Targeting Rules]</strong></div>
+
+<h2>Step 1: Open Page Targeting in Settings</h2>
+
+<p>Click the <strong>Settings</strong> tab in the top navigation bar, then scroll down to the fourth card under <strong>Behavioral Triggers & Smart Display</strong> titled <strong>Page / URL Targeting Filter</strong>.</p>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Page Targeting Filter Card]</strong></div>
+
+<p>This card controls the visibility logic that runs in the visitor browser when each page loads.</p>
+
+<h2>Step 2: Choose your display target</h2>
+
+<p>Click the dropdown menu labeled <strong>Where the widget will be shown?</strong>:</p>
+
+<ul>
+<li>Select <strong>Every page</strong> if you want your floating chat button to remain accessible across your entire site. This is the default setting for most websites.</li>
+<li>Select a specific Framer page name, such as <code>Home</code>, <code>Pricing</code>, or <code>Contact</code>, if you only want the chat widget to appear on that single page.</li>
+<li>Select <strong>Custom URL Paths & Wildcards...</strong> if you want advanced control over multiple URL paths and subdirectories.</li>
+</ul>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Where Widget Will Be Shown Dropdown]</strong></div>
+
+<h2>Step 3: Select your custom targeting mode</h2>
+
+<p>When you select <strong>Custom URL Paths & Wildcards...</strong>, two additional configuration fields will appear:</p>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Custom Targeting Mode Fields]</strong></div>
+
+<p>In the <strong>Targeting Mode</strong> dropdown, choose your filtering approach:</p>
+
+<ul>
+<li>Select <strong>Show Widget Only on Listed Paths</strong> to hide the widget by default and only display it on the specific URL paths you enter. This approach is helpful when you only want chat on high-intent sales pages.</li>
+<li>Select <strong>Hide Widget on Listed Paths (Show Everywhere Else)</strong> to keep the widget visible across your entire website except on the specific pages you list. This approach is ideal for hiding chat on checkout, thank you, or distraction-free webinar pages.</li>
+</ul>
+
+<h2>Step 4: Enter your URL paths and wildcards</h2>
+
+<p>In the <strong>URL Paths & Wildcards</strong> textarea, enter the paths you want to target, separating each entry onto a new line or with a comma:</p>
+
+<ul>
+<li><strong>Exact path matching:</strong> Enter the precise path starting with a forward slash, such as <code>/pricing</code> or <code>/checkout</code>.</li>
+<li><strong>Wildcard matching:</strong> Add an asterisk symbol (<code>*</code>) to target an entire section or folder structure:</li>
+<li><code>/blog/*</code> targets every post inside your blog directory, such as <code>/blog/news</code> and <code>/blog/announcements</code>.</li>
+<li><code>/products/*</code> targets all product detail pages in your store.</li>
+<li><code>/account/*</code> targets all customer account sub-pages.</li>
+</ul>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: URL Paths Textarea]</strong></div>
+
+<p>For example, to display chat only on your pricing page and product catalog, select <strong>Show Widget Only on Listed Paths</strong> and type:</p>
+
+<p>``<code>text</p>
+<p>/pricing</p>
+<p>/products/*</p>
+<p></code>`<code></p>
+
+<h2>Check that it works</h2>
+
+<p>Click <strong>Update Component</strong> in the bottom action bar, publish your Framer site, and navigate through different pages:</p>
+
+<ol>
+<li>Visit a URL that you included in your list. Confirm that the floating chat button appears cleanly in its designated corner.</li>
+<li>Visit a URL that you excluded or left out of an inclusion list. Confirm that the widget remains completely hidden without leaving any blank placeholder frames.</li>
+<li>Check browser console logs if needed to verify that the targeting evaluation executes without errors.</li>
+</ol>
+
+<h2>Troubleshooting</h2>
+
+<ul>
+<li><strong>The widget shows on pages you intended to exclude:</strong> Ensure each path in your list begins with a leading forward slash, such as </code>/checkout<code> rather than </code>checkout<code>.</li>
+<li><strong>Wildcards do not match child pages:</strong> Check that your wildcard entry ends with </code>/<em><code> rather than just </code></em><code>, for example </code>/blog/<em><code> instead of </code>/blog</em><code>.</li>
+<li><strong>You selected a single Framer page from the dropdown but renamed it later:</strong> If you rename a page inside Framer, reopen the plugin, select the updated page name from the <strong>Where the widget will be shown?</strong> dropdown, and click <strong>Update Component</strong>.</li>
+</ul>
+
+<h2>What to read next</h2>
+
+<ul>
+<li>[Smart Triggers and Scheduling](smart-triggers-and-scheduling.md)</li>
+<li>[Tracking Conversion Analytics](track-conversion-analytics.md)</li>
+<li>[Troubleshooting and FAQ](troubleshooting-and-faq.md)</li>
+</ul>
+
+
+
+<hr/>
+
+<h1>How to track conversion analytics</h1>
+
+<p>This guide explains how to monitor visitor engagement, track message clicks across each communication channel, and measure your click-through conversion rate with the built-in analytics dashboard.</p>
+
+<h2>Before you start</h2>
+
+<p>Make sure you have inserted your chat component onto your Framer canvas and published your site, because the analytics dashboard records real interaction data generated by visitors on your live website.</p>
+
+<h2>Video tutorial</h2>
+
+<div class="placeholder video"><strong>[Video Tutorial Placeholder: Tracking Conversion Analytics]</strong></div>
+
+<h2>Step 1: Confirm analytics is enabled</h2>
+
+<p>Click the <strong>Settings</strong> tab in the top navigation bar and look at the section titled <strong>Enable Analytics</strong>.</p>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Enable Analytics Toggle]</strong></div>
+
+<p>Confirm that the toggle switch is turned on. When enabled, a shortcut button labeled <strong>View Analytics Dashboard</strong> appears in the section, and the <strong>Analytics</strong> tab becomes accessible in the primary navigation bar.</p>
+
+<h2>Step 2: Open the Widget Analytics dashboard</h2>
+
+<p>Click the <strong>Analytics</strong> tab in the top navigation bar.</p>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Analytics Dashboard Overview]</strong></div>
+
+<p>The dashboard displays a live overview of your visitor engagement data, automatically updating as visitors interact with your chat widget.</p>
+
+<h2>Step 3: Choose your reporting timeframe</h2>
+
+<p>In the top right corner of the dashboard, click the reporting period dropdown button to choose your preferred date range:</p>
+
+<ul>
+<li><strong>Last 7 days:</strong> Best for observing day-to-day fluctuations, weekly traffic patterns, and immediate results from new promotions.</li>
+<li><strong>Last 30 days:</strong> Ideal for monthly reporting and reviewing long-term visitor trends.</li>
+<li><strong>Last 6 months:</strong> Useful for tracking overall seasonal growth and evaluating communication channel adoption over time.</li>
+</ul>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Analytics Period Dropdown]</strong></div>
+
+<p>Selecting a timeframe instantly updates the KPI summary cards, the bar chart, and the channel breakdown table below.</p>
+
+<h2>Step 4: Review your primary KPI summary cards</h2>
+
+<p>Three summary cards give you a quick health check of your customer engagement:</p>
+
+<ol>
+<li><strong>Views:</strong> Displays total impressions, which is the number of times your floating chat launcher appeared on screen for unique visitor sessions.</li>
+<li><strong>Clicks:</strong> Displays total channel interactions, recording every time a visitor clicked your launcher, expanded a channel menu, or tapped a direct communication button.</li>
+<li><strong>Conv. Rate:</strong> Displays your click-through conversion rate, calculated as total clicks divided by total views. A higher rate indicates that visitors find your chat prompt appealing and relevant.</li>
+</ol>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: KPI Summary Cards]</strong></div>
+
+<h2>Step 5: Explore the daily clicks volume chart</h2>
+
+<p>Below the KPI cards, the interactive bar chart titled <strong>Clicks over the last 7 days</strong> (or your selected timeframe) illustrates daily interaction volume:</p>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Interactive Clicks Bar Chart]</strong></div>
+
+<ul>
+<li>Each bar represents a day within the reporting period, with height corresponding to total click volume.</li>
+<li>Hover your mouse over any bar to view an instant tooltip showing the exact click count for that specific day.</li>
+<li>The highest-performing day is automatically highlighted with a vibrant accent color so you can spot peak traffic periods at a glance.</li>
+</ul>
+
+<h2>Step 6: Analyze the channel performance breakdown</h2>
+
+<p>Scroll down to the <strong>Channel Performance Breakdown</strong> section to see which messaging apps your audience prefers.</p>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Channel Breakdown Table]</strong></div>
+
+<p>This table lists every active channel alongside:</p>
+
+<ul>
+<li>The platform brand icon and label.</li>
+<li>Total click count recorded during the selected period.</li>
+<li>A proportional color progress bar showing that channel percentage share of total clicks.</li>
+<li>The percentage share number, making it easy to identify your most valuable customer service channels.</li>
+</ul>
+
+<h2>Check that it works</h2>
+
+<p>To verify that your analytics tracking is active:</p>
+
+<ol>
+<li>Open your published website in an incognito or private browser window.</li>
+<li>Scroll until the floating chat launcher appears, then click on the button and click on one of your channel links.</li>
+<li>Reopen the Chat Bubbles plugin in Framer, navigate to the <strong>Analytics</strong> tab, and confirm that your view and click counts have increased.</li>
+</ol>
+
+<h2>Troubleshooting</h2>
+
+<ul>
+<li><strong>The Analytics tab does not appear in the top navigation bar:</strong> Go to <strong>Settings</strong> and ensure the <strong>Enable Analytics</strong> toggle is turned on, because the plugin hides the tab when tracking is disabled to keep your workspace focused.</li>
+<li><strong>Views increase but clicks remain at zero:</strong> Check that your channel handles and numbers are properly configured in the <strong>Builder</strong> tab so that clicking a button initiates a valid conversation.</li>
+<li><strong>You want to reset analytics counts:</strong> Contact Framefic support or disconnect and reinstall the component if you need to wipe historic test data before launching an official marketing campaign.</li>
+</ul>
+
+<h2>What to read next</h2>
+
+<ul>
+<li>[Configuring Messaging Channels](configure-messaging-channels.md)</li>
+<li>[Smart Triggers and Scheduling](smart-triggers-and-scheduling.md)</li>
+<li>[Plans and Billing](plans-and-billing.md)</li>
+<li>[Troubleshooting and FAQ](troubleshooting-and-faq.md)</li>
+</ul>
+
+
+
+<hr/>
+
+<h1>How to manage plans and billing</h1>
+
+<p>This guide explains the available subscription options for Chat Bubbles, how to start your free trial, how to upgrade securely using Stripe, and how to manage or cancel your site license at any time.</p>
+
+<h2>Before you start</h2>
+
+<p>Create a free Framefic account or log in through the plugin shell so your subscription attaches securely to your account and your active Framer site ID.</p>
+
+<h2>Video tutorial</h2>
+
+<div class="placeholder video"><strong>[Video Tutorial Placeholder: Plans and Billing]</strong></div>
+
+<h2>Step 1: Understand the available plans</h2>
+
+<p>Chat Bubbles offers flexible options to accommodate individual site creators, growing agencies, and established online brands:</p>
+
+<ul>
+<li><strong>Free Trial:</strong> Enjoy complete access to every PRO feature for seven days on your Framer site without entering credit card details upfront.</li>
+<li><strong>Pro Monthly:</strong> $4.99 billed monthly. Ideal if you want flexible month-to-month billing with the freedom to pause or cancel whenever you wish.</li>
+<li><strong>Pro Yearly:</strong> $49.99 billed annually. A cost-effective option that saves you over 16% compared to monthly billing while providing uninterrupted service all year long.</li>
+<li><strong>Lifetime Deal:</strong> $99.99 billed as a single one-time payment. Grants perpetual access to all current and future features on your site with zero recurring renewal charges.</li>
+</ul>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Pricing Plans Comparison]</strong></div>
+
+<p>Every paid plan includes:</p>
+
+<ul>
+<li>Access to all 19 messaging channels.</li>
+<li>Unlimited support team agents with custom avatars and direct contact numbers.</li>
+<li>Custom header gradients, background palettes, and button styles.</li>
+<li>Behavioral triggers, including scroll depth and desktop exit-intent.</li>
+<li>Operating hours schedules and offline status notices.</li>
+<li>Real-time conversion analytics and daily impression tracking.</li>
+<li>Zero Framefic watermarks on your published site.</li>
+</ul>
+
+<h2>Step 2: Start your free trial or upgrade to PRO</h2>
+
+<p>To begin your subscription:</p>
+
+<ol>
+<li>Click the <strong>PRO</strong> badge in the top right corner of the plugin header, or click your profile icon and select <strong>Subscription</strong>.</li>
+<li>If you are a new user, you will be prompted to create an account with your email and password. Upon verification, your seven-day free trial activates immediately.</li>
+<li>If you are ready to upgrade, click the <strong>Upgrade to PRO</strong> button to view the pricing plans.</li>
+</ol>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Upgrade Modal]</strong></div>
+
+<h2>Step 3: Complete checkout securely through Stripe</h2>
+
+<p>Select your preferred plan card (<strong>Monthly</strong>, <strong>Yearly</strong>, or <strong>Lifetime</strong>) and click <strong>Continue to Checkout</strong>.</p>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Stripe Payment Window]</strong></div>
+
+<p>The secure Stripe payment modal will appear:</p>
+
+<ol>
+<li>Enter your credit card details, billing address, and account email.</li>
+<li>Confirm your purchase by clicking <strong>Subscribe</strong> or <strong>Pay Now</strong>.</li>
+<li>Once Stripe processes the transaction, a green confirmation screen will confirm that your site license is active.</li>
+<li>Your canvas component will sync immediately, unlocking all PRO styling and behavior controls without requiring you to re-insert the widget.</li>
+</ol>
+
+<h2>Step 4: Manage payment methods and view receipts</h2>
+
+<p>You can manage your billing details directly from within the plugin at any time:</p>
+
+<ol>
+<li>Click your profile avatar in the top right corner of the plugin window.</li>
+<li>Click the <strong>Subscription</strong> button to view your current plan, renewal date, and license status.</li>
+<li>Click <strong>Manage Billing in Stripe</strong> to open the Stripe customer portal in a new browser tab.</li>
+<li>In the portal, you can update your credit card on file, change your billing address, and download official PDF tax invoices.</li>
+</ol>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Subscription Management Page]</strong></div>
+
+<h2>Step 5: Switch plans or cancel your subscription</h2>
+
+<p>If you wish to change your billing frequency or cancel your recurring plan:</p>
+
+<ul>
+<li><strong>Switching between Monthly and Yearly:</strong> In the <strong>Subscription</strong> section, click <strong>Change Plan</strong>, choose your new plan, and confirm the adjustment. Stripe will automatically calculate any prorated balance for you.</li>
+<li><strong>Cancelling your plan:</strong> Click <strong>Cancel Subscription</strong> at the bottom of the subscription page. A brief cancellation questionnaire will appear to collect feedback. Follow the prompts to confirm your cancellation.</li>
+</ul>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Cancellation Confirmation Screen]</strong></div>
+
+<p>When you cancel, your PRO features will remain active until the end of your current paid billing period, and no further renewal charges will be made.</p>
+
+<h2>Check that it works</h2>
+
+<p>To verify that your license is active:</p>
+
+<ol>
+<li>Check the top header of the plugin window. The <strong>PRO</strong> badge should display in vibrant blue with an active status.</li>
+<li>Open the <strong>Settings</strong> tab and confirm that the <strong>Behavioral Triggers & Smart Display</strong> cards are fully unlocked and editable.</li>
+<li>Open your live website to confirm that all custom themes, greeting bubbles, and channel links function without restriction.</li>
+</ol>
+
+<h2>Troubleshooting</h2>
+
+<ul>
+<li><strong>Your card payment was declined:</strong> Ensure your billing address matches the address on file with your bank, and confirm that your card supports international online transactions.</li>
+<li><strong>Your subscription is active but the canvas shows a locked status:</strong> Click your profile icon in the plugin, click <strong>Refresh License</strong>, and then click <strong>Update Component</strong> in the bottom bar to resynchronize your canvas instance.</li>
+<li><strong>You moved your component to a new Framer project:</strong> Each license attaches to one unique Framer site ID. If you migrate your site, reach out to Framefic support with your receipt to transfer your license to the new site.</li>
+</ul>
+
+<h2>What to read next</h2>
+
+<ul>
+<li>[Getting Started](getting-started.md)</li>
+<li>[Smart Triggers and Scheduling](smart-triggers-and-scheduling.md)</li>
+<li>[Troubleshooting and FAQ](troubleshooting-and-faq.md)</li>
+</ul>
+
+
+
+<hr/>
+
+<h1>How to troubleshoot common issues and frequently asked questions</h1>
+
+<p>This guide provides quick answers and step-by-step solutions to the most common setup questions and edge cases when building chat widgets with Chat Bubbles in Framer.</p>
+
+<h2>Before you start</h2>
+
+<p>Make sure you are running the latest version of the Chat Bubbles plugin in Framer, and confirm that your project has been published to test features in your live browser environment.</p>
+
+<h2>Video tutorial</h2>
+
+<div class="placeholder video"><strong>[Video Tutorial Placeholder: Troubleshooting and FAQ]</strong></div>
+
+<h2>Frequently asked questions</h2>
+
+<h3>1. How should I format phone numbers for WhatsApp, Viber, and SMS?</h3>
+
+<p>Always enter phone numbers in international format, including your country code:</p>
+
+<ul>
+<li>For United States and Canada: </code>+1 234 567 8900<code></li>
+<li>For United Kingdom: </code>+44 7911 123456<code></li>
+<li>For Australia: </code>+61 412 345 678<code></li>
+<li>For Germany: </code>+49 151 12345678<code></li>
+</ul>
+
+<p>Do not include leading zeros, dashes, or parentheses in the number field, because messaging services like WhatsApp Web use raw international digits to initiate chats.</p>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Phone Number Formatting Example]</strong></div>
+
+<hr/>
+
+<h3>2. Why does the notification sound chime not play automatically on mobile phones?</h3>
+
+<p>Modern mobile operating systems, including iOS and Android, have strict browser autoplay policies designed to prevent unwanted audio playback. Mobile browsers require a visitor to interact with the page first, such as tapping or scrolling, before allowing web applications to produce sound.</p>
+
+<p>Once your visitor begins interacting with your page, the synthesized greeting chime will play normally when your appearance delay timer triggers.</p>
+
+<hr/>
+
+<h3>3. How does Chat Bubbles work across Framer responsive breakpoints?</h3>
+
+<p>Chat Bubbles is built to adapt automatically across Desktop, Tablet, and Mobile layouts:</p>
+
+<ul>
+<li>On desktop screens, your full channel list or live chat modal appears using your configured <strong>Desktop Offset X (px)</strong> and <strong>Desktop Offset Y (px)</strong> margins.</li>
+<li>On screens under 640 pixels wide, the widget applies your <strong>Mobile Offset X (px)</strong> and <strong>Mobile Offset Y (px)</strong> settings.</li>
+<li>If you have five or more channels active, the <strong>Mobile Layout Constraint (Cap 4+)</strong> feature automatically caps visible mobile buttons to your top four platforms and adds a clean </code>+ More<code> expand button, keeping your mobile screen tidy.</li>
+</ul>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Responsive Breakpoint Preview]</strong></div>
+
+<hr/>
+
+<h3>4. What should I do if the Framer canvas displays a duplicate component warning?</h3>
+
+<p>If you see a notice on your canvas stating that a duplicate component has been detected, check your Framer layers list. You only need to place one Chat Bubbles component on your primary page frame:</p>
+
+<ol>
+<li>Select your page frame in the layers panel.</li>
+<li>Verify that you have only one instance of the Chat Bubbles component inserted.</li>
+<li>If you have multiple breakpoint frames, such as separate Desktop, Tablet, and Mobile variants on the same page, keep the component within your primary shared frame so it inherits seamlessly across all screen sizes.</li>
+</ol>
+
+<hr/>
+
+<h3>5. Why do my latest changes in the plugin not show on my live website?</h3>
+
+<p>Whenever you adjust settings in the plugin interface, remember to click the <strong>Update Component</strong> button located in the bottom action bar.</p>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Update Component Button]</strong></div>
+
+<p>After the green confirmation banner appears, click the <strong>Publish</strong> button in the top right corner of Framer to build and push your new production bundle live.</p>
+
+<hr/>
+
+<h3>6. Can I position the floating button in a different corner?</h3>
+
+<p>Yes. Open the <strong>Settings</strong> tab and look under <strong>Widget Placement</strong>. Click the <strong>Screen Corner Position</strong> dropdown to choose from four options:</p>
+
+<ul>
+<li><strong>Bottom Right (Recommended)</strong></li>
+<li><strong>Bottom Left</strong></li>
+<li><strong>Top Right</strong></li>
+<li><strong>Top Left</strong></li>
+</ul>
+
+<div class="placeholder screenshot"><strong>[Screenshot Placeholder: Screen Corner Position Dropdown]</strong></div>
+
+<p>Selecting a different corner moves both the floating launcher and any opened menus or modals to that designated area.</p>
+
+<hr/>
+
+<h3>7. Does the analytics tracker store personal visitor data or use tracking cookies?</h3>
+
+<p>No. The built-in analytics engine is designed for privacy. It counts anonymous page impressions and button clicks using lightweight aggregation, without storing personal visitor data, IP addresses, or tracking cookies. You can safely run Chat Bubbles on privacy-conscious websites without requiring cookie consent banners for the chat widget.</p>
+
+<hr/>
+
+<h3>8. How do I transfer my PRO license to another Framer project?</h3>
+
+<p>Each Chat Bubbles license is attached to a specific Framer site ID. If you start a new Framer project and want to transfer your existing subscription:</p>
+
+<ol>
+<li>Copy your original purchase invoice number or account email.</li>
+<li>Reach out to the Framefic support team through the official website at </code>https://www.framefic.com/`.</li>
+<li>Provide your new Framer project URL or site ID, and the team will re-assign your license so you can activate PRO on your new canvas.</li>
+</ol>
+
+<hr/>
+
+<h2>Check that it works</h2>
+
+<p>If you encountered an issue earlier and applied one of the fixes above:</p>
+
+<ol>
+<li>Reopen the Chat Bubbles plugin window in Framer.</li>
+<li>Verify your channel numbers, offsets, and triggers.</li>
+<li>Click <strong>Update Component</strong> in the bottom action bar.</li>
+<li>Publish your Framer site and reload your live page in an incognito window to verify that your fix resolved the issue.</li>
+</ol>
+
+<h2>What to read next</h2>
+
+<ul>
+<li>[Getting Started](getting-started.md)</li>
+<li>[Configuring Messaging Channels](configure-messaging-channels.md)</li>
+<li>[Customizing Widget Design](customize-widget-design.md)</li>
+<li>[Plans and Billing](plans-and-billing.md)</li>
+</ul>
+
+
+</body>
+</html>

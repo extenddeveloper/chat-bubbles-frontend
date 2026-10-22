@@ -387,26 +387,41 @@ button.cf-theme-toggle:hover {
     box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
 }
 
-/* Tab Bar - Left Aligned Tabs + Right Profile Icon */
+/* Tab Bar - Left Aligned Tabs with Underline Indicator + Right Profile Icon */
 .cf-tabs {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
-    background: var(--cf-bg-tertiary);
-    padding: 3px 4px !important;
-    border-radius: 10px;
-    margin: 8px 14px 4px;
+    width: 100% !important;
+    background: var(--cf-bg) !important;
+    padding: 0 14px !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
     position: sticky;
     top: 0px;
-    z-index: 15;
-    border: 1px solid var(--cf-border);
-    box-sizing: border-box;
+    z-index: 25;
+    border: none !important;
+    border-bottom: 1px solid var(--cf-border) !important;
+    box-sizing: border-box !important;
+    height: 42px !important;
+    flex-shrink: 0 !important;
 }
 
 .cf-tabs-list {
     display: flex !important;
     align-items: center !important;
-    gap: 3px !important;
+    gap: 16px !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+    box-sizing: border-box !important;
+}
+
+.cf-tabs-list::-webkit-scrollbar {
+    display: none !important;
 }
 
 button.cf-tab {
@@ -416,33 +431,52 @@ button.cf-tab {
     align-items: center !important;
     justify-content: center !important;
     flex: 0 0 auto !important;
-    padding: 6px 11px !important;
+    height: 100% !important;
+    padding: 0 2px !important;
+    font-family: var(--font-sans, "Inter", sans-serif) !important;
     font-size: 13px !important;
     font-weight: 500 !important;
-    color: var(--cf-text-secondary) !important;
-    border-radius: 7px !important;
+    color: var(--cf-text-secondary, #94a3b8) !important;
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 2.5px solid transparent !important;
+    border-radius: 0 !important;
     cursor: pointer !important;
     text-align: center !important;
     user-select: none !important;
-    transition: all 0.15s ease !important;
+    transition: color 0.16s ease, border-color 0.16s ease !important;
     white-space: nowrap !important;
+    margin-bottom: -1px !important;
+    box-shadow: none !important;
 }
 
 button.cf-tab:hover {
-    color: var(--cf-text) !important;
-    background: rgba(255, 255, 255, 0.04) !important;
+    color: var(--cf-text, #ffffff) !important;
+    background: transparent !important;
 }
 
 button.cf-tab.active {
-    color: var(--cf-text) !important;
-    background: var(--cf-control) !important;
+    color: var(--cf-text, #ffffff) !important;
+    background: transparent !important;
     font-weight: 600 !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important;
+    border-bottom: 2.5px solid var(--Secondary-Default, #5271ff) !important;
+    box-shadow: none !important;
+}
+
+.app.light button.cf-tab {
+    color: var(--cf-text-secondary, #64748b) !important;
+}
+
+.app.light button.cf-tab:hover {
+    color: var(--cf-text, #0f172a) !important;
+    background: transparent !important;
 }
 
 .app.light button.cf-tab.active {
-    background: #ffffff !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+    color: var(--cf-text, #0f172a) !important;
+    background: transparent !important;
+    border-bottom: 2.5px solid var(--Secondary-Default, #5271ff) !important;
+    box-shadow: none !important;
 }
 
 button.cf-tab-profile {
@@ -452,29 +486,40 @@ button.cf-tab-profile {
     align-items: center !important;
     justify-content: center !important;
     width: 32px !important;
-    height: 28px !important;
+    height: 32px !important;
     padding: 0 !important;
-    color: var(--cf-text-secondary) !important;
-    border-radius: 7px !important;
+    margin-left: auto !important;
+    color: var(--cf-text-secondary, #94a3b8) !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 50% !important;
     cursor: pointer !important;
-    transition: all 0.15s ease !important;
+    transition: color 0.16s ease, background-color 0.16s ease !important;
     flex-shrink: 0 !important;
 }
 
 button.cf-tab-profile:hover {
-    color: var(--cf-text) !important;
-    background: rgba(255, 255, 255, 0.04) !important;
+    color: var(--cf-text, #ffffff) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
 }
 
 button.cf-tab-profile.active {
-    color: var(--cf-text) !important;
-    background: var(--cf-control) !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important;
+    color: var(--Secondary-Default, #5271ff) !important;
+    background: rgba(82, 113, 255, 0.12) !important;
+}
+
+.app.light button.cf-tab-profile {
+    color: var(--cf-text-secondary, #64748b) !important;
+}
+
+.app.light button.cf-tab-profile:hover {
+    color: var(--cf-text, #0f172a) !important;
+    background: rgba(0, 0, 0, 0.05) !important;
 }
 
 .app.light button.cf-tab-profile.active {
-    background: #ffffff !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+    color: var(--Secondary-Default, #5271ff) !important;
+    background: rgba(82, 113, 255, 0.12) !important;
 }
 
 /* Main Content Area */
