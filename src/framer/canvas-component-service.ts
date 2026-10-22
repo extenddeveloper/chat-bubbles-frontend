@@ -1835,10 +1835,23 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                 border: none !important;
                 background: transparent !important;
                 cursor: pointer !important;
-                font-size: 16px !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                width: 16px !important;
+                height: 16px !important;
                 line-height: 1 !important;
                 color: #9ca3af !important;
                 padding: 0 !important;
+                opacity: 0.75 !important;
+                transition: opacity 0.15s ease, color 0.15s ease !important;
+              }
+              .cf-canvas-greeting-close:hover {
+                opacity: 1 !important;
+                color: #4b5563 !important;
+              }
+              .cf-canvas-greeting-close svg {
+                display: block !important;
               }
               .cf-canvas-modal-header {
                 color: #ffffff !important;
@@ -2292,11 +2305,11 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                         onClick={(e) => e.stopPropagation()}
                     >
                         <a
-                            href="https://framefic.com"
+                            href="https://framefic.com/chat-bubbles"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="framefic-wm-link"
-                            title="Made with Framefic"
+                            title="Made with Chat Bubbles"
                         >
                             <span className="framefic-wm-icon">
                                 <svg width="7" height="7" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -2308,7 +2321,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                                 </svg>
                             </span>
                             <span className="framefic-wm-text">Made with</span>
-                            <span className="framefic-wm-brand">Framefic</span>
+                            <span className="framefic-wm-brand">Chat Bubbles</span>
                         </a>
                     </div>
                 ) : null}
@@ -2327,13 +2340,16 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                     <button
                         type="button"
                         className="cf-canvas-greeting-close"
+                        aria-label="Close"
                         onClick={(e) => {
                             e.stopPropagation()
                             cancelPendingChime()
                             setGreetingDismissed(true)
                         }}
                     >
-                        x
+                        <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                            <path d="M4 4l8 8M12 4l-8 8" />
+                        </svg>
                     </button>
                 </div>
             ) : null}
