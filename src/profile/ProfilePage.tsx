@@ -205,7 +205,7 @@ export function ProfilePage({
               <span>PRO</span>
             </div>
           ) : isTrialUser ? (
-            <div className="framefic-avatar-badge framefic-avatar-badge--trial" title="7-Day Free Trial Active">
+            <div className="framefic-avatar-badge framefic-avatar-badge--trial" title="Free Trial Active">
               <Clock width={13} height={13} color="black" />
               <span>TRIAL</span>
             </div>
@@ -238,10 +238,10 @@ export function ProfilePage({
       {!hasSubscription && (
         <div className="framefic-profile-trial-card">
           <h4 className="framefic-trial-heading">
-            Start Your 7-Day Free Trial
+            Start Your Free Trial
           </h4>
           <p className="framefic-trial-desc">
-            Get full access to all Pro features, multi-agent support teams, and premium bubble styles for 7 days. No credit card required.
+            Get full access to all Pro features, multi-agent support teams, and premium bubble styles during your trial. No credit card required.
           </p>
           {!hasAlreadyTakenTrial ? (
             <button

@@ -276,12 +276,12 @@ export function AuthModal({
         <div className="cb-auth-header">
           <h3 className="cb-auth-title">
             {authMode === "register"
-              ? "You Get 7-Day Free Trial"
+              ? "You Get Free Trial"
               : "Sign in to your account"}
           </h3>
           <p className="cb-auth-desc">
             {authMode === "register"
-              ? "This plugin is full PRO. Start your 7-day free trial to unlock chat bubbles and all customizations."
+              ? "This plugin is full PRO. Start your free trial to unlock chat bubbles and all customizations."
               : "Sign in with your email, password, or Google in your browser to continue."}
           </p>
         </div>
@@ -333,7 +333,7 @@ export function AuthModal({
               onClick={handleOpenBrowserAuth}
             >
               {authMode === "register"
-                ? "Start 7-Day Free Trial"
+                ? "Start Free Trial"
                 : "Sign In with Browser"}
             </button>
           ) : (

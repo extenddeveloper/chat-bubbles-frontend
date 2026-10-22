@@ -89,6 +89,9 @@ export function SubscriptionPage({
       date = new Date(dateVal)
     }
     if (isNaN(date.getTime())) return String(dateVal)
+    if (planDetails?.isTrial) {
+      return date.toLocaleString("en-US", { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
+    }
     return date.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
   }
 

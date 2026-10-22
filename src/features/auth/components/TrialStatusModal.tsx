@@ -42,14 +42,14 @@ export function TrialStatusModal({ isOpen, status, onClose, onUpgrade, onLogout 
               </div>
 
               <h3>You're all set!</h3>
-              <p className="framefic-trial-status-description">Your 7-day free trial has started</p>
+              <p className="framefic-trial-status-description">Your free trial has started</p>
 
               <button className="framefic-trial-status-btn" onClick={onClose}>
                 Start Exploring
               </button>
 
               <span className="framefic-trial-status-footnote">
-                Trial ends in 7 days. Cancel anytime
+                Enjoy full access to all Pro features during your trial
               </span>
             </>
           ) : (
