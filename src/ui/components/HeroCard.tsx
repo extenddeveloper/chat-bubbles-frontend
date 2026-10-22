@@ -64,8 +64,8 @@ export function HeroCard({
                     onClick={onCtaClick}
                     disabled={disabled}
                 >
-                    {ctaIcon}
                     <span>{ctaLabel}</span>
+                    {ctaIcon}
                 </button>
             ) : null}
         </div>

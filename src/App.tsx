@@ -2571,29 +2571,31 @@ export function App() {
             </main>
 
             {!isProfileOpen && (
-                <footer className="actions">
-                    <div className="cf-footer-grid">
-                        <button
-                            type="button"
-                            className="primary-cta"
-                            onClick={handleInsertToCanvas}
-                            disabled={inserting}
-                            title="Insert reusable Chat Bubbles component onto the Framer canvas"
-                        >
-                            <IconSparkles size={16} />
-                            <span>{inserting ? "Inserting..." : "Insert into Canvas"}</span>
-                        </button>
-                        <button
-                            type="button"
-                            className="secondary-cta"
-                            onClick={reset}
-                            disabled={inserting}
-                            title="Restore default settings"
-                        >
-                            <IconRefresh size={13} />
-                            <span>Reset</span>
-                        </button>
-                    </div>
+                <footer className={"actions" + (tab === "home" || isProTabLocked ? " cf-home-actions" : "")}>
+                    {tab !== "home" && !isProTabLocked && (
+                        <div className="cf-footer-grid">
+                            <button
+                                type="button"
+                                className="primary-cta"
+                                onClick={handleInsertToCanvas}
+                                disabled={inserting}
+                                title="Insert reusable Chat Bubbles component onto the Framer canvas"
+                            >
+                                <span>{inserting ? "Inserting..." : "Insert Chat Bubbles"}</span>
+                                <IconSparkles size={16} />
+                            </button>
+                            <button
+                                type="button"
+                                className="secondary-cta"
+                                onClick={reset}
+                                disabled={inserting}
+                                title="Restore default settings"
+                            >
+                                <span>Reset</span>
+                                <IconRefresh size={13} />
+                            </button>
+                        </div>
+                    )}
                     <div className="cf-shell-footer-bar">
                         <a
                             href="https://www.framefic.com/"

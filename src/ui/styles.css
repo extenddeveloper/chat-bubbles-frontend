@@ -1498,6 +1498,17 @@ body[data-framer-theme="dark"] .cf-notice-close:hover,
     box-sizing: border-box !important;
 }
 
+.actions.cf-home-actions {
+    padding: 6px 14px 6px !important;
+    gap: 0 !important;
+}
+
+.actions.cf-home-actions .cf-shell-footer-bar {
+    border-top: none !important;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
 button.cf-btn {
     all: unset !important;
     box-sizing: border-box !important;
