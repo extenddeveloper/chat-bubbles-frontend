@@ -679,51 +679,6 @@ export default function ChatBubbles(props: ChatBubblesProps) {
     const [navDirection, setNavDirection] = React.useState<"forward" | "backward">("forward")
     const [customMessage, setCustomMessage] = React.useState("")
     const [mobileExpanded, setMobileExpanded] = React.useState(false)
-    const [isDarkCanvas, setIsDarkCanvas] = React.useState(false)
-
-    React.useEffect(() => {
-        if (typeof window === "undefined") return
-        function detectDarkCanvas() {
-            try {
-                if (
-                    document.documentElement.classList.contains("dark") ||
-                    document.body.classList.contains("dark") ||
-                    document.body.getAttribute("data-framer-theme") === "dark" ||
-                    document.documentElement.getAttribute("data-theme") === "dark"
-                ) {
-                    return true
-                }
-                let el = containerRef.current ? containerRef.current.parentElement : null
-                while (el && el !== document.body && el !== document.documentElement) {
-                    const bg = window.getComputedStyle(el).backgroundColor
-                    if (bg && bg !== "transparent" && bg !== "rgba(0, 0, 0, 0)") {
-                        const digits = bg.replace(/[^0-9,]/g, "").split(",")
-                        if (digits.length >= 3) {
-                            const r = parseInt(digits[0], 10) || 0
-                            const g = parseInt(digits[1], 10) || 0
-                            const b = parseInt(digits[2], 10) || 0
-                            return (0.2126 * r + 0.7152 * g + 0.0722 * b) < 128
-                        }
-                    }
-                    el = el.parentElement
-                }
-                const bodyBg = window.getComputedStyle(document.body).backgroundColor
-                if (bodyBg && bodyBg !== "transparent" && bodyBg !== "rgba(0, 0, 0, 0)") {
-                    const digits = bodyBg.replace(/[^0-9,]/g, "").split(",")
-                    if (digits.length >= 3) {
-                        const r = parseInt(digits[0], 10) || 0
-                        const g = parseInt(digits[1], 10) || 0
-                        const b = parseInt(digits[2], 10) || 0
-                        return (0.2126 * r + 0.7152 * g + 0.0722 * b) < 128
-                    }
-                }
-            } catch (e) {}
-            return false
-        }
-        setIsDarkCanvas(detectDarkCanvas())
-        const timer = setTimeout(() => setIsDarkCanvas(detectDarkCanvas()), 300)
-        return () => clearTimeout(timer)
-    }, [])
 
     // Single-instance duplicate protection: allows 1 instance per responsive breakpoint (Desktop, Tablet, Mobile)
     const instanceId = React.useMemo(() => Math.random().toString(36).slice(2, 9), [])
@@ -2140,7 +2095,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
               /* Framefic Watermark Badge - Under Toggle Button */
               .cf-canvas-wm-wrap {
                 position: absolute !important;
-                top: calc(100% + 7px) !important;
+                top: calc(100% + 6px) !important;
                 left: 50% !important;
                 transform: translateX(-50%) !important;
                 display: flex !important;
@@ -2161,12 +2116,12 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                 display: inline-flex !important;
                 align-items: center !important;
                 justify-content: center !important;
-                gap: 4.5px !important;
-                padding: 3px 8.5px 3px 5px !important;
+                gap: 4px !important;
+                padding: 3px 8px 3px 5px !important;
                 border-radius: 999px !important;
                 background: rgba(255, 255, 255, 0.94) !important;
-                border: 1px solid rgba(0, 0, 0, 0.09) !important;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+                border: 1px solid rgba(0, 0, 0, 0.08) !important;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04) !important;
                 text-decoration: none !important;
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', Helvetica, Arial, sans-serif !important;
                 font-size: 10px !important;
@@ -2186,7 +2141,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                 transform: translateY(-1px) scale(1.02) !important;
                 border-color: rgba(82, 113, 255, 0.5) !important;
                 background: #ffffff !important;
-                box-shadow: 0 4px 14px rgba(82, 113, 255, 0.2), 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+                box-shadow: 0 4px 12px rgba(82, 113, 255, 0.22) !important;
               }
               .framefic-wm-icon {
                 width: 12px !important;
@@ -2228,6 +2183,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                 display: inline-block !important;
                 flex-shrink: 0 !important;
                 transition: color 0.2s ease !important;
+                text-shadow: none !important;
               }
               .framefic-wm-link:hover .framefic-wm-text {
                 color: #3b82f6 !important;
@@ -2243,55 +2199,52 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                 display: inline-block !important;
                 flex-shrink: 0 !important;
                 transition: color 0.2s ease !important;
+                text-shadow: none !important;
               }
               .framefic-wm-link:hover .framefic-wm-brand {
                 color: #1d4ed8 !important;
               }
 
-              /* Dark Canvas & Dark Mode Adaptations */
+              /* Framer Dark Theme Compatibility */
               body[data-framer-theme="dark"] .framefic-wm-link,
               [data-theme="dark"] .framefic-wm-link,
-              .dark .framefic-wm-link,
-              .cf-wm-dark .framefic-wm-link {
+              .dark .framefic-wm-link {
                 background: rgba(15, 23, 42, 0.88) !important;
                 border-color: rgba(255, 255, 255, 0.16) !important;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35) !important;
               }
 
               body[data-framer-theme="dark"] .framefic-wm-link:hover,
               [data-theme="dark"] .framefic-wm-link:hover,
-              .dark .framefic-wm-link:hover,
-              .cf-wm-dark .framefic-wm-link:hover {
+              .dark .framefic-wm-link:hover {
                 background: rgba(30, 41, 59, 0.95) !important;
                 border-color: rgba(82, 113, 255, 0.6) !important;
-                box-shadow: 0 4px 14px rgba(82, 113, 255, 0.3), 0 1px 3px rgba(0, 0, 0, 0.25) !important;
+                box-shadow: 0 4px 14px rgba(82, 113, 255, 0.3) !important;
               }
 
               body[data-framer-theme="dark"] .framefic-wm-text,
               [data-theme="dark"] .framefic-wm-text,
-              .dark .framefic-wm-text,
-              .cf-wm-dark .framefic-wm-text {
+              .dark .framefic-wm-text {
                 color: #94a3b8 !important;
+                text-shadow: none !important;
               }
 
               body[data-framer-theme="dark"] .framefic-wm-link:hover .framefic-wm-text,
               [data-theme="dark"] .framefic-wm-link:hover .framefic-wm-text,
-              .dark .framefic-wm-link:hover .framefic-wm-text,
-              .cf-wm-dark .framefic-wm-link:hover .framefic-wm-text {
+              .dark .framefic-wm-link:hover .framefic-wm-text {
                 color: #93c5fd !important;
               }
 
               body[data-framer-theme="dark"] .framefic-wm-brand,
               [data-theme="dark"] .framefic-wm-brand,
-              .dark .framefic-wm-brand,
-              .cf-wm-dark .framefic-wm-brand {
+              .dark .framefic-wm-brand {
                 color: #ffffff !important;
+                text-shadow: none !important;
               }
 
               body[data-framer-theme="dark"] .framefic-wm-link:hover .framefic-wm-brand,
               [data-theme="dark"] .framefic-wm-link:hover .framefic-wm-brand,
-              .dark .framefic-wm-link:hover .framefic-wm-brand,
-              .cf-wm-dark .framefic-wm-link:hover .framefic-wm-brand {
+              .dark .framefic-wm-link:hover .framefic-wm-brand {
                 color: #ffffff !important;
               }
             \`}</style>
@@ -2335,7 +2288,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
 
                 {runtimeIsTrial && !isLocked ? (
                     <div
-                        className={"cf-canvas-wm-wrap" + (isDarkCanvas ? " cf-wm-dark" : "")}
+                        className="cf-canvas-wm-wrap"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <a
@@ -2346,7 +2299,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                             title="Made with Framefic"
                         >
                             <span className="framefic-wm-icon">
-                                <svg width="7.5" height="7.5" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <svg width="7" height="7" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M2.2 5V3.4C2.2 2.74 2.74 2.2 3.4 2.2H5" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
                                     <path d="M11 2.2H12.6C13.26 2.2 13.8 2.74 13.8 3.4V5" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
                                     <path d="M2.2 11V12.6C2.2 13.26 2.74 13.8 3.4 13.8H5" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
