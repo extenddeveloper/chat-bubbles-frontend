@@ -77,7 +77,6 @@ export function useAuth() {
             password: _password = null,
             siteId = null,
             framerUserId = null,
-            framerSiteName = null,
             framerSiteUrl = null,
         }: {
             username: string
@@ -85,19 +84,16 @@ export function useAuth() {
             password?: string | null
             siteId?: string | null
             framerUserId?: string | null
-            framerSiteName?: string | null
             framerSiteUrl?: string | null
         }) => {
             void _password
             const siteInfo = await getSiteInfo().catch(() => null)
-            const resolvedSiteName = framerSiteName || siteInfo?.siteName || null
             const resolvedSiteUrl = framerSiteUrl || siteInfo?.siteUrl || null
             const result = await sendAuthOtp({
                 username,
                 email,
                 siteId: siteId || siteInfo?.siteId || null,
                 framerUserId: framerUserId || siteInfo?.userId || null,
-                framerSiteName: resolvedSiteName,
                 framerSiteUrl: resolvedSiteUrl,
             })
             return result
@@ -115,7 +111,6 @@ export function useAuth() {
                 if (info.siteId) setKnownSiteId(info.siteId)
                 void updateSiteInfo({
                     siteId: info.siteId,
-                    siteName: info.siteName,
                     siteUrl: info.siteUrl,
                     framerUserId: info.userId,
                 })
@@ -143,7 +138,6 @@ export function useAuth() {
                 email,
                 siteId: siteInfo?.siteId || null,
                 framerUserId: siteInfo?.userId || null,
-                framerSiteName: siteInfo?.siteName || null,
                 framerSiteUrl: siteInfo?.siteUrl || null,
             })
             return result
@@ -180,7 +174,6 @@ export function useAuth() {
                 if (info.siteId) setKnownSiteId(info.siteId)
                 void updateSiteInfo({
                     siteId: info.siteId,
-                    siteName: info.siteName,
                     siteUrl: info.siteUrl,
                     framerUserId: info.userId,
                 })

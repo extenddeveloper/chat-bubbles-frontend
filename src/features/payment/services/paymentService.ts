@@ -94,7 +94,6 @@ export const checkSubscriptionStatus = async (
     userId?: string | null,
     email?: string | null,
     componentsCount?: number | null,
-    siteName?: string | null,
     siteUrl?: string | null
 ): Promise<any> => {
     const params = new URLSearchParams({ siteId })
@@ -103,7 +102,6 @@ export const checkSubscriptionStatus = async (
     if (componentsCount !== null && componentsCount !== undefined) {
         params.append("componentsCount", String(componentsCount))
     }
-    if (siteName) params.append("siteName", siteName)
     if (siteUrl) params.append("siteUrl", siteUrl)
     return requestApi(`/api/subscription-status?${params.toString()}`, "Failed to check subscription status")
 }
@@ -125,7 +123,6 @@ export const startTrial = async (
     siteId: string,
     framerUserId?: string | null,
     componentsCount?: number | null,
-    siteName?: string | null,
     siteUrl?: string | null
 ): Promise<{ success: boolean; message: string; trialStart?: string; trialEnd?: string }> => {
     const token = getAuthToken()
@@ -135,7 +132,7 @@ export const startTrial = async (
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ siteId, framerUserId, componentsCount, siteName, siteUrl }),
+        body: JSON.stringify({ siteId, framerUserId, componentsCount, siteUrl }),
     })
 }
 

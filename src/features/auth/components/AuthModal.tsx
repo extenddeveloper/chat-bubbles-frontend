@@ -190,13 +190,11 @@ export function AuthModal({
 
     let siteId = ""
     let framerUserId = ""
-    let siteName = ""
     let siteUrl = ""
     try {
         const info = await getSiteInfo()
         siteId = info?.siteId || ""
         framerUserId = info?.userId || ""
-        siteName = info?.siteName || ""
         siteUrl = info?.siteUrl || ""
     } catch {}
 
@@ -217,7 +215,6 @@ export function AuthModal({
     params.set("theme", currentTheme)
     if (siteId) params.set("siteId", siteId)
     if (framerUserId) params.set("framerUserId", framerUserId)
-    if (siteName) params.set("siteName", siteName)
     if (siteUrl) params.set("siteUrl", siteUrl)
 
     const fullUrl = `${authBase}?${params.toString()}`

@@ -112,19 +112,17 @@ export const sendAuthOtp = async ({
     username = null,
     siteId = null,
     framerUserId = null,
-    framerSiteName = null,
     framerSiteUrl = null,
 }: {
     email: string
     username?: string | null
     siteId?: string | null
     framerUserId?: string | null
-    framerSiteName?: string | null
     framerSiteUrl?: string | null
 }): Promise<any> => {
     return authFetch("/api/auth/send-otp", {
         method: "POST",
-        body: JSON.stringify({ email, username, siteId, framerUserId, framerSiteName, framerSiteUrl }),
+        body: JSON.stringify({ email, username, siteId, framerUserId, framerSiteUrl }),
     })
 }
 
@@ -134,7 +132,6 @@ export const verifyAuthOtp = async ({
     username = null,
     siteId = null,
     framerUserId = null,
-    framerSiteName = null,
     framerSiteUrl = null,
 }: {
     email: string
@@ -142,12 +139,11 @@ export const verifyAuthOtp = async ({
     username?: string | null
     siteId?: string | null
     framerUserId?: string | null
-    framerSiteName?: string | null
     framerSiteUrl?: string | null
 }): Promise<{ token: string; user: AuthUser }> => {
     const data = await authFetch("/api/auth/verify-otp", {
         method: "POST",
-        body: JSON.stringify({ email, code, username, siteId, framerUserId, framerSiteName, framerSiteUrl }),
+        body: JSON.stringify({ email, code, username, siteId, framerUserId, framerSiteUrl }),
     })
     if (data.token && data.user) {
         setAuthData(data.token, data.user)
@@ -162,7 +158,6 @@ export const register = async (userData: {
     password?: string | null
     siteId?: string | null
     framerUserId?: string | null
-    framerSiteName?: string | null
     framerSiteUrl?: string | null
 }): Promise<any> => {
     return authFetch("/api/auth/register", {
@@ -263,7 +258,6 @@ export const verifySocialAuthCode = async (code: string): Promise<{ token: strin
 
 export const updateSiteInfo = async (payload: {
     siteId: string
-    siteName?: string | null
     siteUrl?: string | null
     framerUserId?: string | null
 }): Promise<any> => {

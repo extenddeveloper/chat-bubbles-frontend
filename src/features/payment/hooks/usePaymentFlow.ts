@@ -112,7 +112,6 @@ export function usePaymentFlow({ notify, userEmail: authUserEmail, userName: aut
                     siteInfo.userId,
                     resolvedEmail,
                     componentsCount,
-                    siteInfo.siteName,
                     siteInfo.siteUrl
                 )
 
@@ -311,7 +310,6 @@ export function usePaymentFlow({ notify, userEmail: authUserEmail, userName: aut
                 siteInfo.siteId,
                 siteInfo.userId,
                 componentsCount,
-                siteInfo.siteName,
                 siteInfo.siteUrl
             )
             await refreshSubscriptionStatus()

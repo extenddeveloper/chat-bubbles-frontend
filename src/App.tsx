@@ -2618,16 +2618,14 @@ export function App() {
                 onRegister={async (data) => {
                     let siteId = null
                     let framerUserId = null
-                    let framerSiteName = null
                     let framerSiteUrl = null
                     try {
                         const info = await getSiteInfo()
                         siteId = info.siteId || null
                         framerUserId = info.userId || null
-                        framerSiteName = info.siteName || null
                         framerSiteUrl = info.siteUrl || null
                     } catch { }
-                    await auth.register({ ...data, siteId, framerUserId, framerSiteName, framerSiteUrl })
+                    await auth.register({ ...data, siteId, framerUserId, framerSiteUrl })
                 }}
                 onVerifySignup={async (email, code) => {
                     await auth.verifySignup({ email, code })

@@ -2,7 +2,6 @@ import { framer } from "@framer/plugin"
 
 export type SiteInfo = {
     siteId: string
-    siteName: string
     siteUrl: string | null
     userId: string | null
     userName: string | null
@@ -21,7 +20,6 @@ export const getSiteInfo = async (): Promise<SiteInfo> => {
         ])
 
         const siteId = projectInfo?.id ?? "chat_bubbles_local_site"
-        const siteName = projectInfo?.name ?? (projectInfo as any)?.title ?? "Chat Bubbles Project"
 
         const rawUrl =
             publishInfo?.production?.url ||
@@ -51,7 +49,6 @@ export const getSiteInfo = async (): Promise<SiteInfo> => {
 
         return {
             siteId,
-            siteName,
             siteUrl: siteUrl || "https://framer.app",
             userId: currentUser?.id ?? null,
             userName: currentUser?.name ?? currentUser?.displayName ?? null,
@@ -60,7 +57,6 @@ export const getSiteInfo = async (): Promise<SiteInfo> => {
     } catch {
         return {
             siteId: "chat_bubbles_local_site",
-            siteName: "Chat Bubbles Project",
             siteUrl: "https://framer.app",
             userId: null,
             userName: null,
