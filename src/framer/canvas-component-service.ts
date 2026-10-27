@@ -392,22 +392,14 @@ function sendTrackingEvent(eventType: "view" | "click", channelId?: string) {
             eventType: eventType,
             channelId: channelId || "",
         })
-        let sent = false
-        if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
-            try {
-                const blob = new Blob([payload], { type: "application/json" })
-                sent = navigator.sendBeacon(BACKEND_ANALYTICS_URL, blob)
-            } catch {}
-        }
-        if (!sent) {
-            fetch(BACKEND_ANALYTICS_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: payload,
-                mode: "cors",
-                keepalive: true,
-            }).catch(() => {})
-        }
+        fetch(BACKEND_ANALYTICS_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: payload,
+            mode: "cors",
+            credentials: "omit",
+            keepalive: true,
+        }).catch(() => {})
     } catch {}
 }
 
