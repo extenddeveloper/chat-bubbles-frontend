@@ -18,7 +18,8 @@ export function generateComponentCode(
     config: ChatConfig,
     siteId?: string | null,
     siteUrl?: string | null,
-    showBranding: boolean = cachedIsTrial
+    showBranding: boolean = cachedIsTrial,
+    isLocked: boolean = !cachedHasAccess
 ): string {
     const effectiveSiteId = (siteId && siteId.trim()) || (config.widgetId && config.widgetId.trim()) || "chat-bubbles-default"
     const iconEntries = Object.entries(ICONS)
@@ -486,7 +487,8 @@ export default function ChatBubbles(props: ChatBubblesProps) {
     } = props
 
     const isCanvas = typeof RenderTarget !== "undefined" && typeof RenderTarget.current === "function" && RenderTarget.current() === RenderTarget.canvas
-    const runtimeSubscribed = true
+    // @chat-bubbles-lock-state: ${isLocked ? "locked" : "unlocked"}
+    const IS_LOCKED = ${Boolean(isLocked)}
     const showBranding = ${Boolean(showBranding)}
     const containerRef = React.useRef<HTMLDivElement>(null)
     const [isOpen, setIsOpen] = React.useState(isCanvas ? canvasPreview !== "closed" : false)
@@ -755,9 +757,9 @@ export default function ChatBubbles(props: ChatBubblesProps) {
 
     // Web Audio Synthesizer chime for notifications (never plays on Canvas design preview or when hidden or locked)
     const playNotificationChime = React.useCallback((force: boolean = false) => {
-        if (isCanvas || !enableSound || isWidgetHidden || !runtimeSubscribed) return
+        if (isCanvas || !enableSound || isWidgetHidden || IS_LOCKED) return
         playNotificationChimeDirect(force)
-    }, [isCanvas, enableSound, isWidgetHidden, runtimeSubscribed])
+    }, [isCanvas, enableSound, isWidgetHidden, IS_LOCKED])
 
     // Unlock audio on real user gesture (click/tap/scroll/key) and immediately flush pending chime
     React.useEffect(() => {
@@ -1314,7 +1316,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
     }
 
     // Pro licensing & lock state
-    const isLocked = !runtimeSubscribed
+    const isLocked = IS_LOCKED
 
     const lockedBlurContentStyle: React.CSSProperties = {
         filter: "blur(6px)",
@@ -2104,7 +2106,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                         dangerouslySetInnerHTML={{
                             __html: isOpen
                                 ? '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'
-                                : activeLauncherIconSvg,
+                                : (isLocked ? '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' : activeLauncherIconSvg),
                         }}
                     />
                     {hasPillLabel ? (
@@ -3103,7 +3105,8 @@ export async function syncCodeFileNow(config: ChatConfig): Promise<void> {
             config,
             siteInfo?.siteId,
             siteInfo?.siteUrl,
-            cachedIsTrial
+            cachedIsTrial,
+            !cachedHasAccess
         )
         const files = await framer.getCodeFiles()
         const file = files.find((f) => f.name === "ChatBubbles.tsx" || f.name === "ChatBubbles" || f.name === "Chatfic")
@@ -3163,7 +3166,8 @@ export async function insertCanvasComponent(
         config,
         siteInfo?.siteId,
         siteInfo?.siteUrl,
-        isTrial
+        isTrial,
+        !hasAccess
     )
     const fileName = "ChatBubbles.tsx"
 

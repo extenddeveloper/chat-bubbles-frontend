@@ -274,7 +274,7 @@ export function App() {
         setCanvasLicensingState(hasActiveAccess, isTrialActive, BACKEND_BASE_URL)
         if (!prevLicensingRef.current) {
             prevLicensingRef.current = { hasActiveAccess, isTrialActive }
-            if (hasActiveAccess && config) {
+            if (config) {
                 void syncCanvasInstance(config, true)
             }
         } else if (
@@ -287,6 +287,58 @@ export function App() {
             }
         }
     }, [hasActiveAccess, isTrialActive, config])
+
+    useEffect(() => {
+        let isMounted = true
+        const enforceLockState = async () => {
+            try {
+                const isAllowed = typeof (framer as any).isAllowedTo === "function"
+                    ? await (framer as any).isAllowedTo("setCodeFileContent", "CodeFile.setFileContent")
+                    : true
+                if (!isAllowed) return
+
+                const files = await framer.getCodeFiles()
+                const chatFiles = files.filter(
+                    (f) => f.name === "ChatBubbles.tsx" || f.name === "ChatBubbles" || f.name === "Chatfic"
+                )
+
+                for (const file of chatFiles) {
+                    if (!isMounted) break
+                    const code = file.content
+                    const shouldLock = !hasActiveAccess
+
+                    let newCode = code.replace(
+                        /const IS_LOCKED = (true|false);?/,
+                        `const IS_LOCKED = ${shouldLock};`
+                    )
+                    newCode = newCode.replace(
+                        /\/\/ @chat-bubbles-lock-state: (locked|unlocked)/,
+                        `// @chat-bubbles-lock-state: ${shouldLock ? "locked" : "unlocked"}`
+                    )
+                    newCode = newCode.replace(
+                        /const showBranding = (true|false);?/,
+                        `const showBranding = ${Boolean(isTrialActive)};`
+                    )
+
+                    const currentLockMatch = code.match(/const IS_LOCKED = (true|false);?/)
+                    const currentlyLocked = currentLockMatch ? currentLockMatch[1] === "true" : false
+                    const currentBrandingMatch = code.match(/const showBranding = (true|false);?/)
+                    const currentlyBranded = currentBrandingMatch ? currentBrandingMatch[1] === "true" : false
+
+                    if (!currentLockMatch || currentlyLocked !== shouldLock || currentlyBranded !== Boolean(isTrialActive)) {
+                        await file.setFileContent(newCode)
+                    }
+                }
+            } catch (err: any) {
+                console.error("Failed to enforce lock state:", err)
+            }
+        }
+
+        void enforceLockState()
+        return () => {
+            isMounted = false
+        }
+    }, [paymentFlow.isCheckingPayment, hasActiveAccess, isTrialActive])
 
     const handleTabClick = useCallback(
         (targetTab: Tab) => {
