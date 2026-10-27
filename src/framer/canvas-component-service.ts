@@ -20,6 +20,7 @@ export function generateComponentCode(
     siteUrl?: string | null,
     showBranding: boolean = cachedIsTrial
 ): string {
+    const effectiveSiteId = (siteId && siteId.trim()) || (config.widgetId && config.widgetId.trim()) || "chat-bubbles-default"
     const iconEntries = Object.entries(ICONS)
         .map(([key, svg]) => `  ${JSON.stringify(key)}: ${JSON.stringify(svg)},`)
         .join("\n")
@@ -65,7 +66,7 @@ const ICONS: Record<string, string> = {
 ${iconEntries}
 }
 
-const EMBEDDED_SITE_ID = ${JSON.stringify(siteId || "")}
+const EMBEDDED_SITE_ID = ${JSON.stringify(effectiveSiteId)}
 const EMBEDDED_SITE_DOMAIN = ${JSON.stringify(embeddedSiteDomain)}
 
 const GRADIENTS: Record<string, string> = {
@@ -375,6 +376,39 @@ function resolveBreakpointKey(el: HTMLElement | null): string {
     } catch {
         return "desktop"
     }
+}
+
+const BACKEND_ANALYTICS_URL = "https://app.framefic.com/chat-bubbles/api/analytics/track"
+
+function sendTrackingEvent(eventType: "view" | "click", channelId?: string) {
+    if (typeof window === "undefined") return
+    if (RenderTarget.current() === RenderTarget.canvas) return
+    try {
+        const primaryWidgetId = EMBEDDED_SITE_ID || (window.location && window.location.hostname ? window.location.hostname : "") || "chat-bubbles-default"
+        const domain = (window.location && window.location.hostname) ? window.location.hostname : ""
+        const payload = JSON.stringify({
+            widgetId: primaryWidgetId,
+            siteDomain: domain,
+            eventType: eventType,
+            channelId: channelId || "",
+        })
+        let sent = false
+        if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
+            try {
+                const blob = new Blob([payload], { type: "application/json" })
+                sent = navigator.sendBeacon(BACKEND_ANALYTICS_URL, blob)
+            } catch {}
+        }
+        if (!sent) {
+            fetch(BACKEND_ANALYTICS_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: payload,
+                mode: "cors",
+                keepalive: true,
+            }).catch(() => {})
+        }
+    } catch {}
 }
 
 export default function ChatBubbles(props: ChatBubblesProps) {
@@ -718,7 +752,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                 if (typeof (window as any).gtag === "function") {
                     (window as any).gtag("event", "chat_bubbles_view", { event_category: "Chat Bubbles", event_label: "widget_view" })
                 }
-                // Telemetry removed for privacy
+                sendTrackingEvent("view")
             }
         } catch {}
     }, [isCanvas, enableAnalytics, isWidgetHidden, currentLocationPath])
@@ -2337,7 +2371,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                                                         agentName: selectedAgent.name,
                                                     }
                                                 }))
-                                                // Telemetry removed for privacy
+                                                sendTrackingEvent("click", selectedAgent.channelId)
                                             } catch {}
                                         }
                                         if (closeAfterClick) {
@@ -2403,7 +2437,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                                                         (window as any).gtag("event", "chat_bubbles_click", { channel: channel.id, channel_label: channel.label })
                                                     }
                                                     window.dispatchEvent(new CustomEvent("chat_bubbles_interaction", { detail: { channel: channel.id, channelLabel: channel.label } }))
-                                                    // Telemetry removed for privacy
+                                                    sendTrackingEvent("click", channel.id)
                                                 } catch {}
                                             }
                                             if (closeAfterClick) setIsOpen(false)

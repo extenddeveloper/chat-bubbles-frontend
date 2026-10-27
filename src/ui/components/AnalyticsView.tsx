@@ -57,6 +57,15 @@ export function AnalyticsView({
         }
     }, [])
 
+    // Periodic live auto-poll every 6 seconds when the view is active
+    useEffect(() => {
+        if (!enabled) return
+        const interval = setInterval(() => {
+            setRefreshKey((k) => k + 1)
+        }, 6000)
+        return () => clearInterval(interval)
+    }, [enabled])
+
     // Empty zero-state for clean real-time tracking
     const emptyStats = useMemo<AnalyticsData>(() => {
         const xLabels = getXAxisLabels(period)
@@ -87,7 +96,10 @@ export function AnalyticsView({
             try {
                 const siteInfo = await getSiteInfo().catch(() => ({ siteId: "" }))
                 const widgetId = siteInfo?.siteId || "chat-bubbles-default"
-                const url = buildBackendUrl(`/api/analytics/${encodeURIComponent(widgetId)}?period=${encodeURIComponent(period)}`)
+                const domain = typeof window !== "undefined" && window.location && window.location.hostname ? window.location.hostname : ""
+                const queryParams = new URLSearchParams({ period })
+                if (domain) queryParams.set("domain", domain)
+                const url = buildBackendUrl(`/api/analytics/${encodeURIComponent(widgetId)}?${queryParams.toString()}`)
                 const res = await fetch(url)
                 if (!res.ok) return
                 const json = await res.json()
