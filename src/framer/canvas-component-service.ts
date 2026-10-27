@@ -17,7 +17,8 @@ export function setCanvasLicensingState(hasAccess: boolean, isTrial: boolean, _a
 export function generateComponentCode(
     config: ChatConfig,
     siteId?: string | null,
-    siteUrl?: string | null
+    siteUrl?: string | null,
+    showBranding: boolean = cachedIsTrial
 ): string {
     const iconEntries = Object.entries(ICONS)
         .map(([key, svg]) => `  ${JSON.stringify(key)}: ${JSON.stringify(svg)},`)
@@ -460,7 +461,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
 
     const isCanvas = typeof RenderTarget !== "undefined" && typeof RenderTarget.current === "function" && RenderTarget.current() === RenderTarget.canvas
     const runtimeSubscribed = true
-    const runtimeIsTrial = false
+    const showBranding = ${Boolean(showBranding)}
     const containerRef = React.useRef<HTMLDivElement>(null)
     const [isOpen, setIsOpen] = React.useState(isCanvas ? canvasPreview !== "closed" : false)
     const [greetingDismissed, setGreetingDismissed] = React.useState(false)
@@ -2088,7 +2089,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                     ) : null}
                 </button>
 
-                {runtimeIsTrial && !isLocked ? (
+                {showBranding && !isLocked ? (
                     <div
                         className="cf-canvas-wm-wrap"
                         onClick={(e) => e.stopPropagation()}
@@ -3071,7 +3072,8 @@ export async function syncCodeFileNow(config: ChatConfig): Promise<void> {
         const code = generateComponentCode(
             config,
             siteInfo?.siteId,
-            siteInfo?.siteUrl
+            siteInfo?.siteUrl,
+            cachedIsTrial
         )
         const files = await framer.getCodeFiles()
         const file = files.find((f) => f.name === "ChatBubbles.tsx" || f.name === "ChatBubbles" || f.name === "Chatfic")
@@ -3130,7 +3132,8 @@ export async function insertCanvasComponent(
     const code = generateComponentCode(
         config,
         siteInfo?.siteId,
-        siteInfo?.siteUrl
+        siteInfo?.siteUrl,
+        isTrial
     )
     const fileName = "ChatBubbles.tsx"
 
