@@ -730,19 +730,23 @@ export default function ChatBubbles(props: ChatBubblesProps) {
     // Strict visibility guard: if hidden by targeting or operating schedule, widget returns null & suppresses sound
     const isWidgetHidden = !isTargetingAllowed || (!isCanvas && scheduleEnabled && isOffline && scheduleOfflineAction === "hide")
 
-    // Anonymous aggregate view tracking for site visitors (using temporary sessionStorage)
+    // View tracking for live site visitors (deduplicated per page load across responsive breakpoint instances)
     React.useEffect(() => {
         if (isCanvas || !enableAnalytics || isWidgetHidden) return
         try {
-            const pageKey = (currentLocationPath || "home").split("/").filter(Boolean).join("-") || "root"
-            const sessionKey = "chat_bubbles_viewed_" + pageKey
-            if (!sessionStorage.getItem(sessionKey)) {
-                sessionStorage.setItem(sessionKey, "true")
-                if (Array.isArray((window as any).dataLayer)) {
-                    (window as any).dataLayer.push({ event: "chat_bubbles_view", event_category: "Chat Bubbles" })
+            const pagePath = typeof window !== "undefined" && window.location && window.location.pathname ? window.location.pathname : "/"
+            const pageKey = (currentLocationPath || pagePath || "/").toLowerCase()
+            const w = window as any
+            w.__cb_view_stamps__ = w.__cb_view_stamps__ || {}
+            const now = Date.now()
+            // Deduplicate across responsive breakpoint instances (allow 1 view per page path within 3 seconds)
+            if (!w.__cb_view_stamps__[pageKey] || now - w.__cb_view_stamps__[pageKey] > 3000) {
+                w.__cb_view_stamps__[pageKey] = now
+                if (Array.isArray(w.dataLayer)) {
+                    w.dataLayer.push({ event: "chat_bubbles_view", event_category: "Chat Bubbles" })
                 }
-                if (typeof (window as any).gtag === "function") {
-                    (window as any).gtag("event", "chat_bubbles_view", { event_category: "Chat Bubbles", event_label: "widget_view" })
+                if (typeof w.gtag === "function") {
+                    w.gtag("event", "chat_bubbles_view", { event_category: "Chat Bubbles", event_label: "widget_view" })
                 }
                 sendTrackingEvent("view")
             }
