@@ -62,9 +62,7 @@ try {
             "setSelection",
             "getNodesWithType",
             "setPluginData",
-            "getPluginData",
-            "setCustomCode",
-            "getCustomCode"
+            "getPluginData"
         )
     }
 } catch {}

@@ -9,58 +9,29 @@ export type SiteInfo = {
 }
 
 /**
- * Retrieves Framer project and designer metadata for scoped storage and licensing.
+ * Retrieves Framer project identity strictly for project-level license scoping.
+ * Designer personal details (name, email, user ID) and editor URLs are intentionally not extracted.
  */
 export const getSiteInfo = async (): Promise<SiteInfo> => {
     try {
-        const [projectInfo, publishInfo, currentUser] = await Promise.all([
-            framer.getProjectInfo().catch(() => null),
-            framer.getPublishInfo().catch(() => null),
-            (framer as any).getCurrentUser?.().catch(() => null) as Promise<any>,
-        ])
-
+        const projectInfo = await framer.getProjectInfo().catch(() => null)
         const siteId = projectInfo?.id ?? "chat_bubbles_local_site"
-
-        const rawUrl =
-            publishInfo?.production?.url ||
-            publishInfo?.staging?.url ||
-            (projectInfo as any)?.url ||
-            (projectInfo as any)?.publishedUrl ||
-            (projectInfo as any)?.domain ||
-            null
-
-        let siteUrl: string | null = null
-        if (rawUrl && typeof rawUrl === "string") {
-            siteUrl = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`
-        }
-
-        if (!siteUrl && typeof window !== "undefined") {
-            if (document.referrer && (document.referrer.includes(".framer.app") || document.referrer.includes(".framer.website"))) {
-                try {
-                    const refUrl = new URL(document.referrer)
-                    if (refUrl.origin) siteUrl = refUrl.origin
-                } catch {}
-            }
-        }
-
-        if (!siteUrl && projectInfo?.id) {
-            siteUrl = `https://${projectInfo.id}.framer.app`
-        }
 
         return {
             siteId,
-            siteUrl: siteUrl || "https://framer.app",
-            userId: currentUser?.id ?? null,
-            userName: currentUser?.name ?? currentUser?.displayName ?? null,
-            userEmail: currentUser?.email ?? null,
+            siteUrl: null,
+            userId: null,
+            userName: null,
+            userEmail: null,
         }
     } catch {
         return {
             siteId: "chat_bubbles_local_site",
-            siteUrl: "https://framer.app",
+            siteUrl: null,
             userId: null,
             userName: null,
             userEmail: null,
         }
     }
 }
+

@@ -111,18 +111,14 @@ export const sendAuthOtp = async ({
     email,
     username = null,
     siteId = null,
-    framerUserId = null,
-    framerSiteUrl = null,
 }: {
     email: string
     username?: string | null
     siteId?: string | null
-    framerUserId?: string | null
-    framerSiteUrl?: string | null
 }): Promise<any> => {
     return authFetch("/api/auth/send-otp", {
         method: "POST",
-        body: JSON.stringify({ email, username, siteId, framerUserId, framerSiteUrl }),
+        body: JSON.stringify({ email, username, siteId }),
     })
 }
 
@@ -131,19 +127,15 @@ export const verifyAuthOtp = async ({
     code,
     username = null,
     siteId = null,
-    framerUserId = null,
-    framerSiteUrl = null,
 }: {
     email: string
     code: string
     username?: string | null
     siteId?: string | null
-    framerUserId?: string | null
-    framerSiteUrl?: string | null
 }): Promise<{ token: string; user: AuthUser }> => {
     const data = await authFetch("/api/auth/verify-otp", {
         method: "POST",
-        body: JSON.stringify({ email, code, username, siteId, framerUserId, framerSiteUrl }),
+        body: JSON.stringify({ email, code, username, siteId }),
     })
     if (data.token && data.user) {
         setAuthData(data.token, data.user)
@@ -157,8 +149,6 @@ export const register = async (userData: {
     email: string
     password?: string | null
     siteId?: string | null
-    framerUserId?: string | null
-    framerSiteUrl?: string | null
 }): Promise<any> => {
     return authFetch("/api/auth/register", {
         method: "POST",
@@ -254,19 +244,4 @@ export const verifySocialAuthCode = async (code: string): Promise<{ token: strin
         markHasAccount()
     }
     return data
-}
-
-export const updateSiteInfo = async (payload: {
-    siteId: string
-    siteUrl?: string | null
-    framerUserId?: string | null
-}): Promise<any> => {
-    try {
-        return await authFetch("/api/user/site-info", {
-            method: "POST",
-            body: JSON.stringify(payload),
-        })
-    } catch {
-        return null
-    }
 }

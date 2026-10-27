@@ -189,13 +189,9 @@ export function AuthModal({
     setSessionId(newSessionId)
 
     let siteId = ""
-    let framerUserId = ""
-    let siteUrl = ""
     try {
         const info = await getSiteInfo()
         siteId = info?.siteId || ""
-        framerUserId = info?.userId || ""
-        siteUrl = info?.siteUrl || ""
     } catch {}
 
     let currentTheme = "dark"
@@ -214,8 +210,6 @@ export function AuthModal({
     params.set("sessionId", newSessionId)
     params.set("theme", currentTheme)
     if (siteId) params.set("siteId", siteId)
-    if (framerUserId) params.set("framerUserId", framerUserId)
-    if (siteUrl) params.set("siteUrl", siteUrl)
 
     const fullUrl = `${authBase}?${params.toString()}`
     setAuthUrl(fullUrl)

@@ -127,7 +127,6 @@ export function CheckoutForm({
           await verifyPayment({
             paymentIntentId: paymentIntent.id,
             siteId: siteInfo.siteId,
-            framerUserId: siteInfo.userId,
             email: email,
             plan: plan || "lifetime",
             subscriptionId: subscriptionId || null,

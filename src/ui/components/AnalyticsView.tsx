@@ -85,15 +85,9 @@ export function AnalyticsView({
         let isMounted = true
         async function fetchBackendStats() {
             try {
-                const siteInfo = await getSiteInfo().catch(() => ({ siteId: "", siteUrl: null }))
+                const siteInfo = await getSiteInfo().catch(() => ({ siteId: "" }))
                 const widgetId = siteInfo?.siteId || "chat-bubbles-default"
-                let domainParam = ""
-                if (siteInfo?.siteUrl) {
-                    try {
-                        domainParam = "&domain=" + encodeURIComponent(new URL(siteInfo.siteUrl).hostname)
-                    } catch {}
-                }
-                const url = buildBackendUrl(`/api/analytics/${encodeURIComponent(widgetId)}?period=${encodeURIComponent(period)}${domainParam}`)
+                const url = buildBackendUrl(`/api/analytics/${encodeURIComponent(widgetId)}?period=${encodeURIComponent(period)}`)
                 const res = await fetch(url)
                 if (!res.ok) return
                 const json = await res.json()

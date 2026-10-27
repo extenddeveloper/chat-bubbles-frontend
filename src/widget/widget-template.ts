@@ -255,25 +255,6 @@ export function buildWidgetCode(config: ChatConfig): string {
             event_category: "Chat Bubbles"
           });
         }
-        try {
-          var payload = JSON.stringify({
-            widgetId: window.location.hostname || "chat-bubbles-default",
-            siteDomain: window.location.hostname,
-            siteUrl: window.location.href,
-            eventType: "view"
-          });
-          var targetEndpoint = "https://app.framefic.com/chat-bubbles/api/analytics/track";
-          if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
-            navigator.sendBeacon(targetEndpoint, new Blob([payload], { type: "application/json" }));
-          } else {
-            fetch(targetEndpoint, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: payload,
-              mode: "cors"
-            }).catch(function(){});
-          }
-        } catch(e){}
       }
     } catch(e) {}
   }
@@ -529,26 +510,6 @@ export function buildWidgetCode(config: ChatConfig): string {
           agent: agentName || "",
           target_url: targetUrl || ""
         });
-      }
-    } catch(e){}
-    try {
-      var clickPayload = JSON.stringify({
-        widgetId: window.location.hostname || "chat-bubbles-default",
-        siteDomain: window.location.hostname,
-        siteUrl: window.location.href,
-        eventType: "click",
-        channelId: channelId || ""
-      });
-      var targetEndpoint = "https://app.framefic.com/chat-bubbles/api/analytics/track";
-      if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
-        navigator.sendBeacon(targetEndpoint, new Blob([clickPayload], { type: "application/json" }));
-      } else {
-        fetch(targetEndpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: clickPayload,
-          mode: "cors"
-        }).catch(function(){});
       }
     } catch(e){}
   }

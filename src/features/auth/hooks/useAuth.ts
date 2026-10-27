@@ -5,7 +5,6 @@ import {
     fetchCurrentUser,
     sendAuthOtp,
     verifyAuthOtp,
-    updateSiteInfo,
     clearAuthData,
     setAuthData,
     setKnownSiteId,
@@ -76,25 +75,18 @@ export function useAuth() {
             email,
             password: _password = null,
             siteId = null,
-            framerUserId = null,
-            framerSiteUrl = null,
         }: {
             username: string
             email: string
             password?: string | null
             siteId?: string | null
-            framerUserId?: string | null
-            framerSiteUrl?: string | null
         }) => {
             void _password
             const siteInfo = await getSiteInfo().catch(() => null)
-            const resolvedSiteUrl = framerSiteUrl || siteInfo?.siteUrl || null
             const result = await sendAuthOtp({
                 username,
                 email,
                 siteId: siteId || siteInfo?.siteId || null,
-                framerUserId: framerUserId || siteInfo?.userId || null,
-                framerSiteUrl: resolvedSiteUrl,
             })
             return result
         },
@@ -109,11 +101,6 @@ export function useAuth() {
         getSiteInfo()
             .then((info) => {
                 if (info.siteId) setKnownSiteId(info.siteId)
-                void updateSiteInfo({
-                    siteId: info.siteId,
-                    siteUrl: info.siteUrl,
-                    framerUserId: info.userId,
-                })
             })
             .catch(() => {})
         return result
@@ -137,8 +124,6 @@ export function useAuth() {
             const result = await sendAuthOtp({
                 email,
                 siteId: siteInfo?.siteId || null,
-                framerUserId: siteInfo?.userId || null,
-                framerSiteUrl: siteInfo?.siteUrl || null,
             })
             return result
         },
@@ -172,11 +157,6 @@ export function useAuth() {
         getSiteInfo()
             .then((info) => {
                 if (info.siteId) setKnownSiteId(info.siteId)
-                void updateSiteInfo({
-                    siteId: info.siteId,
-                    siteUrl: info.siteUrl,
-                    framerUserId: info.userId,
-                })
             })
             .catch(() => {})
     }, [])

@@ -48,14 +48,13 @@ export const checkLifetimeAvailability = async (): Promise<{ available: boolean;
 export const createPaymentIntent = async (
     plan: string,
     siteId: string,
-    framerUserId?: string | null,
     userName?: string | null,
     userEmail?: string | null
 ): Promise<{ clientSecret?: string; subscriptionId?: string | null; url?: string; publishableKey?: string }> => {
     return requestApi("/api/create-payment-intent", "Payment creation failed", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan, siteId, framerUserId, userName, userEmail }),
+        body: JSON.stringify({ plan, siteId, userName, userEmail }),
     })
 }
 
@@ -70,14 +69,12 @@ export const applyCouponToSubscription = async (subscriptionId: string, couponCo
 export const verifyPayment = async ({
     paymentIntentId,
     siteId,
-    framerUserId,
     email,
     plan,
     subscriptionId = null,
 }: {
     paymentIntentId: string
     siteId: string
-    framerUserId?: string | null
     email: string
     plan: string
     subscriptionId?: string | null
@@ -85,24 +82,16 @@ export const verifyPayment = async ({
     return requestApi("/api/verify-payment", "Payment verification failed", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paymentIntentId, siteId, framerUserId, email, plan, subscriptionId }),
+        body: JSON.stringify({ paymentIntentId, siteId, email, plan, subscriptionId }),
     })
 }
 
 export const checkSubscriptionStatus = async (
     siteId: string,
-    userId?: string | null,
-    email?: string | null,
-    componentsCount?: number | null,
-    siteUrl?: string | null
+    email?: string | null
 ): Promise<any> => {
     const params = new URLSearchParams({ siteId })
-    if (userId) params.append("userId", userId)
     if (email) params.append("email", email)
-    if (componentsCount !== null && componentsCount !== undefined) {
-        params.append("componentsCount", String(componentsCount))
-    }
-    if (siteUrl) params.append("siteUrl", siteUrl)
     return requestApi(`/api/subscription-status?${params.toString()}`, "Failed to check subscription status")
 }
 
@@ -110,20 +99,15 @@ import { getAuthToken } from "../../auth/services/authService"
 
 export const checkTrialEligibility = async (
     siteId: string,
-    framerUserId?: string | null,
     email?: string | null
 ): Promise<{ eligible: boolean; trialExpired?: boolean; daysRemaining?: number; secondsRemaining?: number }> => {
     const params = new URLSearchParams({ siteId })
-    if (framerUserId) params.append("userId", framerUserId)
     if (email) params.append("email", email)
     return requestApi(`/api/check-trial-eligibility?${params.toString()}`, "Failed to check trial eligibility")
 }
 
 export const startTrial = async (
-    siteId: string,
-    framerUserId?: string | null,
-    componentsCount?: number | null,
-    siteUrl?: string | null
+    siteId: string
 ): Promise<{ success: boolean; message: string; trialStart?: string; trialEnd?: string }> => {
     const token = getAuthToken()
     return requestApi("/api/start-trial", "Failed to start free trial", {
@@ -132,7 +116,7 @@ export const startTrial = async (
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ siteId, framerUserId, componentsCount, siteUrl }),
+        body: JSON.stringify({ siteId }),
     })
 }
 

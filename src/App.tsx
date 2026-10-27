@@ -325,7 +325,7 @@ export function App() {
                     try {
                         const siteInfo = await getSiteInfo().catch(() => ({ siteId: "", userId: null, userName: null, userEmail: null }))
                         const resolvedEmail = loggedInEmail || auth.user?.email || siteInfo.userEmail
-                        const eligibility = await checkTrialEligibility(siteInfo.siteId, siteInfo.userId, resolvedEmail)
+                        const eligibility = await checkTrialEligibility(siteInfo.siteId, resolvedEmail)
 
                         if (eligibility.eligible) {
                             if (paymentFlow.handleStartTrial) {
@@ -352,61 +352,6 @@ export function App() {
         },
         [auth.user, paymentFlow, pendingPaymentPlan]
     )
-
-    // Auto trial check & lockout side effect
-    useEffect(() => {
-        let isMounted = true
-
-        const checkTrialStatus = async () => {
-            if (authSuccessInProgressRef.current) return
-            if (trialModalStatus === "started") return
-
-            if (!auth.isLoggedIn || paymentFlow.isCheckingPayment) {
-                if (isMounted) {
-                    setTrialModalStatus(null)
-                }
-                return
-            }
-
-            if (isProfileOpen && profileView === "subscription") {
-                if (isMounted) {
-                    setTrialModalStatus(null)
-                }
-                return
-            }
-
-            if (paymentFlow.isPaid) {
-                if (isMounted) {
-                    setTrialModalStatus(null)
-                }
-                return
-            }
-
-            try {
-                const siteInfo = await getSiteInfo().catch(() => ({ siteId: "", userId: null, userName: null, userEmail: null }))
-                const resolvedEmail = auth.user?.email || siteInfo.userEmail
-
-                const eligibility = await checkTrialEligibility(siteInfo.siteId, siteInfo.userId, resolvedEmail)
-
-                if (eligibility.eligible) {
-                    if (paymentFlow.handleStartTrial) {
-                        await paymentFlow.handleStartTrial()
-                    }
-                    if (isMounted) setTrialModalStatus("started")
-                } else {
-                    if (isMounted) setTrialModalStatus("expired")
-                }
-            } catch (err) {
-                console.error("Error checking trial status:", err)
-            }
-        }
-
-        void checkTrialStatus()
-
-        return () => {
-            isMounted = false
-        }
-    }, [auth.isLoggedIn, paymentFlow.isCheckingPayment, paymentFlow.isPaid, auth.user, isProfileOpen, profileView, trialModalStatus])
 
     const trialBanner = useMemo(() => {
         if (!auth.isLoggedIn || !paymentFlow.isPaid || paymentFlow.currentPlan !== "trial") return null
@@ -988,6 +933,12 @@ export function App() {
                                             description="Create bars and countdown timers to boost engagement and conversions."
                                             logoSrc="./Crestbar.png"
                                             marketplaceUrl="https://www.framer.com/community/marketplace/plugins/announcement-bar/"
+                                        />
+                                        <FrameficCard
+                                            name="CMS Filter"
+                                            description="Transform your Framer CMS with effortless collection and filter field selection, filter grids with pagination."
+                                            logoSrc="./Cmsfilter.png"
+                                            marketplaceUrl="https://www.framer.com/marketplace/plugins/cms-filter/"
                                         />
                                     </div>
                                 </div>
@@ -2414,9 +2365,9 @@ export function App() {
                                                             <button
                                                                 type="button"
                                                                 className={`cf-preset-pill ${(config.scheduleDays || [1, 2, 3, 4, 5]).length === 5 &&
-                                                                        [1, 2, 3, 4, 5].every((d) => (config.scheduleDays || [1, 2, 3, 4, 5]).includes(d))
-                                                                        ? "is-active"
-                                                                        : ""
+                                                                    [1, 2, 3, 4, 5].every((d) => (config.scheduleDays || [1, 2, 3, 4, 5]).includes(d))
+                                                                    ? "is-active"
+                                                                    : ""
                                                                     }`}
                                                                 onClick={() => updateConfig({ scheduleDays: [1, 2, 3, 4, 5] })}
                                                             >
@@ -2425,9 +2376,9 @@ export function App() {
                                                             <button
                                                                 type="button"
                                                                 className={`cf-preset-pill ${(config.scheduleDays || [1, 2, 3, 4, 5]).length === 2 &&
-                                                                        [6, 0].every((d) => (config.scheduleDays || [1, 2, 3, 4, 5]).includes(d))
-                                                                        ? "is-active"
-                                                                        : ""
+                                                                    [6, 0].every((d) => (config.scheduleDays || [1, 2, 3, 4, 5]).includes(d))
+                                                                    ? "is-active"
+                                                                    : ""
                                                                     }`}
                                                                 onClick={() => updateConfig({ scheduleDays: [6, 0] })}
                                                             >
@@ -2436,8 +2387,8 @@ export function App() {
                                                             <button
                                                                 type="button"
                                                                 className={`cf-preset-pill ${(config.scheduleDays || [1, 2, 3, 4, 5]).length === 7
-                                                                        ? "is-active"
-                                                                        : ""
+                                                                    ? "is-active"
+                                                                    : ""
                                                                     }`}
                                                                 onClick={() => updateConfig({ scheduleDays: [1, 2, 3, 4, 5, 6, 0] })}
                                                             >
@@ -2617,15 +2568,11 @@ export function App() {
                 initialMode={auth.authModalMode}
                 onRegister={async (data) => {
                     let siteId = null
-                    let framerUserId = null
-                    let framerSiteUrl = null
                     try {
                         const info = await getSiteInfo()
                         siteId = info.siteId || null
-                        framerUserId = info.userId || null
-                        framerSiteUrl = info.siteUrl || null
                     } catch { }
-                    await auth.register({ ...data, siteId, framerUserId, framerSiteUrl })
+                    await auth.register({ ...data, siteId })
                 }}
                 onVerifySignup={async (email, code) => {
                     await auth.verifySignup({ email, code })

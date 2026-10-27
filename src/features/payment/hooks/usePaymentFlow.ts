@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from "react"
-import { framer } from "@framer/plugin"
 import { getSiteInfo } from "../../../lib/framer/project"
 import {
     createPaymentIntent,
@@ -34,8 +33,6 @@ export type UsePaymentFlowProps = {
     userEmail?: string | null
     userName?: string | null
 }
-
-const STORAGE_OVERRIDE_KEY = "chat_bubbles_subscription_override"
 
 export function usePaymentFlow({ notify, userEmail: authUserEmail, userName: authUserName }: UsePaymentFlowProps) {
     const [clientSecret, setClientSecret] = useState<string | null>(null)
@@ -78,41 +75,10 @@ export function usePaymentFlow({ notify, userEmail: authUserEmail, userName: aut
                 const siteInfo = await getSiteInfo()
                 const resolvedEmail = overrideEmail || authUserEmail || siteInfo.userEmail
 
-                let componentsCount: number | null = null
-                try {
-                    const files = await (framer as any).getCodeFiles?.()
-                    if (Array.isArray(files)) {
-                        componentsCount = files.filter((f: any) => f.name?.startsWith("ChatBubbles") || f.name?.startsWith("Framefic")).length
-                    }
-                } catch {}
-
-                // 1. Temporary local cache
-                let hasLocalOverride = false
-                const localOverride = localStorage.getItem(STORAGE_OVERRIDE_KEY)
-                if (localOverride) {
-                    try {
-                        const parsed = JSON.parse(localOverride)
-                        const expiry = parsed.expiresAt ? new Date(parsed.expiresAt) : null
-                        if (!expiry || expiry > new Date()) {
-                            setIsPaid(true)
-                            setCurrentPlan(parsed.plan)
-                            setPlanDetails(parsed)
-                            hasLocalOverride = true
-                        } else {
-                            localStorage.removeItem(STORAGE_OVERRIDE_KEY)
-                        }
-                    } catch {
-                        localStorage.removeItem(STORAGE_OVERRIDE_KEY)
-                    }
-                }
-
                 // 2. Query backend for real status
                 const subStatus = await checkSubscriptionStatus(
                     siteInfo.siteId,
-                    siteInfo.userId,
-                    resolvedEmail,
-                    componentsCount,
-                    siteInfo.siteUrl
+                    resolvedEmail
                 )
 
                 const isPlanExpired = subStatus.expiresAt
@@ -140,9 +106,6 @@ export function usePaymentFlow({ notify, userEmail: authUserEmail, userName: aut
                         trialDaysRemaining: subStatus.trialDaysRemaining ?? 0,
                         fetchTimestamp: Date.now(),
                     })
-                    if (hasLocalOverride) {
-                        localStorage.removeItem(STORAGE_OVERRIDE_KEY)
-                    }
                 } else {
                     setIsPaid(false)
                     setCurrentPlan(null)
@@ -159,9 +122,6 @@ export function usePaymentFlow({ notify, userEmail: authUserEmail, userName: aut
                         })
                     } else {
                         setPlanDetails(null)
-                    }
-                    if (hasLocalOverride) {
-                        localStorage.removeItem(STORAGE_OVERRIDE_KEY)
                     }
                 }
 
@@ -219,10 +179,6 @@ export function usePaymentFlow({ notify, userEmail: authUserEmail, userName: aut
             }
 
             setPlanDetails(details)
-            try {
-                localStorage.setItem(STORAGE_OVERRIDE_KEY, JSON.stringify(details))
-            } catch {}
-
             setShowPaymentModal(false)
             onFinish?.()
 
@@ -268,7 +224,6 @@ export function usePaymentFlow({ notify, userEmail: authUserEmail, userName: aut
                 const result = await createPaymentIntent(
                     plan,
                     siteInfo.siteId,
-                    siteInfo.userId,
                     resolvedUserName,
                     resolvedEmail
                 )
@@ -298,20 +253,7 @@ export function usePaymentFlow({ notify, userEmail: authUserEmail, userName: aut
     const handleStartTrial = useCallback(async (): Promise<any> => {
         try {
             const siteInfo = await getSiteInfo()
-            let componentsCount: number | null = null
-            try {
-                const files = await (framer as any).getCodeFiles?.()
-                if (Array.isArray(files)) {
-                    componentsCount = files.filter((f: any) => f.name?.startsWith("ChatBubbles") || f.name?.startsWith("Framefic")).length
-                }
-            } catch {}
-
-            const result = await startTrial(
-                siteInfo.siteId,
-                siteInfo.userId,
-                componentsCount,
-                siteInfo.siteUrl
-            )
+            const result = await startTrial(siteInfo.siteId)
             await refreshSubscriptionStatus()
             return result
         } catch (error) {
