@@ -16,12 +16,32 @@ export function setCanvasLicensingState(hasAccess: boolean, isTrial: boolean, _a
 function sanitizeGradient(val?: string | null): string {
     if (!val || typeof val !== "string") return ""
     const trimmed = val.trim()
-    if (/[;<>"'`\\]/.test(trimmed) || /url\s*\(/i.test(trimmed) || /javascript:/i.test(trimmed) || /expression\s*\(/i.test(trimmed)) {
+    const lower = trimmed.toLowerCase()
+    if (
+        lower.indexOf("url(") !== -1 ||
+        lower.indexOf("javascript:") !== -1 ||
+        lower.indexOf("<") !== -1 ||
+        lower.indexOf(">") !== -1 ||
+        lower.indexOf(";") !== -1 ||
+        lower.indexOf('"') !== -1 ||
+        lower.indexOf("'") !== -1
+    ) {
         return ""
     }
-    const isGradient = /^(linear-gradient|radial-gradient)\([a-zA-Z0-9\s(),#%.-]+\)$/i.test(trimmed)
-    const isColor = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(trimmed) || /^rgba?\([0-9\s,%.-]+\)$/.test(trimmed)
-    return (isGradient || isColor) ? trimmed : ""
+    if (
+        lower.indexOf("linear-gradient(") === 0 ||
+        lower.indexOf("radial-gradient(") === 0 ||
+        lower.indexOf("#") === 0 ||
+        lower.indexOf("rgb") === 0
+    ) {
+        return trimmed
+    }
+    return ""
+}
+
+function getActiveChannelValue(config: ChatConfig, channelId: string): string {
+    const ch = config.channels?.find((c) => c.id === channelId)
+    return (ch && ch.enabled) ? (ch.value || "") : ""
 }
 
 export function generateComponentCode(
@@ -78,12 +98,27 @@ ${channelPathEntries}
 function sanitizeGradient(val?: string | null): string {
     if (!val || typeof val !== "string") return ""
     const trimmed = val.trim()
-    if (/[;<>"'\`\\]/.test(trimmed) || /url\\s*\\(/i.test(trimmed) || /javascript:/i.test(trimmed) || /expression\\s*\\(/i.test(trimmed)) {
+    const lower = trimmed.toLowerCase()
+    if (
+        lower.indexOf("url(") !== -1 ||
+        lower.indexOf("javascript:") !== -1 ||
+        lower.indexOf("<") !== -1 ||
+        lower.indexOf(">") !== -1 ||
+        lower.indexOf(";") !== -1 ||
+        lower.indexOf('"') !== -1 ||
+        lower.indexOf("'") !== -1
+    ) {
         return ""
     }
-    const isGradient = /^(linear-gradient|radial-gradient)\\([a-zA-Z0-9\\s(),#%.-]+\\)$/i.test(trimmed)
-    const isColor = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(trimmed) || /^rgba?\\([0-9\\s,%.-]+\\)$/.test(trimmed)
-    return (isGradient || isColor) ? trimmed : ""
+    if (
+        lower.indexOf("linear-gradient(") === 0 ||
+        lower.indexOf("radial-gradient(") === 0 ||
+        lower.indexOf("#") === 0 ||
+        lower.indexOf("rgb") === 0
+    ) {
+        return trimmed
+    }
+    return ""
 }
 
 function renderChannelIcon(channelId: string, size: number = 22): React.ReactElement {
@@ -495,30 +530,30 @@ export default function ChatBubbles(props: ChatBubblesProps) {
         targetingRules = ${JSON.stringify(config.targetingRules || "")},
         agentsData = ${JSON.stringify(JSON.stringify(config.agents || []))},
         scheduleDaysData = ${JSON.stringify(JSON.stringify(config.scheduleDays || [1, 2, 3, 4, 5]))},
-        whatsapp = ${JSON.stringify(config.channels.find((c) => c.id === "whatsapp")?.value || "")},
+        whatsapp = ${JSON.stringify(getActiveChannelValue(config, "whatsapp"))},
         whatsappMessage = ${JSON.stringify(config.channels.find((c) => c.id === "whatsapp")?.message || "Hello! I would like to know more.")},
-        messenger = ${JSON.stringify(config.channels.find((c) => c.id === "messenger")?.value || "")},
-        telegram = ${JSON.stringify(config.channels.find((c) => c.id === "telegram")?.value || "")},
+        messenger = ${JSON.stringify(getActiveChannelValue(config, "messenger"))},
+        telegram = ${JSON.stringify(getActiveChannelValue(config, "telegram"))},
         telegramMessage = ${JSON.stringify(config.channels.find((c) => c.id === "telegram")?.message || "Hello!")},
-        instagram = ${JSON.stringify(config.channels.find((c) => c.id === "instagram")?.value || "")},
-        tiktok = ${JSON.stringify(config.channels.find((c) => c.id === "tiktok")?.value || "")},
-        wechat = ${JSON.stringify(config.channels.find((c) => c.id === "wechat")?.value || "")},
-        viber = ${JSON.stringify(config.channels.find((c) => c.id === "viber")?.value || "")},
-        line = ${JSON.stringify(config.channels.find((c) => c.id === "line")?.value || "")},
-        signal = ${JSON.stringify(config.channels.find((c) => c.id === "signal")?.value || "")},
-        phone = ${JSON.stringify(config.channels.find((c) => c.id === "phone")?.value || "")},
-        sms = ${JSON.stringify(config.channels.find((c) => c.id === "sms")?.value || "")},
+        instagram = ${JSON.stringify(getActiveChannelValue(config, "instagram"))},
+        tiktok = ${JSON.stringify(getActiveChannelValue(config, "tiktok"))},
+        wechat = ${JSON.stringify(getActiveChannelValue(config, "wechat"))},
+        viber = ${JSON.stringify(getActiveChannelValue(config, "viber"))},
+        line = ${JSON.stringify(getActiveChannelValue(config, "line"))},
+        signal = ${JSON.stringify(getActiveChannelValue(config, "signal"))},
+        phone = ${JSON.stringify(getActiveChannelValue(config, "phone"))},
+        sms = ${JSON.stringify(getActiveChannelValue(config, "sms"))},
         smsMessage = ${JSON.stringify(config.channels.find((c) => c.id === "sms")?.message || "")},
-        email = ${JSON.stringify(config.channels.find((c) => c.id === "email")?.value || "")},
+        email = ${JSON.stringify(getActiveChannelValue(config, "email"))},
         emailSubject = ${JSON.stringify(config.channels.find((c) => c.id === "email")?.emailSubject || "")},
         emailMessage = ${JSON.stringify(config.channels.find((c) => c.id === "email")?.message || "")},
-        discord = ${JSON.stringify(config.channels.find((c) => c.id === "discord")?.value || "")},
-        slack = ${JSON.stringify(config.channels.find((c) => c.id === "slack")?.value || "")},
-        teams = ${JSON.stringify(config.channels.find((c) => c.id === "teams")?.value || "")},
-        x = ${JSON.stringify(config.channels.find((c) => c.id === "x")?.value || "")},
-        linkedin = ${JSON.stringify(config.channels.find((c) => c.id === "linkedin")?.value || "")},
-        maps = ${JSON.stringify(config.channels.find((c) => c.id === "maps")?.value || "")},
-        custom = ${JSON.stringify(config.channels.find((c) => c.id === "custom")?.value || "")},
+        discord = ${JSON.stringify(getActiveChannelValue(config, "discord"))},
+        slack = ${JSON.stringify(getActiveChannelValue(config, "slack"))},
+        teams = ${JSON.stringify(getActiveChannelValue(config, "teams"))},
+        x = ${JSON.stringify(getActiveChannelValue(config, "x"))},
+        linkedin = ${JSON.stringify(getActiveChannelValue(config, "linkedin"))},
+        maps = ${JSON.stringify(getActiveChannelValue(config, "maps"))},
+        custom = ${JSON.stringify(getActiveChannelValue(config, "custom"))},
         customLabel = ${JSON.stringify(config.channels.find((c) => c.id === "custom")?.label || "Custom")},
     } = props
 
@@ -526,6 +561,9 @@ export default function ChatBubbles(props: ChatBubblesProps) {
     // @chat-bubbles-lock-state: ${isLocked ? "locked" : "unlocked"}
     const IS_LOCKED = ${Boolean(isLocked)}
     const showBranding = ${Boolean(showBranding)}
+    const BACKEND_URL = "https://app.framefic.com/chat-bubbles"
+    const ANALYTICS_ENABLED = ${Boolean(config.enableAnalytics !== false)}
+    const WIDGET_ID = ${JSON.stringify(config.widgetId || "chat-bubbles-default")}
     const containerRef = React.useRef<HTMLDivElement>(null)
     const [isOpen, setIsOpen] = React.useState(isCanvas ? canvasPreview !== "closed" : false)
     const [greetingDismissed, setGreetingDismissed] = React.useState(false)
@@ -768,27 +806,40 @@ export default function ChatBubbles(props: ChatBubblesProps) {
     // Strict visibility guard: if hidden by targeting or operating schedule, widget returns null & suppresses sound
     const isWidgetHidden = !isTargetingAllowed || (!isCanvas && scheduleEnabled && isOffline && scheduleOfflineAction === "hide")
 
-    // View tracking for live site visitors (deduplicated per page load across responsive breakpoint instances)
+    // Anonymous deduplicated aggregate view tracking for live site visitors (CRO)
     React.useEffect(() => {
-        if (isCanvas || !enableAnalytics || isWidgetHidden) return
+        if (isCanvas || !enableAnalytics || !ANALYTICS_ENABLED || isWidgetHidden) return
         try {
-            const pagePath = typeof window !== "undefined" && window.location && window.location.pathname ? window.location.pathname : "/"
-            const pageKey = (currentLocationPath || pagePath || "/").toLowerCase()
-            const w = window as any
-            w.__cb_view_stamps__ = w.__cb_view_stamps__ || {}
-            const now = Date.now()
-            // Deduplicate across responsive breakpoint instances (allow 1 view per page path within 3 seconds)
-            if (!w.__cb_view_stamps__[pageKey] || now - w.__cb_view_stamps__[pageKey] > 3000) {
-                w.__cb_view_stamps__[pageKey] = now
-                if (Array.isArray(w.dataLayer)) {
-                    w.dataLayer.push({ event: "chat_bubbles_view", event_category: "Chat Bubbles" })
-                }
-                if (typeof w.gtag === "function") {
-                    w.gtag("event", "chat_bubbles_view", { event_category: "Chat Bubbles", event_label: "widget_view" })
-                }
+            const sessionKey = "cb_viewed_" + WIDGET_ID
+            if (typeof sessionStorage !== "undefined" && !sessionStorage.getItem(sessionKey)) {
+                sessionStorage.setItem(sessionKey, "true")
+                fetch(BACKEND_URL + "/api/analytics/track", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ widgetId: WIDGET_ID, eventType: "view" }),
+                    keepalive: true,
+                }).catch(() => {})
+            }
+            if (Array.isArray((window as any).dataLayer)) {
+                (window as any).dataLayer.push({ event: "chat_bubbles_view", event_category: "Chat Bubbles" })
+            }
+            if (typeof (window as any).gtag === "function") {
+                (window as any).gtag("event", "chat_bubbles_view", { event_category: "Chat Bubbles", event_label: "widget_view" })
             }
         } catch {}
-    }, [isCanvas, enableAnalytics, isWidgetHidden, currentLocationPath])
+    }, [isCanvas, enableAnalytics, isWidgetHidden])
+
+    const trackChannelClick = React.useCallback((channelId: string) => {
+        if (isCanvas || !enableAnalytics || !ANALYTICS_ENABLED) return
+        try {
+            fetch(BACKEND_URL + "/api/analytics/track", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ widgetId: WIDGET_ID, eventType: "click", channelId }),
+                keepalive: true,
+            }).catch(() => {})
+        } catch {}
+    }, [isCanvas, enableAnalytics])
 
     // Web Audio Synthesizer chime for notifications (never plays on Canvas design preview or when hidden or locked)
     const playNotificationChime = React.useCallback((force: boolean = false) => {
@@ -2432,6 +2483,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                                     style={headerWrapStyle}
                                     onClick={(e) => {
                                         e.stopPropagation()
+                                        trackChannelClick(selectedAgent ? selectedAgent.channelId : "whatsapp")
                                         if (enableAnalytics && typeof window !== "undefined") {
                                             try {
                                                 if (Array.isArray((window as any).dataLayer)) {
@@ -2512,6 +2564,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         onClick={() => {
+                                            trackChannelClick(channel.id)
                                             if (enableAnalytics && typeof window !== "undefined") {
                                                 try {
                                                     if (Array.isArray((window as any).dataLayer)) {
@@ -2824,7 +2877,7 @@ addPropertyControls(ChatBubbles, {
         type: ControlType.String,
         title: "WhatsApp",
         placeholder: "+1234567890",
-        defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "whatsapp")?.value || "")},
+        defaultValue: ${JSON.stringify(getActiveChannelValue(config, "whatsapp"))},
             },
     whatsappMessage: {
         type: ControlType.String,
@@ -2835,13 +2888,13 @@ addPropertyControls(ChatBubbles, {
         type: ControlType.String,
         title: "Messenger",
         placeholder: "username",
-        defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "messenger")?.value || "")},
+        defaultValue: ${JSON.stringify(getActiveChannelValue(config, "messenger"))},
             },
     telegram: {
         type: ControlType.String,
         title: "Telegram",
         placeholder: "username",
-        defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "telegram")?.value || "")},
+        defaultValue: ${JSON.stringify(getActiveChannelValue(config, "telegram"))},
             },
     telegramMessage: {
         type: ControlType.String,
@@ -2852,49 +2905,49 @@ addPropertyControls(ChatBubbles, {
         type: ControlType.String,
         title: "Instagram",
         placeholder: "username",
-        defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "instagram")?.value || "")},
+        defaultValue: ${JSON.stringify(getActiveChannelValue(config, "instagram"))},
             },
     tiktok: {
         type: ControlType.String,
         title: "TikTok",
         placeholder: "username",
-        defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "tiktok")?.value || "")},
+        defaultValue: ${JSON.stringify(getActiveChannelValue(config, "tiktok"))},
             },
     wechat: {
         type: ControlType.String,
         title: "WeChat",
         placeholder: "wechat_id",
-        defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "wechat")?.value || "")},
+        defaultValue: ${JSON.stringify(getActiveChannelValue(config, "wechat"))},
             },
     viber: {
         type: ControlType.String,
         title: "Viber",
         placeholder: "+1234567890",
-        defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "viber")?.value || "")},
+        defaultValue: ${JSON.stringify(getActiveChannelValue(config, "viber"))},
             },
     line: {
         type: ControlType.String,
         title: "LINE",
         placeholder: "line_id",
-        defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "line")?.value || "")},
+        defaultValue: ${JSON.stringify(getActiveChannelValue(config, "line"))},
             },
     signal: {
         type: ControlType.String,
         title: "Signal",
         placeholder: "username or link",
-        defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "signal")?.value || "")},
+        defaultValue: ${JSON.stringify(getActiveChannelValue(config, "signal"))},
             },
     phone: {
         type: ControlType.String,
         title: "Phone",
         placeholder: "+1234567890",
-        defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "phone")?.value || "")},
+        defaultValue: ${JSON.stringify(getActiveChannelValue(config, "phone"))},
             },
     sms: {
         type: ControlType.String,
         title: "SMS",
         placeholder: "+1234567890",
-        defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "sms")?.value || "")},
+        defaultValue: ${JSON.stringify(getActiveChannelValue(config, "sms"))},
             },
     smsMessage: {
         type: ControlType.String,
@@ -2906,7 +2959,7 @@ addPropertyControls(ChatBubbles, {
         type: ControlType.String,
         title: "Email",
         placeholder: "hello@example.com",
-        defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "email")?.value || "")},
+        defaultValue: ${JSON.stringify(getActiveChannelValue(config, "email"))},
             },
     emailSubject: {
         type: ControlType.String,
@@ -2924,43 +2977,43 @@ addPropertyControls(ChatBubbles, {
         type: ControlType.String,
         title: "Discord",
         placeholder: "https://discord.gg/yourserver",
-        defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "discord")?.value || "")},
+        defaultValue: ${JSON.stringify(getActiveChannelValue(config, "discord"))},
             },
     slack: {
         type: ControlType.String,
         title: "Slack",
         placeholder: "https://join.slack.com/...",
-        defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "slack")?.value || "")},
+        defaultValue: ${JSON.stringify(getActiveChannelValue(config, "slack"))},
             },
     teams: {
         type: ControlType.String,
         title: "Teams",
         placeholder: "user@company.com",
-        defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "teams")?.value || "")},
+        defaultValue: ${JSON.stringify(getActiveChannelValue(config, "teams"))},
             },
     x: {
         type: ControlType.String,
         title: "X (Twitter)",
         placeholder: "username",
-        defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "x")?.value || "")},
+        defaultValue: ${JSON.stringify(getActiveChannelValue(config, "x"))},
             },
     linkedin: {
         type: ControlType.String,
         title: "LinkedIn",
         placeholder: "in/username or company/name",
-        defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "linkedin")?.value || "")},
+        defaultValue: ${JSON.stringify(getActiveChannelValue(config, "linkedin"))},
             },
     maps: {
         type: ControlType.String,
         title: "Google Maps",
         placeholder: "Store address or maps link",
-        defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "maps")?.value || "")},
+        defaultValue: ${JSON.stringify(getActiveChannelValue(config, "maps"))},
             },
     custom: {
         type: ControlType.String,
         title: "Custom URL",
         placeholder: "https://example.com/chat",
-        defaultValue: ${JSON.stringify(config.channels.find((c) => c.id === "custom")?.value || "")},
+        defaultValue: ${JSON.stringify(getActiveChannelValue(config, "custom"))},
             },
     customLabel: {
         type: ControlType.String,
@@ -3136,30 +3189,30 @@ export function buildControlPayload(config: ChatConfig) {
         showOn: config.showOn || "Every page",
         targetingMode: config.targetingMode || "show",
         targetingRules: config.targetingRules || "",
-        whatsapp: config.channels.find((c) => c.id === "whatsapp")?.value || "",
+        whatsapp: getActiveChannelValue(config, "whatsapp"),
         whatsappMessage: config.channels.find((c) => c.id === "whatsapp")?.message || "Hello! I would like to know more.",
-        messenger: config.channels.find((c) => c.id === "messenger")?.value || "",
-        telegram: config.channels.find((c) => c.id === "telegram")?.value || "",
+        messenger: getActiveChannelValue(config, "messenger"),
+        telegram: getActiveChannelValue(config, "telegram"),
         telegramMessage: config.channels.find((c) => c.id === "telegram")?.message || "Hello!",
-        instagram: config.channels.find((c) => c.id === "instagram")?.value || "",
-        tiktok: config.channels.find((c) => c.id === "tiktok")?.value || "",
-        wechat: config.channels.find((c) => c.id === "wechat")?.value || "",
-        viber: config.channels.find((c) => c.id === "viber")?.value || "",
-        line: config.channels.find((c) => c.id === "line")?.value || "",
-        signal: config.channels.find((c) => c.id === "signal")?.value || "",
-        phone: config.channels.find((c) => c.id === "phone")?.value || "",
-        sms: config.channels.find((c) => c.id === "sms")?.value || "",
+        instagram: getActiveChannelValue(config, "instagram"),
+        tiktok: getActiveChannelValue(config, "tiktok"),
+        wechat: getActiveChannelValue(config, "wechat"),
+        viber: getActiveChannelValue(config, "viber"),
+        line: getActiveChannelValue(config, "line"),
+        signal: getActiveChannelValue(config, "signal"),
+        phone: getActiveChannelValue(config, "phone"),
+        sms: getActiveChannelValue(config, "sms"),
         smsMessage: config.channels.find((c) => c.id === "sms")?.message || "",
-        email: config.channels.find((c) => c.id === "email")?.value || "",
+        email: getActiveChannelValue(config, "email"),
         emailSubject: config.channels.find((c) => c.id === "email")?.emailSubject || "",
         emailMessage: config.channels.find((c) => c.id === "email")?.message || "",
-        discord: config.channels.find((c) => c.id === "discord")?.value || "",
-        slack: config.channels.find((c) => c.id === "slack")?.value || "",
-        teams: config.channels.find((c) => c.id === "teams")?.value || "",
-        x: config.channels.find((c) => c.id === "x")?.value || "",
-        linkedin: config.channels.find((c) => c.id === "linkedin")?.value || "",
-        maps: config.channels.find((c) => c.id === "maps")?.value || "",
-        custom: config.channels.find((c) => c.id === "custom")?.value || "",
+        discord: getActiveChannelValue(config, "discord"),
+        slack: getActiveChannelValue(config, "slack"),
+        teams: getActiveChannelValue(config, "teams"),
+        x: getActiveChannelValue(config, "x"),
+        linkedin: getActiveChannelValue(config, "linkedin"),
+        maps: getActiveChannelValue(config, "maps"),
+        custom: getActiveChannelValue(config, "custom"),
         customLabel: config.channels.find((c) => c.id === "custom")?.label || "Custom",
         agentsData: JSON.stringify(config.agents || []),
         scheduleDaysData: JSON.stringify(config.scheduleDays || [1, 2, 3, 4, 5]),

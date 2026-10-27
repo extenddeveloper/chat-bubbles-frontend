@@ -2053,6 +2053,7 @@ export function App() {
                                 enabled={true}
                                 onToggleEnabled={(enableAnalytics) => updateConfig({ enableAnalytics })}
                                 channels={config.channels}
+                                widgetId={config.widgetId}
                                 onNavigateToSettings={() => {
                                     setIsProfileOpen(false)
                                     setTab("settings")

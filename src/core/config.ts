@@ -129,6 +129,7 @@ export const DEFAULT_CONFIG: ChatConfig = {
     showOn: "Every page",
     targetingMode: "show",
     targetingRules: "",
+    widgetId: "",
 }
 
 export function normalizeConfig(input: Partial<ChatConfig> | null | undefined): ChatConfig {
@@ -150,9 +151,14 @@ export function normalizeConfig(input: Partial<ChatConfig> | null | undefined): 
         ? source.agents
         : DEFAULT_AGENTS
 
+    const rawWidgetId = source.widgetId && typeof source.widgetId === "string" && source.widgetId.trim()
+        ? source.widgetId.trim()
+        : "cb_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
+
     return sanitizeConfig({
         ...DEFAULT_CONFIG,
         ...source,
+        widgetId: rawWidgetId,
         channels,
         agents,
     })
