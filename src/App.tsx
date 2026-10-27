@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react"
-import { framer } from "@framer/plugin"
+import { framer, useIsAllowedTo } from "@framer/plugin"
 import { cloneDefaultConfig, normalizeConfig } from "./core/config"
 import { loadConfig, saveConfig } from "./core/storage"
-import { insertCanvasComponent, syncCanvasInstance, setCanvasLicensingState } from "./framer/canvas-component-service"
+import { insertCanvasComponent, syncCanvasInstance, setCanvasLicensingState, generateComponentCode } from "./framer/canvas-component-service"
 import { BACKEND_BASE_URL } from "./config/backend"
 import type { ChannelId, ChatAgent, ChatChannel, ChatConfig, ModalTheme } from "./types"
 import { Field } from "./ui/components/Field"
@@ -242,6 +242,8 @@ export function App() {
         userName: auth.user?.username,
     })
 
+    useIsAllowedTo("CodeFile.setFileContent")
+
     const [profileView, setProfileView] = useState<"profile" | "subscription">("profile")
     const [forceShowPlans, setForceShowPlans] = useState<number>(0)
     const [trialModalStatus, setTrialModalStatus] = useState<"started" | "expired" | null>(null)
@@ -289,43 +291,65 @@ export function App() {
     }, [hasActiveAccess, isTrialActive, config])
 
     useEffect(() => {
+        if (paymentFlow.isCheckingPayment) return
+
         let isMounted = true
         const enforceLockState = async () => {
             try {
                 const isAllowed = typeof (framer as any).isAllowedTo === "function"
-                    ? await (framer as any).isAllowedTo("setCodeFileContent", "CodeFile.setFileContent")
+                    ? await (framer as any).isAllowedTo("CodeFile.setFileContent")
                     : true
                 if (!isAllowed) return
 
                 const files = await framer.getCodeFiles()
                 const chatFiles = files.filter(
-                    (f) => f.name === "ChatBubbles.tsx" || f.name === "ChatBubbles" || f.name === "Chatfic"
+                    (f) =>
+                        f.name.toLowerCase().startsWith("chatbubble") ||
+                        f.name.toLowerCase().startsWith("chatfic")
                 )
+
+                const siteInfo = await getSiteInfo().catch(() => null)
+                const shouldLock = !hasActiveAccess
 
                 for (const file of chatFiles) {
                     if (!isMounted) break
-                    const code = file.content
-                    const shouldLock = !hasActiveAccess
+                    const code = file.content || ""
 
-                    let newCode = code.replace(
-                        /const IS_LOCKED = (true|false);?/,
-                        `const IS_LOCKED = ${shouldLock};`
-                    )
-                    newCode = newCode.replace(
-                        /\/\/ @chat-bubbles-lock-state: (locked|unlocked)/,
-                        `// @chat-bubbles-lock-state: ${shouldLock ? "locked" : "unlocked"}`
-                    )
-                    newCode = newCode.replace(
-                        /const showBranding = (true|false);?/,
-                        `const showBranding = ${Boolean(isTrialActive)};`
-                    )
-
+                    let newCode = code
                     const currentLockMatch = code.match(/const IS_LOCKED = (true|false);?/)
                     const currentlyLocked = currentLockMatch ? currentLockMatch[1] === "true" : false
                     const currentBrandingMatch = code.match(/const showBranding = (true|false);?/)
                     const currentlyBranded = currentBrandingMatch ? currentBrandingMatch[1] === "true" : false
 
-                    if (!currentLockMatch || currentlyLocked !== shouldLock || currentlyBranded !== Boolean(isTrialActive)) {
+                    if ((!currentLockMatch || !code.includes("cf-canvas-pro-locked-container")) && config) {
+                        newCode = generateComponentCode(
+                            config,
+                            siteInfo?.siteId,
+                            siteInfo?.siteUrl,
+                            isTrialActive,
+                            shouldLock
+                        )
+                    } else {
+                        newCode = newCode.replace(
+                            /const IS_LOCKED = (true|false);?/,
+                            `const IS_LOCKED = ${shouldLock};`
+                        )
+                        newCode = newCode.replace(
+                            /\/\/ @chat-bubbles-lock-state: (locked|unlocked)/,
+                            `// @chat-bubbles-lock-state: ${shouldLock ? "locked" : "unlocked"}`
+                        )
+                        newCode = newCode.replace(
+                            /const showBranding = (true|false);?/,
+                            `const showBranding = ${Boolean(isTrialActive)};`
+                        )
+                    }
+
+                    if (
+                        !currentLockMatch ||
+                        currentlyLocked !== shouldLock ||
+                        currentlyBranded !== Boolean(isTrialActive) ||
+                        newCode !== code
+                    ) {
                         await file.setFileContent(newCode)
                     }
                 }
@@ -338,7 +362,7 @@ export function App() {
         return () => {
             isMounted = false
         }
-    }, [paymentFlow.isCheckingPayment, hasActiveAccess, isTrialActive])
+    }, [paymentFlow.isCheckingPayment, hasActiveAccess, isTrialActive, config])
 
     const handleTabClick = useCallback(
         (targetTab: Tab) => {

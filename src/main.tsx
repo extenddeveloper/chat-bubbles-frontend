@@ -55,7 +55,6 @@ try {
     if (typeof (framer as any).isAllowedTo === "function") {
         ;(framer as any).isAllowedTo(
             "CodeFile.setFileContent",
-            "setCodeFileContent",
             "createCodeFile",
             "setAttributes",
             "addComponentInstance",
