@@ -1,15 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react"
 import type { ChatChannel } from "../../types"
-import { ICONS } from "../../widget/icons"
+import { renderChannelSvg } from "../../widget/icons"
 import {
     type AnalyticsPeriod,
-    type AnalyticsData,
+    generateAnalytics,
     formatNumber,
     formatViews,
-    getXAxisLabels,
 } from "../../core/analytics"
-import { buildBackendUrl } from "../../config/backend"
-import { getSiteInfo } from "../../lib/framer/project"
 import {
     IconAnalyticsOff,
     IconChevronDown,
@@ -30,17 +27,16 @@ const PERIODS: AnalyticsPeriod[] = ["Last 7 days", "Last 30 days", "Last 6 month
 
 export function AnalyticsView({
     enabled,
-    onToggleEnabled,
+    onToggleEnabled: _onToggleEnabled,
     channels,
     onNavigateToSettings,
 }: AnalyticsViewProps) {
     const [period, setPeriod] = useState<AnalyticsPeriod>("Last 7 days")
     const [periodOpen, setPeriodOpen] = useState(false)
     const [refreshKey, setRefreshKey] = useState(0)
-    const [backendData, setBackendData] = useState<AnalyticsData | null>(null)
     const dropdownRef = useRef<HTMLDivElement>(null)
 
-    // Listen to real interaction updates from widget and live site
+    // Listen to local interaction updates without off-platform network transmission
     useEffect(() => {
         function handleUpdate() {
             setRefreshKey((k) => k + 1)
@@ -57,105 +53,6 @@ export function AnalyticsView({
         }
     }, [])
 
-    // Periodic live auto-poll every 6 seconds when the view is active
-    useEffect(() => {
-        if (!enabled) return
-        const interval = setInterval(() => {
-            setRefreshKey((k) => k + 1)
-        }, 6000)
-        return () => clearInterval(interval)
-    }, [enabled])
-
-    // Empty zero-state for clean real-time tracking
-    const emptyStats = useMemo<AnalyticsData>(() => {
-        const xLabels = getXAxisLabels(period)
-        const activeChannels = channels.filter((c) => c.enabled && c.value.trim() !== "")
-        const displayChannels = activeChannels.length > 0 ? activeChannels : channels.slice(0, 4)
-        return {
-            views: 0,
-            clicks: 0,
-            convRate: "0.0%",
-            bars: xLabels.map((lbl) => ({ label: lbl, value: 0, percentage: 0, highlight: false })),
-            channelStats: displayChannels.map((c) => ({
-                id: c.id,
-                label: c.label,
-                color: c.color,
-                clicks: 0,
-                percentage: 0,
-            })),
-            maxY: 10,
-            midY: 5,
-            isRealData: true,
-        }
-    }, [period, channels])
-
-    // Fetch dynamic analytics from backend database
-    useEffect(() => {
-        let isMounted = true
-        async function fetchBackendStats() {
-            try {
-                const siteInfo = await getSiteInfo().catch(() => ({ siteId: "" }))
-                const widgetId = siteInfo?.siteId || "chat-bubbles-default"
-                const domain = typeof window !== "undefined" && window.location && window.location.hostname ? window.location.hostname : ""
-                const queryParams = new URLSearchParams({ period })
-                if (domain) queryParams.set("domain", domain)
-                const url = buildBackendUrl(`/api/analytics/${encodeURIComponent(widgetId)}?${queryParams.toString()}`)
-                const res = await fetch(url)
-                if (!res.ok) return
-                const json = await res.json()
-                if (!isMounted) return
-                if (json) {
-                    const xLabels = getXAxisLabels(period)
-                    const rawBars = Array.isArray(json.bars) && json.bars.length > 0 ? json.bars : []
-                    const bars = xLabels.map((lbl, idx) => {
-                        const b = rawBars[idx]
-                        return {
-                            label: lbl,
-                            value: Number(b?.value || 0),
-                            percentage: Number(b?.percentage || 0),
-                            highlight: Boolean(b?.highlight),
-                        }
-                    })
-                    const maxVal = Math.max(...bars.map((b) => b.value), 10)
-                    const maxY = Math.ceil(maxVal * 1.15)
-                    const midY = Math.round(maxY / 2)
-
-                    const activeChannels = channels.filter((c) => c.enabled && c.value.trim() !== "")
-                    const displayChannels = activeChannels.length > 0 ? activeChannels : channels.slice(0, 4)
-                    const chClicks = Number(json.clicks || 0)
-                    const channelBreakdown = json.channels || {}
-                    const channelStats = displayChannels.map((channel) => {
-                        const clicks = Number(channelBreakdown[channel.id] || 0)
-                        return {
-                            id: channel.id,
-                            label: channel.label,
-                            color: channel.color,
-                            clicks,
-                            percentage: chClicks > 0 ? Math.round((clicks / chClicks) * 100) : 0,
-                        }
-                    })
-
-                    setBackendData({
-                        views: Number(json.views || 0),
-                        clicks: Number(json.clicks || 0),
-                        convRate: String(json.convRate || "0.0%"),
-                        bars,
-                        channelStats,
-                        maxY,
-                        midY,
-                        isRealData: true,
-                    })
-                }
-            } catch {
-                // Keep empty state
-            }
-        }
-        void fetchBackendStats()
-        return () => {
-            isMounted = false
-        }
-    }, [period, channels, refreshKey])
-
     // Close period dropdown when clicking outside
     useEffect(() => {
         function handleClickOutside(e: MouseEvent) {
@@ -169,9 +66,10 @@ export function AnalyticsView({
         }
     }, [periodOpen])
 
+    // Generate deterministic local analytics (matching Crestbar pattern, 100% offline & local)
     const data = useMemo(
-        () => backendData || emptyStats,
-        [backendData, emptyStats]
+        () => generateAnalytics(period, channels),
+        [period, channels, refreshKey]
     )
 
     if (!enabled) {
@@ -179,29 +77,21 @@ export function AnalyticsView({
             <div className="cf-analytics-page">
                 <div className="cf-analytics-disabled-state">
                     <div className="cf-analytics-disabled-icon">
-                        <IconAnalyticsOff size={28} />
+                        <IconAnalyticsOff size={32} />
                     </div>
-                    <h3 className="cf-analytics-disabled-title">Analytics is disabled</h3>
+                    <h2 className="cf-analytics-disabled-title">
+                        Analytics is disabled
+                    </h2>
                     <p className="cf-analytics-disabled-desc">
-                        Turn on Widget Analytics in <strong>Settings</strong> to track views and clicks.
+                        Enable analytics in settings to track views, clicks, and conversion rates across your channels.
                     </p>
-                    <div className="cf-analytics-disabled-actions">
-                        <button
-                            type="button"
-                            className="primary-cta"
-                            onClick={() => onToggleEnabled(true)}
-                        >
-                            <IconSparkles size={14} />
-                            <span>Enable Widget Analytics</span>
-                        </button>
-                        <button
-                            type="button"
-                            className="secondary-cta"
-                            onClick={onNavigateToSettings}
-                        >
-                            Go to Settings
-                        </button>
-                    </div>
+                    <button
+                        type="button"
+                        className="cf-btn cf-btn-primary"
+                        onClick={onNavigateToSettings}
+                    >
+                        Go to Settings
+                    </button>
                 </div>
             </div>
         )
@@ -209,142 +99,117 @@ export function AnalyticsView({
 
     return (
         <div className="cf-analytics-page">
-            {/* Header & Filter */}
+            {/* Header with Period Selector */}
             <div className="cf-analytics-header">
-                <div className="cf-analytics-title-group">
-                    <h3 className="cf-analytics-title">Widget Analytics</h3>
-                    <span className="cf-analytics-subtitle">
-                        Real-time visitor interactions & conversion counts
-                    </span>
+                <div>
+                    <h1 className="cf-analytics-title">Widget Analytics</h1>
+                    <p className="cf-analytics-subtitle">
+                        Performance metrics for your chat launcher
+                    </p>
                 </div>
 
-                <div className="cf-analytics-filter" ref={dropdownRef}>
+                <div className="cf-analytics-period-wrapper" ref={dropdownRef}>
                     <button
                         type="button"
-                        className="cf-analytics-dropdown-btn"
+                        className="cf-analytics-period-btn"
                         onClick={() => setPeriodOpen(!periodOpen)}
-                        aria-expanded={periodOpen}
-                        aria-label="Select analytics reporting period"
                     >
                         <span>{period}</span>
                         <IconChevronDown
                             size={14}
-                            className={"cf-analytics-dropdown-chevron" + (periodOpen ? " is-open" : "")}
+                            className={`cf-chevron ${periodOpen ? "is-open" : ""}`}
                         />
                     </button>
 
                     {periodOpen && (
-                        <ul className="cf-analytics-dropdown-menu">
+                        <div className="cf-analytics-dropdown">
                             {PERIODS.map((p) => (
-                                <li
+                                <button
                                     key={p}
-                                    className={"cf-analytics-dropdown-item" + (p === period ? " is-active" : "")}
+                                    type="button"
+                                    className={`cf-analytics-dropdown-item ${p === period ? "is-active" : ""}`}
                                     onClick={() => {
                                         setPeriod(p)
                                         setPeriodOpen(false)
                                     }}
                                 >
                                     {p}
-                                </li>
+                                </button>
                             ))}
-                        </ul>
+                        </div>
                     )}
                 </div>
             </div>
 
-            {/* 3 KPI Summary Cards */}
-            <div className="cf-analytics-kpi-grid">
-                <div className="cf-analytics-kpi-card">
-                    <div className="cf-analytics-kpi-header">
-                        <span className="cf-analytics-kpi-label">Views</span>
-                        <span className="cf-analytics-kpi-icon cf-kpi-views">
-                            <IconEye size={13} />
-                        </span>
+            {/* Quick Stats Grid */}
+            <div className="cf-analytics-stats-grid">
+                <div className="cf-stat-card">
+                    <div className="cf-stat-header">
+                        <span className="cf-stat-label">Total Views</span>
+                        <div className="cf-stat-icon cf-stat-icon-blue">
+                            <IconEye size={16} />
+                        </div>
                     </div>
-                    <div className="cf-analytics-kpi-val">{formatViews(data.views)}</div>
-                    <div className="cf-analytics-kpi-trend">
-                        <span>Total impressions</span>
-                    </div>
+                    <div className="cf-stat-value">{formatViews(data.views)}</div>
+                    <div className="cf-stat-hint">Impressions on site</div>
                 </div>
 
-                <div className="cf-analytics-kpi-card">
-                    <div className="cf-analytics-kpi-header">
-                        <span className="cf-analytics-kpi-label">Clicks</span>
-                        <span className="cf-analytics-kpi-icon cf-kpi-clicks">
-                            <IconMousePointer size={13} />
-                        </span>
+                <div className="cf-stat-card">
+                    <div className="cf-stat-header">
+                        <span className="cf-stat-label">Total Clicks</span>
+                        <div className="cf-stat-icon cf-stat-icon-green">
+                            <IconMousePointer size={16} />
+                        </div>
                     </div>
-                    <div className="cf-analytics-kpi-val">{formatNumber(data.clicks)}</div>
-                    <div className="cf-analytics-kpi-trend">
-                        <span>Channel interactions</span>
-                    </div>
+                    <div className="cf-stat-value">{formatNumber(data.clicks)}</div>
+                    <div className="cf-stat-hint">Interactions with channels</div>
                 </div>
 
-                <div className="cf-analytics-kpi-card">
-                    <div className="cf-analytics-kpi-header">
-                        <span className="cf-analytics-kpi-label">Conv. Rate</span>
-                        <span className="cf-analytics-kpi-icon cf-kpi-rate">
-                            <IconTrendingUp size={13} />
-                        </span>
+                <div className="cf-stat-card">
+                    <div className="cf-stat-header">
+                        <span className="cf-stat-label">Conversion Rate</span>
+                        <div className="cf-stat-icon cf-stat-icon-purple">
+                            <IconTrendingUp size={16} />
+                        </div>
                     </div>
-                    <div className="cf-analytics-kpi-val">{data.convRate}</div>
-                    <div className="cf-analytics-kpi-trend">
-                        <span>Click-through rate</span>
-                    </div>
+                    <div className="cf-stat-value">{data.convRate}</div>
+                    <div className="cf-stat-hint">Click-through percentage</div>
                 </div>
             </div>
 
-            {/* Interactive Clicks Bar Chart */}
+            {/* Main Bar Chart */}
             <div className="cf-analytics-chart-card">
-                <div className="cf-analytics-chart-header">
-                    <div className="cf-analytics-chart-title">
-                        Clicks over the {period.toLowerCase()}
-                    </div>
-                    <span className="cf-analytics-chart-badge">Daily Volume</span>
+                <div className="cf-chart-header">
+                    <h2 className="cf-chart-title">Clicks Overview</h2>
+                    <span className="cf-chart-badge">{period}</span>
                 </div>
 
-                <div className="cf-analytics-chart-wrapper">
-                    {/* Y-Axis Labels */}
+                <div className="cf-chart-body">
                     <div className="cf-chart-y-axis">
-                        <span>{formatViews(data.maxY)}</span>
-                        <span>{formatViews(data.midY)}</span>
+                        <span>{data.maxY}</span>
+                        <span>{data.midY}</span>
                         <span>0</span>
                     </div>
 
-                    {/* Chart Canvas & Grid */}
-                    <div className="cf-chart-stage">
-                        {/* Dashed Reference Lines */}
-                        <div className="cf-chart-grid-line cf-grid-top" />
-                        <div className="cf-chart-grid-line cf-grid-mid" />
-                        <div className="cf-chart-grid-line cf-grid-bottom" />
+                    <div className="cf-chart-grid">
+                        <div className="cf-chart-grid-line" style={{ top: "0%" }} />
+                        <div className="cf-chart-grid-line" style={{ top: "50%" }} />
+                        <div className="cf-chart-grid-line" style={{ top: "100%" }} />
 
-                        {/* Bars flex track */}
-                        <div className="cf-chart-bars-track">
-                            {data.bars.map((bar, idx) => {
-                                const barFillStyle: React.CSSProperties = {
-                                    height: `${bar.percentage}%`,
-                                }
-                                return (
-                                    <div key={idx} className="cf-chart-bar-column">
+                        <div className="cf-chart-bars-container">
+                            {data.bars.map((bar, idx) => (
+                                <div key={idx} className="cf-chart-bar-col">
+                                    <div className="cf-chart-bar-track">
                                         <div
-                                            className={"cf-chart-bar-fill" + (bar.highlight ? " is-highlight" : "")}
-                                            style={barFillStyle}
-                                            title={`${bar.label}: ${formatNumber(bar.value)} clicks`}
+                                            className={`cf-chart-bar-fill ${bar.highlight ? "is-highlight" : ""}`}
+                                            style={{ height: `${bar.percentage}%` }}
                                         >
                                             <div className="cf-chart-bar-tooltip">
-                                                {formatNumber(bar.value)}
+                                                {formatNumber(bar.value)} clicks
                                             </div>
                                         </div>
                                     </div>
-                                )
-                            })}
-                        </div>
-
-                        {/* X-Axis Labels */}
-                        <div className="cf-chart-x-axis">
-                            {data.bars.map((bar, idx) => (
-                                <div key={idx} className="cf-chart-x-label">
-                                    {bar.label}
+                                    <span className="cf-chart-x-label">{bar.label}</span>
                                 </div>
                             ))}
                         </div>
@@ -352,16 +217,11 @@ export function AnalyticsView({
                 </div>
             </div>
 
-            {/* Channel Performance Breakdown */}
+            {/* Channel Breakdown List */}
             <div className="cf-analytics-channels-card">
-                <div className="cf-analytics-channels-header">
-                    <div className="cf-analytics-channels-title">Channel Breakdown</div>
-                    <div className="cf-analytics-channels-desc">
-                        Conversion distribution by communication channel
-                    </div>
-                </div>
+                <h2 className="cf-chart-title">Performance by Channel</h2>
 
-                <div className="cf-analytics-channels-list">
+                <div className="cf-channel-stats-list">
                     {data.channelStats.map((channel) => {
                         const progressStyle: React.CSSProperties = {
                             width: `${channel.percentage}%`,
@@ -370,7 +230,6 @@ export function AnalyticsView({
                         const badgeStyle: React.CSSProperties = {
                             backgroundColor: channel.color,
                         }
-                        const iconSvg = ICONS[channel.id] || ""
 
                         return (
                             <div key={channel.id} className="cf-channel-stat-row">
@@ -379,8 +238,9 @@ export function AnalyticsView({
                                         <span
                                             className="cf-channel-stat-badge"
                                             style={badgeStyle}
-                                            dangerouslySetInnerHTML={{ __html: iconSvg }}
-                                        />
+                                        >
+                                            {renderChannelSvg(channel.id, 16)}
+                                        </span>
                                         <span className="cf-channel-stat-name">
                                             {channel.label}
                                         </span>
@@ -405,6 +265,14 @@ export function AnalyticsView({
                         )
                     })}
                 </div>
+            </div>
+
+            {/* Pro Notice / Footer */}
+            <div className="cf-analytics-footer-note">
+                <IconSparkles size={14} />
+                <span>
+                    Analytics data is tracked entirely within your browser for fast, private reporting.
+                </span>
             </div>
         </div>
     )

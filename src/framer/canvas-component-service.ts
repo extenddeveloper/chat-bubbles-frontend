@@ -1,6 +1,6 @@
 import { framer } from "@framer/plugin"
 import type { ChatConfig } from "../types"
-import { ICONS } from "../widget/icons"
+import { CHANNEL_PATHS } from "../widget/icons"
 import { MODAL_THEME_GRADIENTS } from "../core/config"
 import { SVG_AVATAR_PRESETS } from "../core/avatars"
 import { getSiteInfo } from "../lib/framer/project"
@@ -13,24 +13,32 @@ export function setCanvasLicensingState(hasAccess: boolean, isTrial: boolean, _a
     cachedIsTrial = isTrial
 }
 
+function sanitizeGradient(val?: string | null): string {
+    if (!val || typeof val !== "string") return ""
+    const trimmed = val.trim()
+    if (/[;<>"'`\\]/.test(trimmed) || /url\s*\(/i.test(trimmed) || /javascript:/i.test(trimmed) || /expression\s*\(/i.test(trimmed)) {
+        return ""
+    }
+    const isGradient = /^(linear-gradient|radial-gradient)\([a-zA-Z0-9\s(),#%.-]+\)$/i.test(trimmed)
+    const isColor = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(trimmed) || /^rgba?\([0-9\s,%.-]+\)$/.test(trimmed)
+    return (isGradient || isColor) ? trimmed : ""
+}
 
 export function generateComponentCode(
     config: ChatConfig,
-    siteId?: string | null,
-    siteUrl?: string | null,
+    _siteId?: string | null,
+    _siteUrl?: string | null,
     showBranding: boolean = cachedIsTrial,
     isLocked: boolean = !cachedHasAccess
 ): string {
-    const effectiveSiteId = (siteId && siteId.trim()) || (config.widgetId && config.widgetId.trim()) || "chat-bubbles-default"
-    const iconEntries = Object.entries(ICONS)
-        .map(([key, svg]) => `  ${JSON.stringify(key)}: ${JSON.stringify(svg)},`)
+    const channelPathEntries = Object.entries(CHANNEL_PATHS)
+        .map(([key, d]) => `  ${JSON.stringify(key)}: ${JSON.stringify(d)},`)
         .join("\n")
 
-    const gradient = config.modalTheme === "custom" && config.modalCustomGradient
-        ? config.modalCustomGradient
+    const safeCustomGradient = sanitizeGradient(config.modalCustomGradient)
+    const gradient = config.modalTheme === "custom" && safeCustomGradient
+        ? safeCustomGradient
         : MODAL_THEME_GRADIENTS[config.modalTheme] || MODAL_THEME_GRADIENTS.whatsapp
-
-    const embeddedSiteDomain = siteUrl ? (function() { try { return new URL(siteUrl).hostname } catch { return "" } })() : ""
 
     const defaultAgentsJson = JSON.stringify(
         config.agents && config.agents.length > 0
@@ -63,12 +71,76 @@ export function generateComponentCode(
     return `import * as React from "react"
 import { addPropertyControls, ControlType, RenderTarget } from "framer"
 
-const ICONS: Record<string, string> = {
-${iconEntries}
+const CHANNEL_PATHS: Record<string, string> = {
+${channelPathEntries}
 }
 
-const EMBEDDED_SITE_ID = ${JSON.stringify(effectiveSiteId)}
-const EMBEDDED_SITE_DOMAIN = ${JSON.stringify(embeddedSiteDomain)}
+function sanitizeGradient(val?: string | null): string {
+    if (!val || typeof val !== "string") return ""
+    const trimmed = val.trim()
+    if (/[;<>"'\`\\]/.test(trimmed) || /url\\s*\\(/i.test(trimmed) || /javascript:/i.test(trimmed) || /expression\\s*\\(/i.test(trimmed)) {
+        return ""
+    }
+    const isGradient = /^(linear-gradient|radial-gradient)\\([a-zA-Z0-9\\s(),#%.-]+\\)$/i.test(trimmed)
+    const isColor = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(trimmed) || /^rgba?\\([0-9\\s,%.-]+\\)$/.test(trimmed)
+    return (isGradient || isColor) ? trimmed : ""
+}
+
+function renderChannelIcon(channelId: string, size: number = 22): React.ReactElement {
+    const d = CHANNEL_PATHS[channelId] || CHANNEL_PATHS.whatsapp
+    return (
+        <svg
+            viewBox="0 0 24 24"
+            width={size}
+            height={size}
+            fill="currentColor"
+            aria-hidden="true"
+            style={{ width: size, height: size, display: "block" }}
+        >
+            <path fill="currentColor" d={d} />
+        </svg>
+    )
+}
+
+function renderLauncherIcon(launcherIcon: string, isOpen: boolean, isLocked: boolean): React.ReactElement {
+    if (isOpen) {
+        return (
+            <svg viewBox="0 0 24 24" width={22} height={22} fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+                <path d="M12 5v14M5 12h14" />
+            </svg>
+        )
+    }
+    if (isLocked) {
+        return (
+            <svg viewBox="0 0 24 24" width={22} height={22} fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+        )
+    }
+    if (launcherIcon === "support") {
+        return (
+            <svg viewBox="0 0 24 24" width={24} height={24} fill="currentColor" aria-hidden="true">
+                <path d="M12 2a9 9 0 0 0-9 9v4a3 3 0 0 0 3 3h1v-6H5v-1a7 7 0 1 1 14 0v1h-2v6h1a3 3 0 0 0 3-3v-4a9 9 0 0 0-9-9Zm-5 13v3H6a1 1 0 0 1-1-1v-2h2Zm12 2a1 1 0 0 1-1 1h-1v-3h2v2Z" />
+            </svg>
+        )
+    }
+    if (launcherIcon === "chat" || !CHANNEL_PATHS[launcherIcon]) {
+        return (
+            <svg viewBox="0 0 24 24" width={24} height={24} fill="currentColor" aria-hidden="true">
+                <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2Zm0 14H5.2L4 17.2V4h16v12Z" />
+                <circle cx="8" cy="10" r="1.5" />
+                <circle cx="12" cy="10" r="1.5" />
+                <circle cx="16" cy="10" r="1.5" />
+            </svg>
+        )
+    }
+    return (
+        <svg viewBox="0 0 24 24" width={24} height={24} fill="currentColor" aria-hidden="true">
+            <path fill="currentColor" d={CHANNEL_PATHS[launcherIcon]} />
+        </svg>
+    )
+}
 
 const GRADIENTS: Record<string, string> = {
   whatsapp: "linear-gradient(135deg, #25D366 0%, #128C7E 100%)",
@@ -79,17 +151,6 @@ const GRADIENTS: Record<string, string> = {
   wechat: "linear-gradient(135deg, #07C160 0%, #048843 100%)",
   dark: "linear-gradient(135deg, #1f2937 0%, #111827 100%)",
   custom: ${JSON.stringify(gradient)},
-}
-
-const LAUNCHER_ICONS: Record<string, string> = {
-  chat: '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2Zm0 14H5.2L4 17.2V4h16v12Z"/><circle cx="8" cy="10" r="1.5"/><circle cx="12" cy="10" r="1.5"/><circle cx="16" cy="10" r="1.5"/></svg>',
-  whatsapp: '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M20.5 3.5A11.7 11.7 0 0 0 12.1 0C5.7 0 .5 5.2.5 11.6c0 2 .5 4 1.5 5.7L.4 23.9l6.8-1.8a11.6 11.6 0 0 0 4.9 1.1h.1c6.4 0 11.6-5.2 11.6-11.6 0-3.1-1.2-6-3.3-8.1Zm-8.4 17.7h-.1c-1.5 0-3-.4-4.3-1.1l-.3-.2-4 1 1.1-3.9-.2-.3a9.6 9.6 0 0 1-1.5-5.1C2.8 6.3 7 2 12.2 2c2.5 0 4.9 1 6.7 2.8 1.8 1.8 2.8 4.2 2.8 6.7 0 5.3-4.3 9.7-9.6 9.7Zm5.3-7.2c-.3-.2-1.8-.9-2.1-1-.3-.1-.5-.2-.7.2-.2.3-.8 1-1 1.2-.2.2-.4.2-.7.1-.3-.2-1.3-.5-2.5-1.6-.9-.8-1.6-1.8-1.8-2.1-.2-.3 0-.5.2-.7.2-.2.3-.4.5-.6.2-.2.2-.3.3-.5.1-.2.1-.4 0-.6-.1-.2-.7-1.7-.9-2.3-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.2 1.2-1.2 2.9s1.2 3.3 1.4 3.5c.2.2 2.3 3.6 5.7 5 .8.3 1.4.5 1.9.6.8.3 1.5.2 2.1.1.7-.1 1.8-.7 2-1.4.3-.7.3-1.3.2-1.4-.1-.2-.3-.3-.6-.4Z"/></svg>',
-  messenger: '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 1C5.8 1 1 5.5 1 11.4c0 3.3 1.6 6.2 4.2 8.1V23l3.9-2.1c.9.2 1.9.3 2.9.3 6.2 0 11-4.5 11-10.4S18.2 1 12 1Zm1.1 13.9-2.8-3-5.5 3 6.1-6.5 2.8 3 5.4-3-6 6.5Z"/></svg>',
-  telegram: '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="m21.5 3.5-3.2 16.1c-.2 1.1-.8 1.3-1.7.8l-4.7-3.5-2.3 2.2c-.3.3-.5.5-1 .5l.3-4.8 8.7-7.9c.4-.4-.1-.6-.6-.2L6.3 13.7 1.7 12.2c-1-.3-1-1 .2-1.5L20 3.2c.8-.3 1.8.2 1.5.3Z"/></svg>',
-  instagram: '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5Zm0 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3H7Zm5 3.5A4.5 4.5 0 1 1 7.5 12 4.5 4.5 0 0 1 12 7.5Zm0 2A2.5 2.5 0 1 0 14.5 12 2.5 2.5 0 0 0 12 9.5ZM17.3 6.2a1.1 1.1 0 1 1-1.1 1.1 1.1 0 0 1 1.1-1.1Z"/></svg>',
-  phone: '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M6.7 2.2 9 1.7c.6-.1 1.1.2 1.3.7l1.1 2.7c.2.5.1 1-.3 1.4L9.7 7.9c1.1 2.2 2.7 3.9 4.9 4.9l1.4-1.4c.4-.4.9-.5 1.4-.3l2.7 1.1c.5.2.8.7.7 1.3l-.5 2.3c-.1.6-.7 1-1.3 1-8.1-.2-14.5-6.6-14.7-14.7 0-.6.4-1.2 1-1.3Z"/></svg>',
-  email: '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M3 4h18c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H3c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2Zm0 3.1v.3l9 5.6 9-5.6v-.3H3Zm18 2.6-8.5 5.3a1 1 0 0 1-1 0L3 9.7V18h18V9.7Z"/></svg>',
-  support: '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 2a9 9 0 0 0-9 9v4a3 3 0 0 0 3 3h1v-6H5v-1a7 7 0 1 1 14 0v1h-2v6h1a3 3 0 0 0 3-3v-4a9 9 0 0 0-9-9Zm-5 13v3H6a1 1 0 0 1-1-1v-2h2Zm12 2a1 1 0 0 1-1 1h-1v-3h2v2Z"/></svg>',
 }
 
 interface ChatBubblesProps {
@@ -377,31 +438,6 @@ function resolveBreakpointKey(el: HTMLElement | null): string {
     } catch {
         return "desktop"
     }
-}
-
-const BACKEND_ANALYTICS_URL = "https://app.framefic.com/chat-bubbles/api/analytics/track"
-
-function sendTrackingEvent(eventType: "view" | "click", channelId?: string) {
-    if (typeof window === "undefined") return
-    if (RenderTarget.current() === RenderTarget.canvas) return
-    try {
-        const primaryWidgetId = EMBEDDED_SITE_ID || (window.location && window.location.hostname ? window.location.hostname : "") || "chat-bubbles-default"
-        const domain = (window.location && window.location.hostname) ? window.location.hostname : ""
-        const payload = JSON.stringify({
-            widgetId: primaryWidgetId,
-            siteDomain: domain,
-            eventType: eventType,
-            channelId: channelId || "",
-        })
-        fetch(BACKEND_ANALYTICS_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: payload,
-            mode: "cors",
-            credentials: "omit",
-            keepalive: true,
-        }).catch(() => {})
-    } catch {}
 }
 
 export default function ChatBubbles(props: ChatBubblesProps) {
@@ -750,7 +786,6 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                 if (typeof w.gtag === "function") {
                     w.gtag("event", "chat_bubbles_view", { event_category: "Chat Bubbles", event_label: "widget_view" })
                 }
-                sendTrackingEvent("view")
             }
         } catch {}
     }, [isCanvas, enableAnalytics, isWidgetHidden, currentLocationPath])
@@ -1192,10 +1227,10 @@ export default function ChatBubbles(props: ChatBubblesProps) {
     const btnHeight = 58
     const isBottom = position.startsWith("bottom")
     const isRight = position.endsWith("right")
-    const headerGradient = modalTheme === "custom" && modalCustomGradient
-        ? modalCustomGradient
+    const safeModalGradient = sanitizeGradient(modalCustomGradient)
+    const headerGradient = modalTheme === "custom" && safeModalGradient
+        ? safeModalGradient
         : (GRADIENTS[modalTheme] || GRADIENTS.whatsapp)
-    const activeLauncherIconSvg = LAUNCHER_ICONS[launcherIcon] || LAUNCHER_ICONS.chat
 
     const btnAnimation = animation === "bounce"
         ? "cfBounce 1.6s ease infinite"
@@ -2157,14 +2192,9 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                     aria-label={ariaLabel}
                     aria-expanded={isOpen}
                 >
-                    <div
-                        className={"cf-icon-rotator" + (isOpen ? " is-open" : "")}
-                        dangerouslySetInnerHTML={{
-                            __html: isOpen
-                                ? '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'
-                                : (isLocked ? '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' : activeLauncherIconSvg),
-                        }}
-                    />
+                    <div className={"cf-icon-rotator" + (isOpen ? " is-open" : "")}>
+                        {renderLauncherIcon(launcherIcon, isOpen, isLocked)}
+                    </div>
                     {hasPillLabel ? (
                         <span className="cf-pill-text">
                             {isOpen ? "Close" : launcherText}
@@ -2335,8 +2365,9 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                                                 <span
                                                     className={"cf-canvas-agent-av-badge" + (isOffline ? " offline" : "")}
                                                     style={isOffline ? { background: "#6b7280" } : agentBadgeBgStyle}
-                                                    dangerouslySetInnerHTML={{ __html: ICONS[agent.channelId] || "" }}
-                                                />
+                                                >
+                                                    {renderChannelIcon(agent.channelId, 11)}
+                                                </span>
                                             </div>
                                             <div className="cf-canvas-agent-info">
                                                 <div className="cf-canvas-agent-name-row">
@@ -2425,7 +2456,6 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                                                         agentName: selectedAgent.name,
                                                     }
                                                 }))
-                                                sendTrackingEvent("click", selectedAgent.channelId)
                                             } catch {}
                                         }
                                         if (closeAfterClick) {
@@ -2491,7 +2521,6 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                                                         (window as any).gtag("event", "chat_bubbles_click", { channel: channel.id, channel_label: channel.label })
                                                     }
                                                     window.dispatchEvent(new CustomEvent("chat_bubbles_interaction", { detail: { channel: channel.id, channelLabel: channel.label } }))
-                                                    sendTrackingEvent("click", channel.id)
                                                 } catch {}
                                             }
                                             if (closeAfterClick) setIsOpen(false)
@@ -2499,10 +2528,9 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                                         className="cf-channel-btn"
                                         style={channelBtnStyle}
                                     >
-                                        <div
-                                            className="cf-canvas-icon-inner"
-                                            dangerouslySetInnerHTML={{ __html: ICONS[channel.id] || "" }}
-                                        />
+                                        <div className="cf-canvas-icon-inner">
+                                            {renderChannelIcon(channel.id, 22)}
+                                        </div>
                                     </a>
                                     {showLabels ? (
                                         <span className="cf-canvas-channel-label">

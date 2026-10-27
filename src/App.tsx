@@ -26,7 +26,7 @@ import { FrameficCard } from "./ui/components/FrameficCard"
 import { CustomColorPicker } from "./ui/components/CustomColorPicker"
 import { GradientColorPicker } from "./ui/components/GradientColorPicker"
 import { SVG_AVATAR_PRESETS } from "./core/avatars"
-import { ICONS } from "./widget/icons"
+import { renderChannelSvg } from "./widget/icons"
 import { sanitizeAgent, sanitizeAvatarUrl, sanitizeChannel, sanitizeMultilineText, sanitizeText } from "./core/sanitize"
 import {
     IconCamera,
@@ -1071,10 +1071,9 @@ export function App() {
                                                                     : undefined
                                                             }
                                                         >
-                                                            <span
-                                                                className={"cf-channel-icon-badge " + chClass}
-                                                                dangerouslySetInnerHTML={{ __html: ICONS[channel.id] || "" }}
-                                                            />
+                                                            <span className={"cf-channel-icon-badge " + chClass}>
+                                                                {renderChannelSvg(channel.id, 18)}
+                                                            </span>
                                                             <div className="cf-channel-meta">
                                                                 <div className="cf-channel-meta-title">
                                                                     {channel.id === "custom" ? (channel.label.trim() || "Custom") : channel.label}
