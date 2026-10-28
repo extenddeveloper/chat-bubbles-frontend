@@ -144,42 +144,6 @@ export const verifyAuthOtp = async ({
     return data
 }
 
-export const register = async (userData: {
-    username: string
-    email: string
-    password?: string | null
-    siteId?: string | null
-}): Promise<any> => {
-    return authFetch("/api/auth/register", {
-        method: "POST",
-        body: JSON.stringify(userData),
-    })
-}
-
-export const verifySignup = async (email: string, code: string): Promise<{ token: string; user: AuthUser }> => {
-    const data = await authFetch("/api/auth/verify-signup", {
-        method: "POST",
-        body: JSON.stringify({ email, code }),
-    })
-    if (data.token && data.user) {
-        setAuthData(data.token, data.user)
-        markHasAccount()
-    }
-    return data
-}
-
-export const login = async (credentials: { email: string; password?: string | null }): Promise<{ token: string; user: AuthUser }> => {
-    const data = await authFetch("/api/auth/login", {
-        method: "POST",
-        body: JSON.stringify(credentials),
-    })
-    if (data.token && data.user) {
-        setAuthData(data.token, data.user)
-        markHasAccount()
-    }
-    return data
-}
-
 export const fetchCurrentUser = async (): Promise<AuthUser | null> => {
     try {
         const data = await authFetch("/api/auth/me")
@@ -197,51 +161,10 @@ export const fetchCurrentUser = async (): Promise<AuthUser | null> => {
     }
 }
 
-export const forgotPassword = async (email: string): Promise<any> => {
-    return authFetch("/api/auth/forgot-password", {
-        method: "POST",
-        body: JSON.stringify({ email }),
-    })
-}
-
-export const verifyResetCode = async (email: string, code: string): Promise<any> => {
-    return authFetch("/api/auth/verify-reset-code", {
-        method: "POST",
-        body: JSON.stringify({ email, code }),
-    })
-}
-
-export const resetPassword = async (credentials: { email: string; code: string; password: string }): Promise<any> => {
-    return authFetch("/api/auth/reset-password", {
-        method: "POST",
-        body: JSON.stringify(credentials),
-    })
-}
-
-export const checkAccountExists = async (email: string): Promise<{ exists: boolean }> => {
-    try {
-        return await authFetch(`/api/auth/account-exists?email=${encodeURIComponent(email)}`)
-    } catch {
-        return { exists: false }
-    }
-}
-
 export const fetchSocialAuthStatus = async (sessionId: string): Promise<{ status: string; token?: string; user?: AuthUser }> => {
     try {
         return await authFetch(`/api/auth/social-status?sessionId=${encodeURIComponent(sessionId)}`)
     } catch {
         return { status: "pending" }
     }
-}
-
-export const verifySocialAuthCode = async (code: string): Promise<{ token: string; user: AuthUser }> => {
-    const data = await authFetch("/api/auth/social-verify-code", {
-        method: "POST",
-        body: JSON.stringify({ code }),
-    })
-    if (data.token && data.user) {
-        setAuthData(data.token, data.user)
-        markHasAccount()
-    }
-    return data
 }

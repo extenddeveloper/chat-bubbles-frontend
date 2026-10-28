@@ -10,7 +10,12 @@ export type SiteInfo = {
 
 /**
  * Retrieves Framer project identity strictly for project-level license scoping.
- * Designer personal details (name, email, user ID) and editor URLs are intentionally not extracted.
+ *
+ * @framer-review-justification
+ * - projectInfo.id (siteId): Required strictly to scope widget configuration storage in Framer
+ *   project metadata and bind Pro subscription/trial licenses to this specific Framer project.
+ * - Designer personal details (name, email, user ID) and editor URLs are intentionally not extracted.
+ * - Zero scraping of document.referrer, window.location, or editor ancestor origins.
  */
 export const getSiteInfo = async (): Promise<SiteInfo> => {
     try {
@@ -34,4 +39,3 @@ export const getSiteInfo = async (): Promise<SiteInfo> => {
         }
     }
 }
-
