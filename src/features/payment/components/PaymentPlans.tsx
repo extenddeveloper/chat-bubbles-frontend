@@ -182,7 +182,7 @@ export const PaymentPlans: FC<PaymentPlansProps> = ({
             }
             disabled={isLtDisabled}
             aria-busy={isLtProcessing}
-            className={`plan-action-btn primary-cta${isLtProcessing ? " loading" : ""}${isLtCurrentPlan ? " current" : ""}`}
+            className={`plan-action-btn subscription-action-btn${isLtProcessing ? " loading" : ""}${isLtCurrentPlan ? " current" : ""}`}
           >
             {isLtCurrentPlan
               ? "Current Plan"

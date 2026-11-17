@@ -322,23 +322,20 @@
   box-sizing: border-box;
 }
 
-/* Lifetime / Primary Plan Button (.plan-action-btn.primary-cta) */
-.framefic-plan-card .plan-action-btn.primary-cta,
-.framefic-plan-card.lifetime .plan-action-btn {
+/* Primary Plan Button (.plan-action-btn.primary-cta) */
+.framefic-plan-card .plan-action-btn.primary-cta {
   background: var(--cf-primary-cta-bg) !important;
   color: var(--cf-primary-cta-color) !important;
   box-shadow: var(--cf-primary-cta-shadow);
 }
 
-.framefic-plan-card .plan-action-btn.primary-cta:hover:not(:disabled),
-.framefic-plan-card.lifetime .plan-action-btn:hover:not(:disabled) {
+.framefic-plan-card .plan-action-btn.primary-cta:hover:not(:disabled) {
   background: var(--cf-primary-cta-bg-hover) !important;
   box-shadow: var(--cf-primary-cta-shadow-hover);
   transform: translateY(-1px);
 }
 
-.framefic-plan-card .plan-action-btn.primary-cta:active:not(:disabled),
-.framefic-plan-card.lifetime .plan-action-btn:active:not(:disabled) {
+.framefic-plan-card .plan-action-btn.primary-cta:active:not(:disabled) {
   background: var(--cf-primary-cta-bg-active) !important;
   transform: scale(0.985);
 }
