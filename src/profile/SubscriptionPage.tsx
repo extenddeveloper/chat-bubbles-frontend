@@ -6,6 +6,9 @@ import {
   cancelSubscription,
   createBillingPortalSession,
   changeSubscriptionPlan,
+  fetchPlans,
+  getCachedPlans,
+  type StripePlans,
 } from "../features/payment/services/paymentService"
 
 export type SubscriptionPageProps = {
@@ -15,7 +18,7 @@ export type SubscriptionPageProps = {
   isCreatingPayment: boolean
   payingPlan: string | null
   lifetimeAvailability: any
-  onPay: (e: any, planKey: string) => void
+  onPay: (e: any, planKey: string, couponCode?: string | null) => void
   onRefreshSubscription: () => Promise<boolean>
   notify: (payload: { type: "Success" | "Error"; message: string }) => void | Promise<void>
   defaultShowPlans?: number
@@ -33,6 +36,7 @@ export function SubscriptionPage({
   notify,
   defaultShowPlans = 0,
 }: SubscriptionPageProps) {
+  const [plans, setPlans] = useState<StripePlans | null>(getCachedPlans())
   const [isLoadingBillingPortal, setIsLoadingBillingPortal] = useState<boolean>(false)
   const [isCancellingSubscription, setIsCancellingSubscription] = useState<boolean>(false)
   const [isChangingPlan, setIsChangingPlan] = useState<boolean>(false)
@@ -42,6 +46,29 @@ export function SubscriptionPage({
   const [upgradePreviewPlan, setUpgradePreviewPlan] = useState<string | null>(null)
   const [activeCancelStep, setActiveCancelStep] = useState<number | null>(null)
   const [cancelFeedback, setCancelFeedback] = useState<string>("")
+
+  useEffect(() => {
+    let isMounted = true
+    const abortCtrl = new AbortController()
+
+    async function loadPlans() {
+      try {
+        const fetched = await fetchPlans(abortCtrl.signal)
+        if (isMounted && fetched) {
+          setPlans(fetched)
+        }
+      } catch (e) {
+        console.warn("Failed to load plans in SubscriptionPage:", e)
+      }
+    }
+
+    void loadPlans()
+
+    return () => {
+      isMounted = false
+      abortCtrl.abort()
+    }
+  }, [])
 
   useEffect(() => {
     if (defaultShowPlans > 0) {
@@ -216,11 +243,12 @@ export function SubscriptionPage({
             isCreatingPayment={isCreatingPayment}
             payingPlan={payingPlan}
             lifetimeAvailability={lifetimeAvailability}
-            onPay={(e, planKey) => {
+            plans={plans}
+            onPay={(e, planKey, couponCode) => {
               if (hasSubscription && !isSubscriptionEnded && !planDetails?.isTrial && (planKey === "monthly" || planKey === "yearly" || planKey === "lifetime")) {
                 setUpgradePreviewPlan(planKey)
               } else {
-                onPay(e, planKey)
+                onPay(e, planKey, couponCode)
               }
             }}
             currentPlan={currentPlan}

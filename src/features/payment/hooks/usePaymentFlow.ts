@@ -204,7 +204,7 @@ export function usePaymentFlow({ notify, userEmail: authUserEmail, userName: aut
     )
 
     const makePayment = useCallback(
-        async (event: any, plan: string) => {
+        async (event: any, plan: string, couponCode?: string | null) => {
             if (event && event.preventDefault) {
                 event.preventDefault()
             }
@@ -225,8 +225,13 @@ export function usePaymentFlow({ notify, userEmail: authUserEmail, userName: aut
                     plan,
                     siteInfo.siteId,
                     resolvedUserName,
-                    resolvedEmail
+                    resolvedEmail,
+                    couponCode
                 )
+
+                if (result.finalAmount != null) {
+                    setShowAmount(result.finalAmount / 100)
+                }
 
                 if (result.clientSecret) {
                     setClientSecret(result.clientSecret)

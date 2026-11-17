@@ -49,12 +49,28 @@ export const createPaymentIntent = async (
     plan: string,
     siteId: string,
     userName?: string | null,
-    userEmail?: string | null
-): Promise<{ clientSecret?: string; subscriptionId?: string | null; url?: string; publishableKey?: string }> => {
+    userEmail?: string | null,
+    couponCode?: string | null
+): Promise<{
+    clientSecret?: string
+    subscriptionId?: string | null
+    url?: string
+    publishableKey?: string
+    finalAmount?: number
+    originalAmount?: number
+    couponApplied?: boolean
+    couponCode?: string | null
+}> => {
     return requestApi("/api/create-payment-intent", "Payment creation failed", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan, siteId, userName, userEmail }),
+        body: JSON.stringify({
+            plan,
+            siteId,
+            userName,
+            userEmail,
+            couponCode: couponCode || undefined,
+        }),
     })
 }
 
@@ -155,4 +171,148 @@ export const trackPaymentCompletion = async (
     } catch {
         return null
     }
+}
+
+// ────────────────────────────────────────────────────────────
+//  Dynamic Announcement Configuration
+// ────────────────────────────────────────────────────────────
+export interface AnnouncementConfig {
+    enabled: boolean
+    campaignId: string
+    title: string
+    subtitle: string
+    buttonText: string
+    couponCode?: string | null
+    countdownEnabled: boolean
+    durationMinutes: number
+    countdownVisibleMinutes: number
+    linkUrl: string
+    action: "modal" | "link" | "upgrade" | "navigate"
+    icon: string
+    showTo: "free" | "all"
+}
+
+export const DEFAULT_ANNOUNCEMENT: AnnouncementConfig = {
+    enabled: true,
+    campaignId: "bfcm26",
+    title: "Black Friday Offer",
+    subtitle: "Get 50% Off Plan.",
+    buttonText: "Get Now",
+    couponCode: "60LTDBFCM26",
+    countdownEnabled: true,
+    durationMinutes: 3,
+    countdownVisibleMinutes: 3,
+    linkUrl: "",
+    action: "modal",
+    icon: "bell-ring",
+    showTo: "free",
+}
+
+let cachedAnnouncementConfig: AnnouncementConfig | null = null
+let announcementFetchInFlight: Promise<AnnouncementConfig> | null = null
+
+export const getCachedAnnouncementConfig = (): AnnouncementConfig | null => cachedAnnouncementConfig
+
+export const fetchAnnouncementConfig = async (
+    _apiUrl?: string,
+    signal?: AbortSignal
+): Promise<AnnouncementConfig> => {
+    if (cachedAnnouncementConfig) return cachedAnnouncementConfig
+    if (announcementFetchInFlight) return announcementFetchInFlight
+
+    announcementFetchInFlight = (async () => {
+        try {
+            const data = await requestApi("/api/announcement", "Failed to load announcement", { signal })
+            if (data && typeof data === "object") {
+                cachedAnnouncementConfig = {
+                    enabled: Boolean(data.enabled),
+                    campaignId: String(data.campaignId || "bfcm26"),
+                    title: String(data.title || "Black Friday Offer"),
+                    subtitle: String(data.subtitle || "Get 50% Off Plan."),
+                    buttonText: String(data.buttonText || "Get Now"),
+                    couponCode: data.couponCode ? String(data.couponCode) : null,
+                    countdownEnabled: Boolean(data.countdownEnabled),
+                    durationMinutes: Number(data.durationMinutes) || 3,
+                    countdownVisibleMinutes: Number(data.countdownVisibleMinutes) || 3,
+                    linkUrl: String(data.linkUrl || ""),
+                    action: (data.action as any) || "modal",
+                    icon: String(data.icon || "bell-ring"),
+                    showTo: (data.showTo as any) || "free",
+                }
+                return cachedAnnouncementConfig
+            }
+            return DEFAULT_ANNOUNCEMENT
+        } catch {
+            return DEFAULT_ANNOUNCEMENT
+        } finally {
+            announcementFetchInFlight = null
+        }
+    })()
+
+    return announcementFetchInFlight
+}
+
+// ────────────────────────────────────────────────────────────
+//  Dynamic Plans Catalog
+// ────────────────────────────────────────────────────────────
+export type PaidPlan = "monthly" | "yearly" | "lifetime"
+
+export interface PlanDiscountInfo {
+    code: string
+    type: "percentage" | "flat"
+    amount: number
+    currencyCode?: string | null
+    formattedDiscount: string
+    discountedAmount: number
+    discountedFormattedPrice: string
+    couponId?: string | null
+}
+
+export interface StripePlan {
+    configured: boolean
+    enabled?: boolean
+    amount: number
+    currency: string
+    label: string
+    interval?: "month" | "year" | null
+    formattedPrice: string
+    discount?: PlanDiscountInfo | null
+}
+
+export type StripePlans = Partial<Record<PaidPlan, StripePlan>>
+
+let cachedPlans: StripePlans | null = null
+let plansFetchInFlight: Promise<StripePlans> | null = null
+
+export const getCachedPlans = (): StripePlans | null => cachedPlans
+
+export const fetchPlans = async (signal?: AbortSignal): Promise<StripePlans> => {
+    if (cachedPlans) return cachedPlans
+    if (plansFetchInFlight) return plansFetchInFlight
+
+    plansFetchInFlight = (async () => {
+        try {
+            const data = await requestApi("/api/plans", "Failed to fetch plans", { signal })
+            const plans = data?.plans as StripePlans | undefined
+            if (plans && typeof plans === "object") {
+                const validPlans: StripePlans = {}
+                for (const key of ["monthly", "yearly", "lifetime"] as const) {
+                    const p = plans[key]
+                    if (p && typeof p === "object") {
+                        validPlans[key] = p
+                    }
+                }
+                cachedPlans = validPlans
+                return validPlans
+            }
+            return {}
+        } catch (err) {
+            console.warn("Failed to fetch plans catalog:", err)
+            return {}
+        } finally {
+            plansFetchInFlight = null
+        }
+    })()
+
+    return plansFetchInFlight
 }

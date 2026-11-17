@@ -9,6 +9,7 @@ import { Field } from "./ui/components/Field"
 import { Section } from "./ui/components/Section"
 import { Switch } from "./ui/components/Switch"
 import { HeroCard } from "./ui/components/HeroCard"
+import { AnnouncementBanner } from "./ui/components/AnnouncementBanner"
 import { HelpRow } from "./ui/components/HelpRow"
 import { ProfilePage } from "./profile/ProfilePage"
 import { SubscriptionPage } from "./profile/SubscriptionPage"
@@ -380,13 +381,13 @@ export function App() {
     )
 
     const handlePay = useCallback(
-        (event: any, planId: string) => {
+        (event: any, planId: string, couponCode?: string | null) => {
             if (!auth.isLoggedIn) {
                 setPendingPaymentPlan(planId)
                 auth.openAuthModal("register")
                 return
             }
-            void paymentFlow.makePayment(event, planId)
+            void paymentFlow.makePayment(event, planId, couponCode)
         },
         [auth, paymentFlow]
     )
@@ -938,6 +939,22 @@ export function App() {
                         {/* HOME TAB */}
                         {tab === "home" && (
                             <>
+                                <AnnouncementBanner
+                                    isLoggedIn={auth.isLoggedIn}
+                                    isPaidUser={paymentFlow.isPaid && !isTrialActive}
+                                    hasActiveTrial={isTrialActive}
+                                    user={auth.user}
+                                    trialEndTimestamp={
+                                        paymentFlow.planDetails?.expiresAt
+                                            ? new Date(paymentFlow.planDetails.expiresAt).getTime()
+                                            : null
+                                    }
+                                    onUpgrade={() => {
+                                        setForceShowPlans((prev) => prev + 1)
+                                        setIsProfileOpen(true)
+                                        setProfileView("subscription")
+                                    }}
+                                />
                                 <HeroCard
                                     badgeLabel="Chat Widget"
                                     badgeType="brand"

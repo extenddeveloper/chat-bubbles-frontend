@@ -1,0 +1,299 @@
+/* ────────────────────────────────────────────────────────────
+   Promotional Announcement Banner (Black Friday / Promo Card)
+   Design: Brand Blue #5271FF, white text, 3D gift box, dark pill CTA
+   ──────────────────────────────────────────────────────────── */
+
+.cf-promo-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #5271FF;
+  background-image: radial-gradient(circle at 75% 30%, rgba(255, 255, 255, 0.16) 0%, rgba(82, 113, 255, 0) 65%);
+  border-radius: 16px;
+  padding: 16px 14px 16px 18px;
+  overflow: hidden;
+  box-shadow: 0 8px 22px -4px rgba(82, 113, 255, 0.38), 0 3px 8px -2px rgba(82, 113, 255, 0.2);
+  margin-top: 4px;
+  margin-bottom: 8px;
+  user-select: none;
+}
+
+/* Subtle decorative concentric background curves */
+.cf-promo-bg-shapes {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Close button at top-right */
+.cf-promo-close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  z-index: 10;
+  padding: 0;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  outline: none;
+}
+
+.cf-promo-close-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.cf-promo-close-btn:focus-visible {
+  box-shadow: 0 0 0 2px #ffffff;
+}
+
+/* Left Content Column */
+.cf-promo-content {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  flex: 1;
+  min-width: 0;
+  padding-right: 8px;
+}
+
+.cf-promo-countdown {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: #ffffff;
+  margin-bottom: 4px;
+  letter-spacing: -0.01em;
+}
+
+.cf-promo-title {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #ffffff;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.02em;
+  word-break: break-word;
+}
+
+.cf-promo-subtitle {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.95);
+  margin: 0 0 12px 0;
+  word-break: break-word;
+}
+
+.cf-promo-action-row {
+  display: flex;
+  align-items: center;
+}
+
+/* Primary Dark Pill Button */
+.cf-promo-pill-btn {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  color: #ffffff;
+  background-color: #111317;
+  border: none;
+  border-radius: 9999px;
+  padding: 6px 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  cursor: pointer;
+  outline: none;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+  transition: background-color 0.18s ease, transform 0.1s ease, box-shadow 0.18s ease;
+  white-space: nowrap;
+}
+
+.cf-promo-pill-btn:hover {
+  background-color: #1c1e24;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.42);
+}
+
+.cf-promo-pill-btn:active {
+  transform: scale(0.97);
+}
+
+.cf-promo-pill-btn:focus-visible {
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #111317;
+}
+
+.cf-promo-pill-btn--action {
+  background-color: #111317;
+}
+
+.cf-promo-pill-btn--action:hover {
+  background-color: #1c1e24;
+}
+
+.cf-promo-btn-text {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.cf-promo-copy-icon {
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.cf-promo-btn-copied {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #4ade80;
+  font-weight: 700;
+}
+
+/* Right Art Column: 3D Box & Stars */
+.cf-promo-art {
+  position: relative;
+  z-index: 3;
+  width: 125px;
+  height: 125px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.cf-promo-box-img {
+  width: 125px;
+  height: 125px;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.2));
+}
+
+/* Hidden element for zero inline CSS clipboard fallback */
+.cf-promo-clipboard-hidden {
+  position: fixed;
+  opacity: 0;
+  pointer-events: none;
+  left: -9999px;
+  top: -9999px;
+}
+
+/* ────────────────────────────────────────────────────────────
+   Text-Free Shimmer Skeleton
+   Matches exact size and border-radius of the announcement card
+   ──────────────────────────────────────────────────────────── */
+
+.cf-promo-skeleton {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(82, 113, 255, 0.08);
+  border: 1px solid rgba(82, 113, 255, 0.2);
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin-top: 4px;
+  margin-bottom: 8px;
+  overflow: hidden;
+  height: 164px;
+}
+
+.cf-promo-skeleton::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0,
+    rgba(255, 255, 255, 0.08) 20%,
+    rgba(255, 255, 255, 0.16) 60%,
+    rgba(255, 255, 255, 0)
+  );
+  animation: cfShimmer 1.8s infinite;
+}
+
+@keyframes cfShimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cf-promo-skeleton::after {
+    animation: none !important;
+  }
+}
+
+.cf-promo-skeleton-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.cf-promo-skeleton-line {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+}
+
+.cf-promo-sk-timer {
+  width: 120px;
+  height: 14px;
+  margin-bottom: 2px;
+}
+
+.cf-promo-sk-title {
+  width: 180px;
+  height: 22px;
+}
+
+.cf-promo-sk-sub {
+  width: 150px;
+  height: 14px;
+  margin-bottom: 8px;
+}
+
+.cf-promo-skeleton-pill {
+  width: 110px;
+  height: 32px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.cf-promo-skeleton-art {
+  width: 110px;
+  height: 110px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
