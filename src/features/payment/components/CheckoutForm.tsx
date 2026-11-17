@@ -130,7 +130,7 @@ export function CheckoutForm({
         result.discountedAmount < 0 ||
         (!activatesAccess && result.discountedAmount / divisor >= originalAmount)
       ) {
-        throw new Error("This coupon is not valid for the selected plan. Please try another code.")
+        throw new Error(result?.message || "This coupon is not valid for the selected plan. Please try another code.")
       }
 
       if (!activatesAccess && !result.clientSecret) {
@@ -174,6 +174,43 @@ export function CheckoutForm({
           ? "This coupon is not valid for this account. It is limited to first-time customers; previous trials or payment attempts can affect eligibility."
           : err.message || "Invalid or expired coupon code. Please try another code."
       )
+
+      // Revert previous coupon discount and restore original price on invalid coupon attempt
+      const piId = clientSecret ? clientSecret.split("_secret_")[0] : null
+      const targetSubId = plan === "lifetime" ? piId : subscriptionId || piId
+
+      if (targetSubId && appliedCode) {
+        try {
+          const revertResult = await applyCouponToSubscription(targetSubId, "", piId, plan)
+          const restored =
+            typeof revertResult?.originalAmount === "number" ? revertResult.originalAmount / divisor : initialAmount
+          setShowAmount(restored)
+          setDraft((previous) => ({
+            ...previous,
+            appliedCode: "",
+            originalAmount: restored,
+            subscriptionId: revertResult?.subscriptionId || targetSubId,
+          }))
+          if (revertResult?.clientSecret && revertResult.clientSecret !== clientSecret) {
+            setClientSecret(revertResult.clientSecret)
+          } else if (elements) {
+            await elements.fetchUpdates().catch(() => {})
+          }
+        } catch {
+          setShowAmount(initialAmount)
+          setDraft((previous) => ({
+            ...previous,
+            appliedCode: "",
+            originalAmount: initialAmount,
+          }))
+        }
+      } else {
+        setShowAmount(initialAmount)
+        setDraft((previous) => ({
+          ...previous,
+          appliedCode: "",
+        }))
+      }
     } finally {
       busy.current = false
       setIsApplyingCoupon(false)
