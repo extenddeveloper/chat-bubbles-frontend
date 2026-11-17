@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react"
-import { framer, useIsAllowedTo } from "@framer/plugin"
+import { framer } from "@framer/plugin"
 import { cloneDefaultConfig, normalizeConfig } from "./core/config"
 import { loadConfig, saveConfig } from "./core/storage"
 import { insertCanvasComponent, syncCanvasInstance, setCanvasLicensingState, generateComponentCode } from "./framer/canvas-component-service"
@@ -242,8 +242,6 @@ export function App() {
         userEmail: auth.user?.email,
         userName: auth.user?.username,
     })
-
-    useIsAllowedTo("CodeFile.setFileContent")
 
     const [profileView, setProfileView] = useState<"profile" | "subscription">("profile")
     const [forceShowPlans, setForceShowPlans] = useState<number>(0)
