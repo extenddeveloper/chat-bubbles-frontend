@@ -113,7 +113,7 @@ export function CheckoutForm({
         return
       }
 
-      const result = await applyCouponToSubscription(targetSubId, trimmed, piId)
+      const result = await applyCouponToSubscription(targetSubId, trimmed, piId, plan)
       const originalAmount =
         typeof result?.originalAmount === "number" ? result.originalAmount / divisor : initialAmount
       const activatesAccess =
@@ -193,7 +193,7 @@ export function CheckoutForm({
         throw new Error("Cannot update this payment session.")
       }
 
-      const result = await applyCouponToSubscription(targetSubId, "", piId)
+      const result = await applyCouponToSubscription(targetSubId, "", piId, plan)
       if (result?.success === false) {
         throw new Error(result?.message || "Failed to remove coupon.")
       }
