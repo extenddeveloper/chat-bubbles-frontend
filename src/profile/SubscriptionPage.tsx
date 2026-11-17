@@ -223,7 +223,7 @@ export function SubscriptionPage({
     }
   }
 
-  const currentPlan = planDetails?.plan
+  const currentPlan = hasSubscription && planDetails?.plan ? planDetails.plan : null
   const isAnyActionLoading = isLoadingBillingPortal || isCancellingSubscription || isChangingPlan
 
   return (

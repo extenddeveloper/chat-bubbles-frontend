@@ -909,8 +909,8 @@ export function App() {
                     profileView === "subscription" ? (
                         <SubscriptionPage
                             onClose={() => setProfileView("profile")}
-                            hasSubscription={paymentFlow.isPaid}
-                            planDetails={paymentFlow.planDetails}
+                            hasSubscription={Boolean(auth.isLoggedIn && paymentFlow.isPaid)}
+                            planDetails={auth.isLoggedIn ? paymentFlow.planDetails : null}
                             isCreatingPayment={paymentFlow.isCreatingPayment}
                             payingPlan={paymentFlow.payingPlan}
                             lifetimeAvailability={paymentFlow.lifetimeAvailability}
@@ -923,8 +923,8 @@ export function App() {
                         <ProfilePage
                             onBack={() => setIsProfileOpen(false)}
                             authUser={auth.user}
-                            planDetails={paymentFlow.planDetails}
-                            hasSubscription={paymentFlow.isPaid}
+                            planDetails={auth.isLoggedIn ? paymentFlow.planDetails : null}
+                            hasSubscription={Boolean(auth.isLoggedIn && paymentFlow.isPaid)}
                             theme={themePreference}
                             onSignIn={() => auth.openAuthModal("login")}
                             onSignUp={() => auth.openAuthModal("register")}

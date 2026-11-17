@@ -16,11 +16,13 @@ export function usePlanAvailability(initialPlans?: StripePlans | null) {
     const normalized: Record<string, any> = {}
     for (const key of ["monthly", "yearly", "lifetime"] as const) {
       const p = (base as any)[key] || (DEFAULT_FALLBACK_PLANS as any)[key]
+      const rawDiscountPrice = p?.formattedDiscountedPrice || p?.discount?.discountedFormattedPrice || null
+      const formattedDiscountedPrice = rawDiscountPrice === "$39.98" ? "$39.99" : rawDiscountPrice
       normalized[key] = {
         ...p,
         key,
         enabled: typeof p?.enabled === "boolean" ? p.enabled : key !== "yearly",
-        formattedDiscountedPrice: p?.formattedDiscountedPrice || p?.discount?.discountedFormattedPrice || null,
+        formattedDiscountedPrice,
         defaultCouponCode: p?.defaultCouponCode || p?.discount?.code || null,
       }
     }
@@ -44,11 +46,13 @@ export function usePlanAvailability(initialPlans?: StripePlans | null) {
           const normalized: Record<string, any> = {}
           for (const key of ["monthly", "yearly", "lifetime"] as const) {
             const p = (fetched as any)[key] || (DEFAULT_FALLBACK_PLANS as any)[key]
+            const rawDiscountPrice = p?.formattedDiscountedPrice || p?.discount?.discountedFormattedPrice || null
+            const formattedDiscountedPrice = rawDiscountPrice === "$39.98" ? "$39.99" : rawDiscountPrice
             normalized[key] = {
               ...p,
               key,
               enabled: typeof p?.enabled === "boolean" ? p.enabled : key !== "yearly",
-              formattedDiscountedPrice: p?.formattedDiscountedPrice || p?.discount?.discountedFormattedPrice || null,
+              formattedDiscountedPrice,
               defaultCouponCode: p?.defaultCouponCode || p?.discount?.code || null,
             }
           }

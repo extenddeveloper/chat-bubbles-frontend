@@ -69,11 +69,33 @@ export function usePaymentFlow({ notify, userEmail: authUserEmail, userName: aut
         }
     }, [])
 
+    // When logged out (no authUserEmail), reset all paid plan states immediately
+    useEffect(() => {
+        if (!authUserEmail) {
+            setIsPaid(false)
+            setCurrentPlan(null)
+            setPlanDetails(null)
+            setIsCheckingPayment(false)
+        }
+    }, [authUserEmail])
+
     const refreshSubscriptionStatus = useCallback(
         async (overrideEmail?: string | null): Promise<boolean> => {
             try {
                 const siteInfo = await getSiteInfo()
-                const resolvedEmail = overrideEmail || authUserEmail || siteInfo.userEmail
+                const resolvedEmail = overrideEmail || authUserEmail || null
+
+                if (!resolvedEmail) {
+                    setIsPaid(false)
+                    setCurrentPlan(null)
+                    setPlanDetails(null)
+                    setIsCheckingPayment(false)
+                    try {
+                        const availability = await checkLifetimeAvailability()
+                        setLifetimeAvailability(availability)
+                    } catch {}
+                    return false
+                }
 
                 // 2. Query backend for real status
                 const subStatus = await checkSubscriptionStatus(
