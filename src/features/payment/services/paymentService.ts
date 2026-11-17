@@ -52,14 +52,17 @@ export const createPaymentIntent = async (
     userEmail?: string | null,
     couponCode?: string | null
 ): Promise<{
-    clientSecret?: string
+    clientSecret?: string | null
     subscriptionId?: string | null
     url?: string
-    publishableKey?: string
+    publishableKey?: string | null
     finalAmount?: number
     originalAmount?: number
     couponApplied?: boolean
     couponCode?: string | null
+    isPaid?: boolean
+    status?: string
+    message?: string
 }> => {
     return requestApi("/api/create-payment-intent", "Payment creation failed", {
         method: "POST",

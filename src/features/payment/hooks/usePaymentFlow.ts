@@ -278,6 +278,21 @@ export function usePaymentFlow({ notify, userEmail: authUserEmail, userName: aut
                     setAppliedCouponCode(null)
                 }
 
+                if (
+                    result.isPaid === true ||
+                    result.status === "paid" ||
+                    result.status === "active" ||
+                    result.status === "trialing" ||
+                    (result.finalAmount === 0 && !result.clientSecret)
+                ) {
+                    void notify({
+                        type: "Success",
+                        message: plan === "lifetime" ? "Lifetime access is now active!" : "Subscription is now active!",
+                    })
+                    await handlePaymentSuccess()
+                    return
+                }
+
                 if (result.clientSecret) {
                     setClientSecret(result.clientSecret)
                     if (result.publishableKey) setPublishableKey(result.publishableKey)

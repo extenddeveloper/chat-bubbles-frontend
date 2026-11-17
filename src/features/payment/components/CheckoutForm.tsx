@@ -129,7 +129,8 @@ export function CheckoutForm({
         result.isPaid === true ||
         result.status === "paid" ||
         result.status === "active" ||
-        result.status === "trialing"
+        result.status === "trialing" ||
+        result.discountedAmount === 0
 
       if (!activatesAccess && !result.clientSecret) {
         throw new Error("Unable to apply this coupon. Please try again.")
