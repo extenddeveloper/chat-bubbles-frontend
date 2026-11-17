@@ -87,7 +87,7 @@ export function PaymentModal({
         subscriptionId: subscriptionId ?? null,
       })
     }
-  }, [isOpen, defaultEmail, defaultCouponCode, originalAmount, showAmount, subscriptionId])
+  }, [isOpen, defaultEmail, defaultCouponCode])
 
   // Detect Stripe loading failure or timeout
   useEffect(() => {

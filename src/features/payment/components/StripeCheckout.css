@@ -239,35 +239,59 @@ body[data-framer-theme="light"] .crestbar-checkout-page::-webkit-scrollbar-thumb
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 6px;
+  gap: 12px;
+  width: 100%;
+  margin-top: 8px;
+  box-sizing: border-box;
 }
 
 .crestbar-checkout-page .framefic-coupon-success {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   color: #12b76a;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
-  margin-top: 0;
+  line-height: 1.4;
+  white-space: nowrap;
 }
 
 .crestbar-checkout-page .framefic-coupon-remove-btn {
-  background: transparent;
-  border: 0;
-  color: #f04438;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(240, 68, 56, 0.12) !important;
+  border: 1px solid rgba(240, 68, 56, 0.28) !important;
+  color: #f04438 !important;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
+  font-family: inherit;
   cursor: pointer;
-  padding: 0 4px;
-  text-decoration: underline;
-  transition: opacity 0.15s ease;
+  padding: 3px 10px;
+  border-radius: 6px;
+  text-decoration: none !important;
+  line-height: 1.2;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  box-shadow: none !important;
 }
 
 .crestbar-checkout-page .framefic-coupon-remove-btn:hover:not(:disabled) {
-  opacity: 0.8;
+  background: rgba(240, 68, 56, 0.22) !important;
+  border-color: rgba(240, 68, 56, 0.45) !important;
+  color: #f04438 !important;
+  transform: translateY(-1px);
+}
+
+.crestbar-checkout-page .framefic-coupon-remove-btn:active:not(:disabled) {
+  background: rgba(240, 68, 56, 0.28) !important;
+  transform: scale(0.97);
 }
 
 .crestbar-checkout-page .framefic-coupon-remove-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
 }
 
 .crestbar-checkout-page .framefic-coupon-error {
