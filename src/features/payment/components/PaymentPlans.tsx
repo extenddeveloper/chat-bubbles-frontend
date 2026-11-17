@@ -1,7 +1,9 @@
+import "./PaymentLoading.css"
 import { useState, useEffect, type FC } from "react"
 import { Check } from "lucide-react"
 import { PLAN_FEATURES } from "../constants"
-import type { StripePlans, PaidPlan, PlanDiscountInfo } from "../services/paymentService"
+import { usePlanAvailability } from "../hooks/usePlanAvailability"
+import type { StripePlans, PlanDiscountInfo } from "../services/paymentService"
 
 export function formatDiscountBadge(discount?: PlanDiscountInfo | string | null): string {
   if (!discount) return ""
@@ -14,6 +16,41 @@ export function formatDiscountBadge(discount?: PlanDiscountInfo | string | null)
     .replace(/\bAUD\s*/gi, "AU$")
 }
 
+export function PricingSkeleton() {
+  return (
+    <div
+      className="framefic-plans-container pricing-skeleton beaf-plans-container beaf-plans-skeleton-wrapper"
+      role="status"
+      aria-label="Loading plans and pricing"
+      aria-busy="true"
+    >
+      <div className="pricing-skeleton-toggle beaf-skeleton-toggle-container">
+        <div className="beaf-skeleton-toggle-pill" />
+        <div className="beaf-skeleton-toggle-pill" />
+      </div>
+      {[0, 1].map((index) => (
+        <div
+          key={index}
+          className="framefic-plan-card beaf-plan-card pricing-skeleton-card beaf-skeleton-card"
+          aria-hidden="true"
+        >
+          <div className="plan-header beaf-skeleton-header">
+            <span className="pricing-skeleton-title beaf-skeleton-line beaf-skeleton-title" />
+            <span className="pricing-skeleton-price beaf-skeleton-line beaf-skeleton-price" />
+          </div>
+          <div className="plan-features beaf-skeleton-features">
+            {[0, 1, 2, 3].map((row) => (
+              <span key={row} className="pricing-skeleton-line beaf-skeleton-line beaf-skeleton-text-long" />
+            ))}
+          </div>
+          <span className="pricing-skeleton-button beaf-skeleton-btn" />
+        </div>
+      ))}
+    </div>
+  )
+}
+export const PaymentPlansSkeleton = PricingSkeleton
+
 export type PaymentPlansProps = {
   isCreatingPayment: boolean
   payingPlan: string | null
@@ -23,268 +60,106 @@ export type PaymentPlansProps = {
   plans?: StripePlans | null
 }
 
-export function PaymentPlansSkeleton() {
-  return (
-    <div className="framefic-plans-container beaf-plans-container beaf-plans-skeleton-wrapper" role="status" aria-label="Loading plans">
-      <div className="beaf-skeleton-toggle-container">
-        <div className="beaf-skeleton-toggle-pill" />
-        <div className="beaf-skeleton-toggle-pill" />
-      </div>
-
-      <div className="framefic-plan-card beaf-plan-card beaf-skeleton-card">
-        <div className="plan-header beaf-skeleton-header">
-          <div className="beaf-skeleton-line beaf-skeleton-title" />
-          <div className="beaf-skeleton-line beaf-skeleton-price" />
-        </div>
-
-        <div className="plan-features beaf-skeleton-features">
-          <div className="beaf-skeleton-feature-item">
-            <div className="beaf-skeleton-check" />
-            <div className="beaf-skeleton-line beaf-skeleton-text-long" />
-          </div>
-          <div className="beaf-skeleton-feature-item">
-            <div className="beaf-skeleton-check" />
-            <div className="beaf-skeleton-line beaf-skeleton-text-medium" />
-          </div>
-          <div className="beaf-skeleton-feature-item">
-            <div className="beaf-skeleton-check" />
-            <div className="beaf-skeleton-line beaf-skeleton-text-long" />
-          </div>
-        </div>
-
-        <div className="beaf-skeleton-btn" />
-      </div>
-
-      <div className="beaf-skeleton-divider">
-        <div className="beaf-skeleton-line beaf-skeleton-divider-pill" />
-      </div>
-
-      <div className="framefic-plan-card beaf-plan-card lifetime beaf-skeleton-card">
-        <div className="plan-header beaf-skeleton-header">
-          <div className="beaf-skeleton-title-group">
-            <div className="beaf-skeleton-line beaf-skeleton-title" />
-            <div className="beaf-skeleton-line beaf-skeleton-badge" />
-          </div>
-          <div className="beaf-skeleton-line beaf-skeleton-price" />
-        </div>
-
-        <div className="plan-features beaf-skeleton-features">
-          <div className="beaf-skeleton-feature-item">
-            <div className="beaf-skeleton-check" />
-            <div className="beaf-skeleton-line beaf-skeleton-text-short" />
-          </div>
-          <div className="beaf-skeleton-feature-item">
-            <div className="beaf-skeleton-check" />
-            <div className="beaf-skeleton-line beaf-skeleton-text-medium" />
-          </div>
-        </div>
-
-        <div className="beaf-skeleton-btn" />
-      </div>
-    </div>
-  )
-}
-
 export const PaymentPlans: FC<PaymentPlansProps> = ({
   isCreatingPayment,
   payingPlan,
   lifetimeAvailability,
   onPay,
   currentPlan,
-  plans = null,
+  plans: propPlans = null,
 }) => {
-  // Plan availability dynamically synced from backend
-  const isMonthlyAvailable = plans ? Boolean(plans.monthly?.configured && plans.monthly.enabled !== false) : true
-  const isYearlyAvailable = plans ? Boolean(plans.yearly?.configured && plans.yearly.enabled !== false) : true
-  const isLifetimeAvailable = plans ? Boolean(plans.lifetime?.configured && plans.lifetime.enabled !== false) : true
-
-  const hasRecurring = isMonthlyAvailable || isYearlyAvailable
-  const hasLifetime = isLifetimeAvailable
-  const showIntervalToggle = isMonthlyAvailable && isYearlyAvailable
-  const showDivider = hasRecurring && hasLifetime
-
-  const [activeInterval, setActiveInterval] = useState<"monthly" | "yearly">(() => {
-    if (!isMonthlyAvailable && isYearlyAvailable) return "yearly"
-    if (isMonthlyAvailable && !isYearlyAvailable) return "monthly"
-    return currentPlan === "yearly" ? "yearly" : "monthly"
-  })
+  const { enabled, plans, error, retry } = usePlanAvailability(propPlans)
+  const [preferredInterval, setActiveInterval] = useState<"monthly" | "yearly">(
+    currentPlan === "yearly" ? "yearly" : "monthly"
+  )
 
   useEffect(() => {
-    if (!isMonthlyAvailable && isYearlyAvailable) {
+    if (currentPlan === "yearly") {
       setActiveInterval("yearly")
-      return
-    }
-    if (isMonthlyAvailable && !isYearlyAvailable) {
-      setActiveInterval("monthly")
-      return
-    }
-    if (currentPlan === "yearly" && isYearlyAvailable) {
-      setActiveInterval("yearly")
-    } else if (currentPlan === "monthly" && isMonthlyAvailable) {
+    } else if (currentPlan === "monthly") {
       setActiveInterval("monthly")
     }
-  }, [currentPlan, isMonthlyAvailable, isYearlyAvailable])
+  }, [currentPlan])
 
-  // If plans prop is explicitly null (still loading), show skeleton
-  if (plans === null) {
-    return <PaymentPlansSkeleton />
+  if (!enabled || !plans) {
+    return error ? (
+      <div role="alert" className="framefic-plans-empty">
+        <p>{error}</p>
+        <button type="button" className="plan-action-btn primary-cta" onClick={retry}>
+          Retry
+        </button>
+      </div>
+    ) : (
+      <PricingSkeleton />
+    )
   }
 
-  const monthlyPlan = {
-    id: "monthly" as PaidPlan,
-    name: "Monthly Pro",
-    price: plans.monthly?.formattedPrice || "$4.99",
-    features: PLAN_FEATURES,
-  }
+  const activeInterval = enabled[preferredInterval] ? preferredInterval : enabled.monthly ? "monthly" : "yearly"
+  const savings =
+    enabled.monthly && enabled.yearly && plans.monthly?.currency === plans.yearly?.currency && (plans.monthly?.amount || 0) > 0
+      ? Math.round((1 - (plans.yearly?.amount || 0) / ((plans.monthly?.amount || 0) * 12)) * 100)
+      : 17
 
-  const yearlyPlan = {
-    id: "yearly" as PaidPlan,
-    name: "Yearly Pro",
-    price: plans.yearly?.formattedPrice || "$49.99",
-    features: [
-      ...PLAN_FEATURES,
-      "Save 17% with annual commitment",
-      "Priority feature requests",
-    ],
-  }
-
-  const lifetimePlan = {
-    id: "lifetime" as PaidPlan,
-    name: "Lifetime Access",
-    price: plans.lifetime?.formattedPrice || "$99.99",
-    features: [
-      "Pay once, chat forever",
-      ...PLAN_FEATURES,
-      "Lifetime updates for this project",
-      "Direct founder support",
-    ],
-  }
-
-  const resolvedInterval: "monthly" | "yearly" =
-    (!isMonthlyAvailable && isYearlyAvailable)
-      ? "yearly"
-      : (isMonthlyAvailable && !isYearlyAvailable)
-        ? "monthly"
-        : activeInterval
-
-  const subCard = resolvedInterval === "monthly" ? monthlyPlan : yearlyPlan
-  const isSubProcessing = isCreatingPayment && payingPlan === subCard.id
-  const isSubCurrentPlan = Boolean(currentPlan && subCard.id === currentPlan)
+  // Active subscription card details
+  const subCard = activeInterval === "monthly" ? plans.monthly : plans.yearly
+  const isSubProcessing = isCreatingPayment && payingPlan === subCard?.key
+  const isSubCurrentPlan = Boolean(currentPlan && subCard?.key === currentPlan)
   const isSubDowngradeDisabled =
-    (currentPlan === "yearly" && subCard.id === "monthly") ||
-    (currentPlan === "lifetime" && subCard.id !== "lifetime")
-  const isSubDisabled = !plans[subCard.id]?.configured || isCreatingPayment || isSubCurrentPlan || isSubDowngradeDisabled
+    (currentPlan === "yearly" && subCard?.key === "monthly") ||
+    (currentPlan === "lifetime" && subCard?.key !== "lifetime")
+  const isSubDisabled = isCreatingPayment || isSubCurrentPlan || isSubDowngradeDisabled
 
-  const isLtProcessing = isCreatingPayment && payingPlan === lifetimePlan.id
+  const availability = plans.lifetime?.lifetimeAvailability ?? lifetimeAvailability
+  const ltCard = plans.lifetime
+  const isLtProcessing = isCreatingPayment && payingPlan === ltCard?.key
+  const isLtSoldOut = Boolean(availability?.soldOut)
   const spotsRemaining =
-    lifetimeAvailability?.remaining !== undefined
-      ? lifetimeAvailability.remaining
-      : lifetimeAvailability?.spotsLeft !== undefined
-        ? lifetimeAvailability.spotsLeft
+    availability?.remaining !== undefined
+      ? availability.remaining
+      : availability?.spotsLeft !== undefined
+        ? availability.spotsLeft
         : null
-  const totalSpots = lifetimeAvailability?.total || lifetimeAvailability?.totalSpots || 20
-  const isLtSoldOut = spotsRemaining === 0 || Boolean(lifetimeAvailability?.soldOut)
-  const isLtCurrentPlan = Boolean(currentPlan && lifetimePlan.id === currentPlan)
-  const isLtDowngradeDisabled = currentPlan === "lifetime" && lifetimePlan.id !== "lifetime"
-  const isLtDisabled = !plans.lifetime?.configured || isCreatingPayment || isLtSoldOut || isLtCurrentPlan || isLtDowngradeDisabled
+  const totalSpots = availability?.total || availability?.totalSpots || 20
+  const isLtCurrentPlan = Boolean(currentPlan && ltCard?.key === currentPlan)
+  const isLtDowngradeDisabled = currentPlan === "lifetime" && ltCard?.key !== "lifetime"
+  const isLtDisabled = isCreatingPayment || isLtSoldOut || isLtCurrentPlan || isLtDowngradeDisabled
 
-  const lifetimeDiscount = plans.lifetime?.discount || null
+  const lifetimeDiscount = ltCard?.discount || null
+  const lifetimeDiscountBadge =
+    formatDiscountBadge(lifetimeDiscount) || (ltCard?.formattedDiscountedPrice ? "60% OFF" : "Best Deal")
 
   return (
     <div className="framefic-plans-container beaf-plans-container">
-      {/* Interval Toggle - only shown when both monthly and yearly are enabled */}
-      {showIntervalToggle && (
-        <div className="framefic-interval-toggle-container beaf-interval-toggle-container">
-          <button
-            type="button"
-            className={`framefic-interval-btn beaf-interval-btn${resolvedInterval === "monthly" ? " active" : ""}`}
-            onClick={() => setActiveInterval("monthly")}
-          >
-            Monthly
-          </button>
-          <button
-            type="button"
-            className={`framefic-interval-btn beaf-interval-btn${resolvedInterval === "yearly" ? " active" : ""}`}
-            onClick={() => setActiveInterval("yearly")}
-          >
-            <span>Yearly</span>
-            <span className="save-badge">Save 17%</span>
-          </button>
+      {!enabled.monthly && !enabled.yearly && !enabled.lifetime && (
+        <div className="framefic-plans-empty" role="status">
+          <p>Paid plans are currently unavailable. Please try again later.</p>
         </div>
       )}
 
-      {/* Subscription Card - rendered if monthly or yearly is available */}
-      {hasRecurring && (
-        <div className={`framefic-plan-card beaf-plan-card${isSubCurrentPlan ? " current" : ""}`}>
-          <div className="plan-header">
-            <span className="plan-name">
-              {subCard.id === "monthly" ? "Monthly" : "Yearly"}
-            </span>
-            <div className={`plan-price${!plans[subCard.id]?.formattedPrice ? " is-unavailable" : ""}`}>
-              {subCard.price}
-              {plans[subCard.id]?.formattedPrice && (
-                <span className="plan-suffix">/{subCard.id === "monthly" ? "mo" : "yr"}</span>
-              )}
-            </div>
-          </div>
-
-          <div className="plan-features">
-            {subCard.features.map((feature) => (
-              <div key={feature} className="feature-item">
-                <Check className="checkmark" size={14} strokeWidth={2.5} aria-hidden="true" />
-                <span>{feature.replace(/\.$/, "")}</span>
-              </div>
-            ))}
-          </div>
-
-          <button
-            type="button"
-            onClick={(e) => !isSubDisabled && onPay(e, subCard.id)}
-            disabled={isSubDisabled}
-            className={`plan-action-btn primary-cta${isSubProcessing ? " loading" : ""}${isSubCurrentPlan ? " current" : ""}`}
-          >
-            {isSubCurrentPlan
-              ? "Current Plan"
-              : isSubDowngradeDisabled
-                ? "Not Available"
-                : isSubProcessing
-                  ? "Loading..."
-                  : "Upgrade Subscription"}
-          </button>
-        </div>
-      )}
-
-      {/* Divider */}
-      {showDivider && <div className="framefic-plans-divider beaf-plans-divider">or, pay once</div>}
-
-      {/* Lifetime Card - rendered if lifetime plan is available */}
-      {hasLifetime && (
+      {/* Lifetime Card (Crestbar layout: Lifetime first as hero offer) */}
+      {enabled.lifetime && ltCard && (
         <div className={`framefic-plan-card beaf-plan-card lifetime${isLtCurrentPlan ? " current" : ""}`}>
           <div className="plan-header">
             <div className="lifetime-title-row">
               <span className="plan-name">Lifetime</span>
-              {lifetimeDiscount ? (
-                <span className="lifetime-auto-discount-badge">
-                  {formatDiscountBadge(lifetimeDiscount)}
-                </span>
-              ) : (
-                <span className="lifetime-save-badge">Best Deal</span>
-              )}
+              <span className={lifetimeDiscount ? "lifetime-auto-discount-badge" : "lifetime-save-badge"}>
+                {lifetimeDiscountBadge}
+              </span>
             </div>
-            <div className={`plan-price${!plans.lifetime?.formattedPrice ? " is-unavailable" : ""}`}>
-              {lifetimeDiscount ? (
+            <div className="plan-price">
+              {ltCard.formattedDiscountedPrice ? (
                 <div className="plan-discounted-price-container">
-                  <span className="plan-original-price-strikethrough">{lifetimePlan.price}</span>
-                  <span className="plan-discounted-price">{lifetimeDiscount.discountedFormattedPrice}</span>
+                  <del className="plan-original-price plan-original-price-strikethrough">{ltCard.formattedPrice}</del>
+                  <span className="plan-discounted-price">{ltCard.formattedDiscountedPrice}</span>
                 </div>
               ) : (
-                lifetimePlan.price
+                ltCard.formattedPrice
               )}
             </div>
           </div>
 
           <div className="plan-features">
-            {lifetimePlan.features.map((feature) => (
+            {PLAN_FEATURES.map((feature) => (
               <div key={feature} className="feature-item">
                 <Check className="checkmark" size={14} strokeWidth={2.5} aria-hidden="true" />
                 <span>{feature.replace(/\.$/, "")}</span>
@@ -294,18 +169,25 @@ export const PaymentPlans: FC<PaymentPlansProps> = ({
               <div className="feature-item spots-remaining">
                 <Check className="checkmark" size={14} strokeWidth={2.5} aria-hidden="true" />
                 <span>
-                  {isLtSoldOut
-                    ? "All spots taken!"
-                    : `${spotsRemaining}/${totalSpots} spots left`}
+                  {isLtSoldOut ? "All spots taken!" : `${spotsRemaining}/${totalSpots} spots left`}
                 </span>
               </div>
             )}
           </div>
 
+          {ltCard.defaultCouponCode && (
+            <p className="pricing-plan-description">
+              Coupon <strong>{ltCard.defaultCouponCode}</strong> applied automatically for eligible purchases.
+            </p>
+          )}
+
           <button
             type="button"
-            onClick={(e) => !isLtDisabled && onPay(e, lifetimePlan.id, lifetimeDiscount?.code || null)}
+            onClick={(e) =>
+              !isLtDisabled && onPay(e, ltCard.key, ltCard.defaultCouponCode || ltCard.discount?.code || null)
+            }
             disabled={isLtDisabled}
+            aria-busy={isLtProcessing}
             className={`plan-action-btn primary-cta${isLtProcessing ? " loading" : ""}${isLtCurrentPlan ? " current" : ""}`}
           >
             {isLtCurrentPlan
@@ -321,10 +203,78 @@ export const PaymentPlans: FC<PaymentPlansProps> = ({
         </div>
       )}
 
-      {/* Empty State when no plans are enabled */}
-      {!hasRecurring && !hasLifetime && (
-        <div className="framefic-plans-empty">
-          <p>Paid plans are currently unavailable. Please try again later.</p>
+      {/* Divider */}
+      {enabled.lifetime && (enabled.monthly || enabled.yearly) && (
+        <div className="framefic-plans-divider beaf-plans-divider">or, subscribe recurring</div>
+      )}
+
+      {/* Interval Toggle - only shown when both monthly and yearly are enabled */}
+      {enabled.monthly && enabled.yearly && (
+        <div className="framefic-interval-toggle-container beaf-interval-toggle-container">
+          <button
+            type="button"
+            className={`framefic-interval-btn beaf-interval-btn${activeInterval === "monthly" ? " active" : ""}`}
+            onClick={() => setActiveInterval("monthly")}
+          >
+            Monthly
+          </button>
+          <button
+            type="button"
+            className={`framefic-interval-btn beaf-interval-btn${activeInterval === "yearly" ? " active" : ""}`}
+            onClick={() => setActiveInterval("yearly")}
+          >
+            <span>Yearly</span>
+            <span className="save-badge">Save {savings}%</span>
+          </button>
+        </div>
+      )}
+
+      {/* Subscription Card - rendered if monthly or yearly is available */}
+      {(enabled.monthly || enabled.yearly) && subCard && (
+        <div className={`framefic-plan-card beaf-plan-card${isSubCurrentPlan ? " current" : ""}`}>
+          <div className="plan-header">
+            <span className="plan-name">{activeInterval === "monthly" ? "Monthly" : "Yearly"}</span>
+            <div className="plan-price">
+              {subCard.formattedDiscountedPrice && (
+                <del className="plan-original-price plan-original-price-strikethrough">{subCard.formattedPrice}</del>
+              )}
+              {subCard.formattedDiscountedPrice || subCard.formattedPrice}
+              <span className="plan-suffix">{activeInterval === "monthly" ? "/mo" : "/yr"}</span>
+            </div>
+          </div>
+
+          <div className="plan-features">
+            {PLAN_FEATURES.map((feature) => (
+              <div key={feature} className="feature-item">
+                <Check className="checkmark" size={14} strokeWidth={2.5} aria-hidden="true" />
+                <span>{feature.replace(/\.$/, "")}</span>
+              </div>
+            ))}
+          </div>
+
+          {subCard.defaultCouponCode && (
+            <p className="pricing-plan-description">
+              Coupon <strong>{subCard.defaultCouponCode}</strong> applied automatically for eligible purchases.
+            </p>
+          )}
+
+          <button
+            type="button"
+            onClick={(e) =>
+              !isSubDisabled && onPay(e, subCard.key, subCard.defaultCouponCode || subCard.discount?.code || null)
+            }
+            disabled={isSubDisabled}
+            aria-busy={isSubProcessing}
+            className={`plan-action-btn primary-cta${isSubProcessing ? " loading" : ""}${isSubCurrentPlan ? " current" : ""}`}
+          >
+            {isSubCurrentPlan
+              ? "Current Plan"
+              : isSubDowngradeDisabled
+                ? "Not Available"
+                : isSubProcessing
+                  ? "Loading..."
+                  : "Upgrade Subscription"}
+          </button>
         </div>
       )}
     </div>

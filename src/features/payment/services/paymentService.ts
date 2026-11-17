@@ -269,6 +269,7 @@ export interface PlanDiscountInfo {
 }
 
 export interface StripePlan {
+    key?: string
     configured: boolean
     enabled?: boolean
     amount: number
@@ -277,42 +278,113 @@ export interface StripePlan {
     interval?: "month" | "year" | null
     formattedPrice: string
     discount?: PlanDiscountInfo | null
+    formattedDiscountedPrice?: string | null
+    defaultCouponCode?: string | null
 }
 
 export type StripePlans = Partial<Record<PaidPlan, StripePlan>>
 
+export const DEFAULT_FALLBACK_PLANS: StripePlans = {
+    monthly: {
+        key: "monthly",
+        configured: true,
+        enabled: true,
+        amount: 4.99,
+        currency: "usd",
+        label: "Monthly Pro",
+        interval: "month",
+        formattedPrice: "$4.99",
+        discount: null,
+    },
+    yearly: {
+        key: "yearly",
+        configured: true,
+        enabled: false,
+        amount: 49.99,
+        currency: "usd",
+        label: "Yearly Pro",
+        interval: "year",
+        formattedPrice: "$49.99",
+        discount: null,
+    },
+    lifetime: {
+        key: "lifetime",
+        configured: true,
+        enabled: true,
+        amount: 99.99,
+        currency: "usd",
+        label: "Lifetime Access",
+        interval: null,
+        formattedPrice: "$99.99",
+        discount: {
+            code: "60LTDBFCM26",
+            type: "percentage",
+            amount: 60,
+            currencyCode: "usd",
+            formattedDiscount: "60% OFF",
+            discountedAmount: 39.98,
+            discountedFormattedPrice: "$39.98",
+            couponId: "Ylup0ipJ",
+        },
+        formattedDiscountedPrice: "$39.98",
+        defaultCouponCode: "60LTDBFCM26",
+    },
+}
+
 let cachedPlans: StripePlans | null = null
 let plansFetchInFlight: Promise<StripePlans> | null = null
 
-export const getCachedPlans = (): StripePlans | null => cachedPlans
+export const getCachedPlans = (): StripePlans => cachedPlans || DEFAULT_FALLBACK_PLANS
 
-export const fetchPlans = async (signal?: AbortSignal): Promise<StripePlans> => {
+export const fetchPlanPrices = async (signal?: AbortSignal): Promise<StripePlans> => {
     if (cachedPlans) return cachedPlans
     if (plansFetchInFlight) return plansFetchInFlight
 
     plansFetchInFlight = (async () => {
-        try {
-            const data = await requestApi("/api/plans", "Failed to fetch plans", { signal })
-            const plans = data?.plans as StripePlans | undefined
-            if (plans && typeof plans === "object") {
-                const validPlans: StripePlans = {}
-                for (const key of ["monthly", "yearly", "lifetime"] as const) {
-                    const p = plans[key]
-                    if (p && typeof p === "object") {
-                        validPlans[key] = p
+        const candidatePaths = [
+            "/api/plans",
+            "/plans",
+            "/chat-bubbles/api/plans",
+            "/api/plan-availability",
+        ]
+
+        for (const path of candidatePaths) {
+            try {
+                const data = await requestApi(path, "Failed to fetch plans", { signal })
+                const plans = (data?.plans || data) as StripePlans | undefined
+                if (plans && typeof plans === "object" && (plans.monthly || plans.lifetime)) {
+                    const validPlans: StripePlans = {}
+                    for (const key of ["monthly", "yearly", "lifetime"] as const) {
+                        const p = plans[key]
+                        if (p && typeof p === "object") {
+                            validPlans[key] = {
+                                ...p,
+                                key,
+                                configured: p.configured !== false,
+                                enabled: typeof p.enabled === "boolean" ? p.enabled : key !== "yearly",
+                                formattedDiscountedPrice: p.formattedDiscountedPrice || p.discount?.discountedFormattedPrice || null,
+                                defaultCouponCode: p.defaultCouponCode || p.discount?.code || null,
+                            }
+                        } else if (DEFAULT_FALLBACK_PLANS[key]) {
+                            validPlans[key] = { ...DEFAULT_FALLBACK_PLANS[key] }
+                        }
                     }
+                    cachedPlans = validPlans
+                    return validPlans
                 }
-                cachedPlans = validPlans
-                return validPlans
+            } catch {
+                // Try next candidate
             }
-            return {}
-        } catch (err) {
-            console.warn("Failed to fetch plans catalog:", err)
-            return {}
-        } finally {
-            plansFetchInFlight = null
         }
-    })()
+
+        return cachedPlans || DEFAULT_FALLBACK_PLANS
+    })().finally(() => {
+        plansFetchInFlight = null
+    })
 
     return plansFetchInFlight
+}
+
+export const fetchPlans = async (signal?: AbortSignal): Promise<StripePlans> => {
+    return fetchPlanPrices(signal)
 }

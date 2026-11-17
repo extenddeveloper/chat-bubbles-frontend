@@ -130,7 +130,7 @@ function renderChannelIcon(channelId: string, size: number = 22): React.ReactEle
             height={size}
             fill="currentColor"
             aria-hidden="true"
-            style={{ width: size, height: size, display: "block" }}
+            className="cf-channel-icon-svg"
         >
             <path fill="currentColor" d={d} />
         </svg>
@@ -1512,54 +1512,17 @@ export default function ChatBubbles(props: ChatBubblesProps) {
 
     if (isLocked) {
         return (
-            <div
-                className="cf-canvas-pro-locked-container"
-                style={{
-                    position: "relative",
-                    width: "100%",
-                    minHeight: 140,
-                    borderRadius: 16,
-                    background: "rgba(10, 10, 12, 0.8)",
-                    backdropFilter: "blur(8px)",
-                    WebkitBackdropFilter: "blur(8px)",
-                    border: "1px dashed rgba(255, 255, 255, 0.25)",
-                    boxSizing: "border-box",
-                    overflow: "hidden",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: "24px 20px",
-                    textAlign: "center",
-                    color: "#ffffff",
-                    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-                    userSelect: "none",
-                }}
-            >
-                <div
-                    style={{
-                        background: "rgba(255, 255, 255, 0.12)",
-                        border: "1px solid rgba(255, 255, 255, 0.2)",
-                        borderRadius: "50%",
-                        width: 48,
-                        height: 48,
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        marginBottom: 12,
-                        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.3)",
-                        flexShrink: 0,
-                    }}
-                >
+            <div className="cf-canvas-pro-locked-container">
+                <div className="cf-canvas-pro-locked-icon-wrapper">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#708AFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                         <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                     </svg>
                 </div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#ffffff", letterSpacing: "0.2px", marginBottom: 6 }}>
+                <div className="cf-canvas-pro-locked-title">
                     PRO Feature Locked
                 </div>
-                <div style={{ fontSize: 12, opacity: 0.85, color: "#94a3b8", lineHeight: 1.5, maxWidth: 280 }}>
+                <div className="cf-canvas-pro-locked-desc">
                     Upgrade to the PRO plan in the Chat Bubbles plugin to activate this widget.
                 </div>
             </div>

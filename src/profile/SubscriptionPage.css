@@ -386,12 +386,27 @@
   font-family: var(--font-sans, "Inter", sans-serif);
 }
 
-.plan-original-price-strikethrough {
+.plan-original-price-strikethrough,
+del.plan-original-price {
   font-size: 16px;
   font-weight: 500;
   color: var(--framefic-text-muted, #bfbfbf);
   text-decoration: line-through;
   opacity: 0.75;
+  margin-right: 4px;
+}
+
+.pricing-plan-description {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--framefic-text-muted, #9ca3af);
+  text-align: left;
+}
+
+.pricing-plan-description strong {
+  color: var(--framefic-color-1, #6366f1);
+  font-weight: 600;
 }
 
 .plan-discounted-price {
