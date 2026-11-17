@@ -53,7 +53,7 @@ try {
         (framer as any).showUncheckedPermissionToasts = false
     }
     if (typeof (framer as any).isAllowedTo === "function") {
-        ;(framer as any).isAllowedTo(
+        ; (framer as any).isAllowedTo(
             "CodeFile.setFileContent",
             "createCodeFile",
             "setAttributes",
@@ -64,15 +64,16 @@ try {
             "getPluginData"
         )
     }
-} catch {}
+} catch { }
 
 try {
     framer.showUI({
         position: "top right",
-        width: 430,
-        height: 760,
+        width: 390,
+        minHeight: 600,
+        resizable: 'height',
     })
-} catch {}
+} catch { }
 
 const root = document.getElementById("root")
 if (!root) throw new Error("Root element not found")

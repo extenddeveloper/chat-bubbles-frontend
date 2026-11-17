@@ -941,11 +941,11 @@ export function App() {
                             <>
                                 <AnnouncementBanner
                                     isLoggedIn={auth.isLoggedIn}
-                                    isPaidUser={paymentFlow.isPaid && !isTrialActive}
+                                    isPaidUser={Boolean(auth.isLoggedIn && paymentFlow.isPaid && !isTrialActive)}
                                     hasActiveTrial={isTrialActive}
                                     user={auth.user}
                                     trialEndTimestamp={
-                                        paymentFlow.planDetails?.expiresAt
+                                        auth.isLoggedIn && paymentFlow.planDetails?.expiresAt
                                             ? new Date(paymentFlow.planDetails.expiresAt).getTime()
                                             : null
                                     }

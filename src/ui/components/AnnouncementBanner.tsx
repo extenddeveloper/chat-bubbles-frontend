@@ -128,7 +128,10 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
 
     // Strict target audience check: Only show for free / trial users
     // Non-trial paid users must never see the promo banner
-    if (isPaidUser && !hasActiveTrial) {
+    const isEffectivePaidUser = Boolean(isLoggedIn && isPaidUser && !hasActiveTrial);
+    const shouldHideForAudience = (config.showTo === "free") && isEffectivePaidUser;
+
+    if (shouldHideForAudience) {
       return;
     }
 
@@ -348,7 +351,9 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
   if (!resolvedSiteId) return null;
 
   // Audience restriction: Show for free / trial users only
-  if (isPaidUser && !hasActiveTrial) return null;
+  const isEffectivePaidUser = Boolean(isLoggedIn && isPaidUser && !hasActiveTrial);
+  const shouldHideForAudience = (config.showTo === "free") && isEffectivePaidUser;
+  if (shouldHideForAudience) return null;
 
   // Dismissed or countdown expired
   if (isDismissed) return null;
