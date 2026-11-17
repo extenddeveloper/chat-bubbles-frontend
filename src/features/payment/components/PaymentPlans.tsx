@@ -253,7 +253,7 @@ export const PaymentPlans: FC<PaymentPlansProps> = ({
             }
             disabled={isSubDisabled}
             aria-busy={isSubProcessing}
-            className={`plan-action-btn primary-cta${isSubProcessing ? " loading" : ""}${isSubCurrentPlan ? " current" : ""}`}
+            className={`plan-action-btn subscription-action-btn${isSubProcessing ? " loading" : ""}${isSubCurrentPlan ? " current" : ""}`}
           >
             {isSubCurrentPlan
               ? "Current Plan"

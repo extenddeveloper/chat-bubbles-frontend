@@ -325,6 +325,20 @@
   box-sizing: border-box;
 }
 
+.framefic-plan-card .subscription-action-btn:hover:not(:disabled),
+.framefic-plan-card:not(.lifetime) .plan-action-btn:hover:not(:disabled) {
+  background: linear-gradient(180deg, #606d7b 0%, #363e46 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 5px 0 rgba(110, 110, 110, 0.25) inset, 0 3px 6px 0 rgba(0, 0, 0, 0.35) !important;
+  transform: translateY(-1px);
+}
+
+.framefic-plan-card .subscription-action-btn:active:not(:disabled),
+.framefic-plan-card:not(.lifetime) .plan-action-btn:active:not(:disabled) {
+  background: linear-gradient(180deg, #464f58 0%, #23282e 100%) !important;
+  transform: scale(0.985);
+}
+
 .framefic-plan-card .plan-action-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
