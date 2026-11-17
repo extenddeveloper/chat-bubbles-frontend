@@ -818,6 +818,42 @@ export function App() {
 
     const isProTabLocked = !isProfileOpen && tab !== "home" && !hasActiveAccess
 
+    if (paymentFlow.showPaymentModal && !paymentFlow.showPaymentSuccessModal) {
+        return (
+            <div className={"app " + resolvedTheme + " crestbar-checkout-shell"}>
+                <PaymentModal
+                    paymentError={paymentFlow.paymentError}
+                    onRetry={() => {
+                        if (paymentFlow.payingPlan) void paymentFlow.makePayment(null, paymentFlow.payingPlan)
+                    }}
+                    defaultCouponCode={paymentFlow.appliedCouponCode || ""}
+                    isOpen={paymentFlow.showPaymentModal}
+                    clientSecret={paymentFlow.clientSecret}
+                    showPaymentSuccessModal={paymentFlow.showPaymentSuccessModal}
+                    originalAmount={paymentFlow.originalAmount}
+                    showAmount={paymentFlow.showAmount}
+                    showCurrency={paymentFlow.showCurrency}
+                    showType={paymentFlow.showType}
+                    plan={paymentFlow.payingPlan}
+                    stripePromise={
+                        paymentFlow.showPaymentModal && paymentFlow.publishableKey
+                            ? getStripe(paymentFlow.publishableKey)
+                            : null
+                    }
+                    onClose={paymentFlow.closePaymentModal}
+                    defaultEmail={auth.user?.email ?? null}
+                    subscriptionId={paymentFlow.activeSubscriptionId}
+                    setClientSecret={paymentFlow.setClientSecret}
+                    setShowAmount={paymentFlow.setShowAmount}
+                    onSuccess={() => {
+                        paymentFlow.handlePaymentSuccess()
+                    }}
+                    notify={notify}
+                />
+            </div>
+        )
+    }
+
     return (
         <div className={"app " + resolvedTheme}>
             {trialBanner}
@@ -2681,26 +2717,6 @@ export function App() {
                     void handleAuthSuccess(data.user?.email)
                 }}
                 onClose={auth.closeAuthModal}
-            />
-
-            <PaymentModal
-                isOpen={paymentFlow.showPaymentModal}
-                clientSecret={paymentFlow.clientSecret}
-                showPaymentSuccessModal={paymentFlow.showPaymentSuccessModal}
-                showAmount={paymentFlow.showAmount}
-                showType={paymentFlow.showType}
-                plan={paymentFlow.payingPlan}
-                stripePromise={paymentFlow.showPaymentModal && paymentFlow.publishableKey ? getStripe(paymentFlow.publishableKey) : null}
-                onClose={paymentFlow.closePaymentModal}
-                defaultEmail={auth.user?.email ?? null}
-                subscriptionId={paymentFlow.activeSubscriptionId}
-                initialCouponCode={paymentFlow.appliedCouponCode}
-                setClientSecret={paymentFlow.setClientSecret}
-                setShowAmount={paymentFlow.setShowAmount}
-                onSuccess={() => {
-                    paymentFlow.handlePaymentSuccess()
-                }}
-                notify={notify}
             />
 
             <PaymentSuccessModal isOpen={paymentFlow.showPaymentSuccessModal} />

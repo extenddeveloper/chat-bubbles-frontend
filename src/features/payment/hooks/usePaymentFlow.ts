@@ -49,6 +49,9 @@ export function usePaymentFlow({ notify, userEmail: authUserEmail, userName: aut
     const [lifetimeAvailability, setLifetimeAvailability] = useState<any>(null)
     const [activeSubscriptionId, setActiveSubscriptionId] = useState<string | null>(null)
     const [appliedCouponCode, setAppliedCouponCode] = useState<string | null>(null)
+    const [originalAmount, setOriginalAmount] = useState<number | null>(null)
+    const [showCurrency, setShowCurrency] = useState<string>("usd")
+    const [paymentError, setPaymentError] = useState<string | null>(null)
     const [publishableKey, setPublishableKey] = useState<string | null>(null)
 
     // Fetch publishable key on mount
@@ -182,7 +185,10 @@ export function usePaymentFlow({ notify, userEmail: authUserEmail, userName: aut
     const closePaymentModal = useCallback(() => {
         setShowPaymentModal(false)
         setClientSecret(null)
+        setPayingPlan(null)
+        setActiveSubscriptionId(null)
         setAppliedCouponCode(null)
+        setPaymentError(null)
     }, [])
 
     const handlePaymentSuccess = useCallback(
@@ -236,10 +242,13 @@ export function usePaymentFlow({ notify, userEmail: authUserEmail, userName: aut
 
             setIsCreatingPayment(true)
             setPayingPlan(plan)
+            setPaymentError(null)
 
             const planInfo = getPlanPricing(plan)
+            setOriginalAmount(planInfo.amount)
             setShowAmount(planInfo.amount)
             setShowType(planInfo.label)
+            setShowCurrency(planInfo.currency || "usd")
 
             try {
                 const siteInfo = await getSiteInfo()
@@ -254,6 +263,9 @@ export function usePaymentFlow({ notify, userEmail: authUserEmail, userName: aut
                     couponCode
                 )
 
+                if (result.originalAmount != null) {
+                    setOriginalAmount(result.originalAmount / 100)
+                }
                 if (result.finalAmount != null) {
                     setShowAmount(result.finalAmount / 100)
                 }
@@ -280,6 +292,7 @@ export function usePaymentFlow({ notify, userEmail: authUserEmail, userName: aut
                 }
             } catch (error: any) {
                 const message = error instanceof Error ? error.message : "Payment failed"
+                setPaymentError(message)
                 await notify({ type: "Error", message })
             } finally {
                 setIsCreatingPayment(false)
@@ -367,6 +380,9 @@ export function usePaymentFlow({ notify, userEmail: authUserEmail, userName: aut
         publishableKey,
         showPaymentModal,
         showAmount,
+        originalAmount,
+        showCurrency,
+        paymentError,
         showType,
         isPaid,
         isCheckingPayment,

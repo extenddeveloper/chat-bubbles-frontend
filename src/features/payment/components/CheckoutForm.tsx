@@ -1,9 +1,21 @@
-import React, { useState, useEffect } from "react"
+import "./PaymentLoading.css"
+import React, { useState, useEffect, useRef } from "react"
 import { PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js"
+import { LockKeyhole } from "lucide-react"
 import { verifyPayment, applyCouponToSubscription } from "../services/paymentService"
 import { getSiteInfo } from "../../../lib/framer/project"
 
+export type CheckoutDraft = {
+  email: string
+  couponCode: string
+  appliedCode: string
+  originalAmount: number
+  subscriptionId: string | null
+}
+
 export type CheckoutFormProps = {
+  draft: CheckoutDraft
+  setDraft: React.Dispatch<React.SetStateAction<CheckoutDraft>>
   onClose: () => void
   onSuccess: (id: string) => void | Promise<void>
   notify: (payload: { type: "Success" | "Error"; message: string }) => void | Promise<void>
@@ -11,9 +23,11 @@ export type CheckoutFormProps = {
   defaultEmail?: string | null
   subscriptionId?: string | null
   clientSecret?: string | null
-  initialCouponCode?: string | null
   setClientSecret: (secret: string | null) => void
   setShowAmount: (amount: number | null) => void
+  showCurrency?: string
+  showAmount: number | null
+  showType: string | null
 }
 
 const getErrorMessage = (error: unknown): string => {
@@ -22,52 +36,72 @@ const getErrorMessage = (error: unknown): string => {
 }
 
 export function CheckoutForm({
+  draft,
+  setDraft,
   onClose,
   onSuccess,
   notify,
   plan,
-  defaultEmail,
-  subscriptionId,
   clientSecret,
-  initialCouponCode,
   setClientSecret,
   setShowAmount,
+  showAmount,
+  showCurrency = "usd",
+  showType,
 }: CheckoutFormProps) {
+  const [paymentReady, setPaymentReady] = useState(false)
+  const [paymentLoadError, setPaymentLoadError] = useState("")
+  useEffect(() => {
+    if (paymentReady || paymentLoadError) return
+    const timer = setTimeout(
+      () => setPaymentLoadError("Payment fields could not load. Close checkout and try again."),
+      20000
+    )
+    return () => clearTimeout(timer)
+  }, [paymentReady, paymentLoadError])
+
   const stripe = useStripe()
   const elements = useElements()
   const [isSubmittingPayment, setIsSubmittingPayment] = useState<boolean>(false)
-  const [paymentReady, setPaymentReady] = useState(false)
-  const [paymentLoadError, setPaymentLoadError] = useState("")
-  const [email, setEmail] = useState<string>(defaultEmail || "")
+  const { email, couponCode, appliedCode, originalAmount: initialAmount, subscriptionId } = draft
+  const busy = useRef(false)
   const [showEmailError, setShowEmailError] = useState<boolean>(false)
 
-  const [couponCode, setCouponCode] = useState<string>(initialCouponCode || "")
-  const [appliedCode, setAppliedCode] = useState<string>(initialCouponCode || "")
-  const [couponApplied, setCouponApplied] = useState<boolean>(Boolean(initialCouponCode))
   const [isApplyingCoupon, setIsApplyingCoupon] = useState<boolean>(false)
   const [couponError, setCouponError] = useState<string>("")
-
-  useEffect(() => {
-    if (initialCouponCode) {
-      setCouponCode(initialCouponCode)
-      setAppliedCode(initialCouponCode)
-      setCouponApplied(true)
-    }
-  }, [initialCouponCode])
+  const money = (amount: number) =>
+    new Intl.NumberFormat("en-US", { style: "currency", currency: showCurrency }).format(amount)
+  const divisor =
+    10 **
+    (new Intl.NumberFormat("en", { style: "currency", currency: showCurrency }).resolvedOptions()
+      .maximumFractionDigits ?? 2)
+  const currentAmount = showAmount ?? initialAmount
+  const discountAmount = Math.max(0, initialAmount - currentAmount)
+  const couponApplied = Boolean(appliedCode) && couponCode.trim() === appliedCode && !couponError
 
   useEffect(() => {
     if (showEmailError) {
       const timer = setTimeout(() => {
         setShowEmailError(false)
-      }, 10000)
+      }, 8000)
       return () => clearTimeout(timer)
     }
   }, [showEmailError])
 
+  const planLabel =
+    plan === "monthly"
+      ? "Billed monthly"
+      : plan === "yearly"
+      ? "Billed yearly"
+      : plan === "lifetime"
+      ? "Lifetime access · one-time payment"
+      : showType || "Pro Plan"
+
   const handleApplyCoupon = async (): Promise<void> => {
     const trimmed = couponCode.trim()
-    if (!trimmed || isApplyingCoupon) return
+    if (!trimmed || busy.current || (trimmed === appliedCode && !couponError)) return
 
+    busy.current = true
     setIsApplyingCoupon(true)
     setCouponError("")
 
@@ -75,25 +109,46 @@ export function CheckoutForm({
       const piId = clientSecret ? clientSecret.split("_secret_")[0] : null
       const targetSubId = plan === "lifetime" ? piId : subscriptionId || piId
       if (!targetSubId) {
-        setCouponError("Cannot apply coupon to this payment.")
+        setCouponError("Cannot apply coupon to this payment session.")
         return
       }
 
       const result = await applyCouponToSubscription(targetSubId, trimmed, piId)
-
-      if (result.discountedAmount !== undefined) {
-        setShowAmount(result.discountedAmount / 100)
+      const originalAmount =
+        typeof result?.originalAmount === "number" ? result.originalAmount / divisor : initialAmount
+      if (
+        result?.success === false ||
+        typeof result?.discountedAmount !== "number" ||
+        !Number.isFinite(result.discountedAmount) ||
+        result.discountedAmount < 0 ||
+        result.discountedAmount / divisor >= originalAmount
+      ) {
+        throw new Error("This coupon is not valid for the selected plan. Please try another code.")
       }
-
       const activatesAccess =
         result.isPaid === true ||
+        result.status === "paid" ||
         result.status === "active" ||
-        result.status === "trialing" ||
-        result.discountedAmount === 0
+        result.status === "trialing"
+
+      if (!activatesAccess && !result.clientSecret) {
+        throw new Error("Unable to apply this coupon. Please try again.")
+      }
+      if (!activatesAccess && result.clientSecret === clientSecret && elements) {
+        const { error } = await elements.fetchUpdates()
+        if (error) throw new Error(error.message)
+      }
+
+      setShowAmount(result.discountedAmount / divisor)
+      setDraft((previous) => ({
+        ...previous,
+        appliedCode: trimmed,
+        originalAmount:
+          typeof result.originalAmount === "number" ? result.originalAmount / divisor : previous.originalAmount,
+        subscriptionId: result.subscriptionId || targetSubId,
+      }))
 
       if (activatesAccess) {
-        setCouponApplied(true)
-        setAppliedCode(trimmed)
         void notify({
           type: "Success",
           message:
@@ -108,20 +163,17 @@ export function CheckoutForm({
 
       if (result.clientSecret && result.clientSecret !== clientSecret) {
         setClientSecret(result.clientSecret)
-      } else if (elements) {
-        try {
-          await elements.fetchUpdates()
-        } catch {
-          // ignore non-critical fetchUpdates
-        }
       }
 
-      setCouponApplied(true)
-      setAppliedCode(trimmed)
       void notify({ type: "Success", message: "Coupon applied successfully!" })
     } catch (err: any) {
-      setCouponError(err.message || "Invalid or expired coupon code")
+      setCouponError(
+        /prior transactions|first.time/i.test(err.message || "")
+          ? "This coupon is not valid for this account. It is limited to first-time customers; previous trials or payment attempts can affect eligibility."
+          : err.message || "Invalid or expired coupon code. Please try another code."
+      )
     } finally {
+      busy.current = false
       setIsApplyingCoupon(false)
     }
   }
@@ -129,13 +181,14 @@ export function CheckoutForm({
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
 
-    if (!stripe || !elements) return
+    if (!stripe || !elements || busy.current) return
 
     if (!email) {
       setShowEmailError(true)
       return
     }
 
+    busy.current = true
     setIsSubmittingPayment(true)
     try {
       const { error, paymentIntent } = await stripe.confirmPayment({
@@ -167,7 +220,7 @@ export function CheckoutForm({
             siteId: siteInfo.siteId,
             email: email,
             plan: plan || "lifetime",
-            subscriptionId: subscriptionId || null,
+            subscriptionId: plan === "lifetime" ? null : subscriptionId || null,
           })
         } catch (verifyErr) {
           console.error("Backend verification error (non-blocking):", verifyErr)
@@ -187,43 +240,75 @@ export function CheckoutForm({
         message: getErrorMessage(error),
       })
     } finally {
+      busy.current = false
       setIsSubmittingPayment(false)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="payment-form">
+    <form onSubmit={handleSubmit} className="crestbar-card-form payment-form" translate="no">
+      {/* ── Summary Card (Connectfic Style) ── */}
+      <div className="crestbar-payment-summary">
+        <h1 id="crestbar-payment-title">Complete payment</h1>
+        <span className="crestbar-checkout-plan">{planLabel}</span>
+        <div className="crestbar-checkout-total" aria-live="polite">
+          {initialAmount > currentAmount && (
+            <del className="checkout-original-price">{money(initialAmount)}</del>
+          )}
+          <strong>{money(currentAmount)}</strong>
+          {plan === "monthly" && <span>/ month</span>}
+          {plan === "yearly" && <span>/ year</span>}
+        </div>
+        {discountAmount > 0 && (
+          <div>
+            <div className="crestbar-checkout-breakdown">
+              <span>Subtotal</span>
+              <span>{money(initialAmount)}</span>
+            </div>
+            <div className="crestbar-checkout-discount">
+              <span>Coupon discount ({appliedCode})</span>
+              <span>−{money(discountAmount)}</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Email Field ── */}
       <div className="framefic-email-wrapper">
-        <label className="framefic-email-label" htmlFor="chat-bubbles-payment-email">
+        <label className="framefic-email-label" htmlFor="crestbar-payment-email">
           Email
         </label>
         <input
-          id="chat-bubbles-payment-email"
+          id="crestbar-payment-email"
           type="email"
+          autoComplete="email"
           className="framefic-email-input-field"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            const val = e.target.value
+            setDraft((previous) => ({ ...previous, email: val }))
+          }}
           placeholder="email@example.com"
-          disabled={!!defaultEmail || isSubmittingPayment}
+          disabled={isSubmittingPayment}
           required
         />
       </div>
 
-      {/* ── Coupon Code Section (Always Visible for both Lifetime & Monthly) ── */}
+      {/* ── Coupon Code Apply Section (Always Visible) ── */}
       <div className="framefic-coupon-section">
-        <label className="framefic-email-label" htmlFor="chat-bubbles-coupon">
+        <label className="framefic-email-label" htmlFor="crestbar-coupon">
           Coupon code
         </label>
         <div className="framefic-coupon-input-row">
           <input
-            id="chat-bubbles-coupon"
+            id="crestbar-coupon"
             type="text"
             className="framefic-coupon-input"
             placeholder="Enter coupon code"
             value={couponCode}
             onChange={(e) => {
               const val = e.target.value.toUpperCase()
-              setCouponCode(val)
+              setDraft((previous) => ({ ...previous, couponCode: val }))
               setCouponError("")
             }}
             disabled={isApplyingCoupon || isSubmittingPayment}
@@ -236,13 +321,13 @@ export function CheckoutForm({
               isApplyingCoupon ||
               isSubmittingPayment ||
               !couponCode.trim() ||
-              (couponApplied && couponCode.trim() === appliedCode && !couponError)
+              (couponCode.trim() === appliedCode && !couponError)
             }
           >
             {isApplyingCoupon ? "Applying..." : "Apply"}
           </button>
         </div>
-        {couponApplied && couponCode.trim() === appliedCode && !couponError && (
+        {couponApplied && (
           <div className="framefic-coupon-success">✓ Coupon applied successfully!</div>
         )}
         {couponError && (
@@ -252,9 +337,8 @@ export function CheckoutForm({
         )}
       </div>
 
-      {paymentLoadError && <p className="payment-error-hint">{paymentLoadError}</p>}
-
-      {/* ── Stripe Payment Element (wallets & extra billing fields disabled to prevent cluttered Link popup) ── */}
+      {/* ── Stripe Payment Element (Link & Wallet disabled to prevent cluttered popup) ── */}
+      {paymentLoadError && <p role="alert">{paymentLoadError}</p>}
       <PaymentElement
         onReady={() => {
           setPaymentReady(true)
@@ -281,6 +365,14 @@ export function CheckoutForm({
         </div>
       )}
 
+      {/* ── Stripe Security Badge (Bottom) ── */}
+      <div className="crestbar-stripe-branding">
+        <LockKeyhole size={12} aria-hidden="true" />
+        <span>Payments processed by</span>
+        <strong>Stripe</strong>
+      </div>
+
+      {/* ── Action Buttons ── */}
       <div className="framefic-payment-button">
         <button
           type="button"
@@ -302,8 +394,10 @@ export function CheckoutForm({
             isSubmittingPayment ||
             isApplyingCoupon
           }
+          aria-busy={isSubmittingPayment || (!paymentReady && !paymentLoadError)}
         >
-          {isSubmittingPayment ? "Processing..." : "Pay Now"}
+          <LockKeyhole size={14} aria-hidden="true" />
+          {isSubmittingPayment ? "Processing..." : `Pay ${money(currentAmount)}`}
         </button>
       </div>
     </form>

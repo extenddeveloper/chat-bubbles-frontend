@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react"
 import { Elements } from "@stripe/react-stripe-js"
-import { CheckoutForm } from "./CheckoutForm"
-import "./PaymentModal.css"
+import { ArrowLeft, LockKeyhole } from "lucide-react"
+import { CheckoutForm, type CheckoutDraft } from "./CheckoutForm"
+import "./StripeCheckout.css"
 
 export type PaymentModalProps = {
   isOpen: boolean
   clientSecret: string | null
   showPaymentSuccessModal: boolean
+  showCurrency?: string
+  originalAmount?: number | null
   showAmount: number | null
   showType: string | null
   plan: string | null
@@ -14,11 +17,13 @@ export type PaymentModalProps = {
   onClose: () => void
   onSuccess: (id: string) => void | Promise<void>
   notify: (payload: { type: "Success" | "Error"; message: string }) => void | Promise<void>
+  defaultCouponCode?: string
   defaultEmail?: string | null
   subscriptionId?: string | null
-  initialCouponCode?: string | null
   setClientSecret: (secret: string | null) => void
   setShowAmount: (amount: number | null) => void
+  paymentError?: string | null
+  onRetry?: () => void
 }
 
 export function PaymentModal({
@@ -26,6 +31,8 @@ export function PaymentModal({
   clientSecret,
   showPaymentSuccessModal,
   showAmount,
+  originalAmount,
+  showCurrency = "usd",
   showType,
   plan,
   stripePromise,
@@ -33,20 +40,28 @@ export function PaymentModal({
   onSuccess,
   notify,
   defaultEmail,
+  defaultCouponCode = "",
   subscriptionId,
-  initialCouponCode,
   setClientSecret,
   setShowAmount,
+  paymentError,
+  onRetry,
 }: PaymentModalProps) {
   const [framerTheme, setFramerTheme] = useState<string | null>(() =>
     typeof document !== "undefined" ? document.body.dataset.framerTheme ?? null : null
   )
   const [stripeLoadError, setStripeLoadError] = useState<boolean>(false)
+  const [initError, setInitError] = useState<string>("")
+  const [draft, setDraft] = useState<CheckoutDraft>(() => ({
+    email: defaultEmail || "",
+    couponCode: defaultCouponCode,
+    appliedCode: defaultCouponCode,
+    originalAmount: originalAmount ?? showAmount ?? 0,
+    subscriptionId: subscriptionId ?? null,
+  }))
 
   useEffect(() => {
-    if (typeof document === "undefined") {
-      return
-    }
+    if (typeof document === "undefined") return
 
     const body = document.body
     const observer = new MutationObserver(() => {
@@ -59,126 +74,163 @@ export function PaymentModal({
     })
 
     setFramerTheme(body.dataset.framerTheme ?? null)
-
     return () => observer.disconnect()
   }, [])
 
   useEffect(() => {
-    if (!stripePromise) {
-      setStripeLoadError(false)
-      return
+    if (isOpen) {
+      setDraft({
+        email: defaultEmail || "",
+        couponCode: defaultCouponCode,
+        appliedCode: defaultCouponCode,
+        originalAmount: originalAmount ?? showAmount ?? 0,
+        subscriptionId: subscriptionId ?? null,
+      })
     }
+  }, [isOpen, defaultEmail, defaultCouponCode, originalAmount, showAmount, subscriptionId])
+
+  // Detect Stripe loading failure or timeout
+  useEffect(() => {
+    setInitError("")
+    setStripeLoadError(false)
+    if (!isOpen) return
+
     let cancelled = false
-    stripePromise.then((stripe: any) => {
-      if (!cancelled && !stripe) {
-        setStripeLoadError(true)
+    const timer = setTimeout(() => {
+      if (!cancelled && (!clientSecret || !stripePromise)) {
+        setInitError("Payment could not initialize. Close and try again.")
       }
-    })
+    }, 20000)
+
+    if (stripePromise) {
+      Promise.resolve(stripePromise)
+        .then((stripe: any) => {
+          if (!cancelled && !stripe) {
+            setStripeLoadError(true)
+          }
+        })
+        .catch(() => {
+          if (!cancelled) setStripeLoadError(true)
+        })
+    }
+
     return () => {
       cancelled = true
+      clearTimeout(timer)
     }
-  }, [stripePromise])
+  }, [isOpen, clientSecret, stripePromise])
 
   const isLightTheme = framerTheme === "light"
 
-  if (!isOpen || !clientSecret || showPaymentSuccessModal) {
+  if (!isOpen || showPaymentSuccessModal) {
     return null
   }
 
-  if (stripeLoadError || !stripePromise) {
-    return (
-      <div className="payment-modal">
-        <div className="payment-box">
-          <h3>Payment Unavailable</h3>
-          <p className="payment-error-desc">
-            The payment service could not be initialized. This may be caused by a network issue or a browser extension blocking external scripts.
-          </p>
-          <p className="payment-error-hint">
-            Please check your internet connection and try again. If the problem persists, disable any ad-blockers or privacy extensions and reload the plugin.
-          </p>
-          <div className="framefic-payment-button payment-cancel-btn-wrap">
-            <button type="button" className="payment-cancel primary-cta payment-cancel-full" onClick={onClose}>
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   const paymentElementOptions = {
-    clientSecret,
+    clientSecret: clientSecret || undefined,
     appearance: {
       theme: (isLightTheme ? "stripe" : "night") as "stripe" | "night",
       variables: {
         colorPrimary: "#5271FF",
-        colorBackground: isLightTheme ? "#FFFFFF" : "#201F1F",
+        colorBackground: isLightTheme ? "#FFFFFF" : "#1a1a1a",
         colorText: isLightTheme ? "#101828" : "#FCFCFD",
         colorTextSecondary: isLightTheme ? "#5F6B7A" : "#BFBFBF",
         colorDanger: "#F97066",
         colorIcon: isLightTheme ? "#5F6B7A" : "#BFBFBF",
-        borderRadius: "4px",
+        borderRadius: "6px",
         spacingUnit: "4px",
         fontSizeBase: "13px",
-        fontFamily: "Mulish, Inter, sans-serif",
-      },
-      rules: {
-        ".Tab": {
-          border: isLightTheme ? "1px solid #CFD7E3" : "1px solid #323131",
-          backgroundColor: isLightTheme ? "#F3F6FB" : "#242323",
-          padding: "10px 12px",
-        },
-        ".TabLabel": {
-          fontSize: "13px",
-          fontWeight: "600",
-        },
-        ".Tab--selected": {
-          borderColor: "#5271FF",
-          backgroundColor: isLightTheme ? "#E7ECF4" : "#323131",
-          color: isLightTheme ? "#101828" : "#FCFCFD",
-        },
-        ".Label": {
-          fontSize: "13px",
-        },
-        ".Input": {
-          border: isLightTheme ? "1px solid #CFD7E3" : "1px solid #323131",
-          backgroundColor: isLightTheme ? "#FFFFFF" : "#242323",
-          boxShadow: "none",
-          fontSize: "13px",
-        },
-        ".Input:focus": {
-          borderColor: "#5271FF",
-          boxShadow: "0 0 0 1px #5271FF",
-        },
-        ".Text": {
-          fontSize: "12px",
-        },
+        fontFamily: "Inter, sans-serif",
       },
     },
   }
 
+  const activeError =
+    paymentError ||
+    initError ||
+    (stripeLoadError ? "Stripe could not load. Check your internet connection and try again." : "")
+
   return (
-    <div className="payment-modal">
-      <div className="payment-box">
-        <h3>Complete Payment</h3>
-        <p>
-          Total Amount is: ${showAmount} ({showType})
-        </p>
-        <Elements key={clientSecret} stripe={stripePromise} options={paymentElementOptions}>
-          <CheckoutForm
-            onClose={onClose}
-            onSuccess={onSuccess}
-            notify={notify}
-            plan={plan}
-            defaultEmail={defaultEmail}
-            subscriptionId={subscriptionId}
-            clientSecret={clientSecret}
-            initialCouponCode={initialCouponCode}
-            setClientSecret={setClientSecret}
-            setShowAmount={setShowAmount}
-          />
-        </Elements>
+    <section className="crestbar-checkout-page" aria-labelledby="crestbar-payment-title">
+      <header className="crestbar-checkout-header">
+        <button type="button" className="crestbar-checkout-back" onClick={onClose}>
+          <ArrowLeft size={14} /> Back to plans
+        </button>
+        <span>
+          <LockKeyhole size={12} /> Secure checkout
+        </span>
+      </header>
+
+      <div className="stripe-checkout-box">
+        {activeError ? (
+          <div>
+            <p role="alert" className="framefic-coupon-error checkout-error-mb">
+              {activeError}
+            </p>
+            {onRetry && (
+              <button
+                type="button"
+                className="primary-cta buy-now-button checkout-btn-full"
+                onClick={() => {
+                  setInitError("")
+                  setStripeLoadError(false)
+                  setDraft({
+                    email: defaultEmail || "",
+                    couponCode: defaultCouponCode,
+                    appliedCode: defaultCouponCode,
+                    originalAmount: originalAmount ?? showAmount ?? 0,
+                    subscriptionId: subscriptionId ?? null,
+                  })
+                  onRetry()
+                }}
+              >
+                Retry checkout
+              </button>
+            )}
+            <button
+              type="button"
+              className="payment-cancel checkout-btn-close"
+              onClick={onClose}
+            >
+              Close
+            </button>
+          </div>
+        ) : clientSecret && stripePromise ? (
+          <Elements key={clientSecret} stripe={stripePromise} options={paymentElementOptions}>
+            <CheckoutForm
+              draft={draft}
+              setDraft={setDraft}
+              onClose={onClose}
+              onSuccess={onSuccess}
+              notify={notify}
+              plan={plan}
+              defaultEmail={defaultEmail}
+              subscriptionId={subscriptionId}
+              clientSecret={clientSecret}
+              setClientSecret={setClientSecret}
+              setShowAmount={setShowAmount}
+              showAmount={showAmount}
+              showCurrency={showCurrency}
+              showType={showType}
+            />
+          </Elements>
+        ) : (
+          <div>
+            <div className="stripe-checkout-skeleton">
+              <span />
+              <span />
+              <span />
+            </div>
+            <button
+              type="button"
+              className="payment-cancel checkout-btn-cancel-skeleton"
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+          </div>
+        )}
       </div>
-    </div>
+    </section>
   )
 }

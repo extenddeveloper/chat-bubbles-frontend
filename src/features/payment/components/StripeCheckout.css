@@ -1,0 +1,392 @@
+.crestbar-shell.crestbar-checkout-shell,
+.crestbar-checkout-shell {
+  overflow-y: auto;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+/* Custom Slim Scrollbar: 4px */
+.crestbar-checkout-shell::-webkit-scrollbar,
+.crestbar-checkout-page::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.crestbar-checkout-shell::-webkit-scrollbar-track,
+.crestbar-checkout-page::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.crestbar-checkout-shell::-webkit-scrollbar-thumb,
+.crestbar-checkout-page::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+}
+
+.crestbar-checkout-shell::-webkit-scrollbar-thumb:hover,
+.crestbar-checkout-page::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.crestbar-checkout-shell::-webkit-scrollbar-button,
+.crestbar-checkout-page::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+body[data-framer-theme="light"] .crestbar-checkout-shell::-webkit-scrollbar-thumb,
+:root[data-user-theme="light"] .crestbar-checkout-shell::-webkit-scrollbar-thumb,
+body[data-framer-theme="light"] .crestbar-checkout-page::-webkit-scrollbar-thumb,
+:root[data-user-theme="light"] .crestbar-checkout-page::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+body[data-framer-theme="light"] .crestbar-checkout-shell::-webkit-scrollbar-thumb:hover,
+:root[data-user-theme="light"] .crestbar-checkout-shell::-webkit-scrollbar-thumb:hover,
+body[data-framer-theme="light"] .crestbar-checkout-page::-webkit-scrollbar-thumb:hover,
+:root[data-user-theme="light"] .crestbar-checkout-page::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  .crestbar-shell.crestbar-checkout-shell,
+  .crestbar-checkout-shell {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  }
+
+  body[data-framer-theme="light"] .crestbar-checkout-shell,
+  :root[data-user-theme="light"] .crestbar-checkout-shell {
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  }
+}
+
+.crestbar-checkout-page {
+  width: 100%;
+  min-height: 100%;
+  padding: 16px;
+  box-sizing: border-box;
+  font-family: Inter, sans-serif;
+  color: var(--framer-color-text, #eee);
+}
+
+.crestbar-checkout-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.crestbar-checkout-header > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--framer-color-text-secondary, #999);
+}
+
+.crestbar-checkout-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: transparent;
+  padding: 6px 0;
+  color: inherit;
+  cursor: pointer;
+  font: 500 12px Inter, sans-serif;
+  width: 100px;
+}
+
+.crestbar-checkout-back:focus-visible {
+  outline: 2px solid #5271ff;
+  outline-offset: 4px;
+}
+
+.stripe-checkout-box {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.stripe-checkout-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.crestbar-payment-summary {
+  display: grid;
+  gap: 6px;
+  padding: 20px 18px;
+  border-radius: 14px;
+  background: #5271ff;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  margin-bottom: 10px;
+}
+
+.crestbar-payment-summary h1 {
+  color: #fff;
+  font: 600 18px/1.3 Inter, sans-serif;
+  letter-spacing: -0.3px;
+  margin: 0;
+}
+
+.crestbar-checkout-plan {
+  font-weight: 500;
+  color: #e3e9ff;
+}
+
+.crestbar-checkout-total {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.crestbar-payment-summary strong {
+  color: #fff;
+  font-size: 32px;
+  line-height: 1.2;
+  font-weight: 650;
+  letter-spacing: -1px;
+}
+
+.crestbar-checkout-total > span {
+  font-size: 11px;
+  color: #e3e9ff;
+}
+
+.crestbar-checkout-breakdown,
+.crestbar-checkout-discount {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 4px 0;
+}
+
+.crestbar-checkout-breakdown {
+  border-top: 1px solid #ffffff40;
+  padding-top: 12px;
+  margin-top: 4px;
+}
+
+.crestbar-checkout-discount > span:last-child {
+  white-space: nowrap;
+}
+
+.crestbar-payment-summary small {
+  color: #fff;
+  font-size: 11px;
+}
+
+.crestbar-card-form {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.crestbar-checkout-page .framefic-email-wrapper {
+  margin-bottom: 10px;
+}
+
+.crestbar-checkout-page .framefic-email-input-field,
+.crestbar-checkout-page .framefic-coupon-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  border-radius: 10px;
+}
+
+.crestbar-checkout-page .framefic-coupon-section {
+  margin-bottom: 12px;
+}
+
+.crestbar-checkout-page .framefic-coupon-input-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px !important;
+}
+
+.crestbar-checkout-page .framefic-coupon-btn {
+  background: #5271ff;
+  color: #fff;
+  border: 0;
+  border-radius: 7px;
+  padding: 0 16px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.crestbar-checkout-page .framefic-coupon-btn:hover:not(:disabled) {
+  background: #405edb;
+}
+
+.crestbar-checkout-page .framefic-coupon-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.crestbar-checkout-page .framefic-coupon-success {
+  color: #12b76a;
+  font-size: 11px;
+  font-weight: 500;
+  margin-top: 6px;
+}
+
+.crestbar-checkout-page .framefic-coupon-error {
+  color: #f04438;
+  font-size: 11px;
+  font-weight: 500;
+  margin-top: 6px;
+}
+
+.crestbar-checkout-page .crestbar-stripe-branding {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: var(--framer-color-text-secondary, #94a3b8);
+  margin: 12px 0 2px;
+  font-family: Inter, sans-serif;
+  line-height: 1;
+}
+
+.crestbar-checkout-page .crestbar-stripe-branding strong {
+  color: var(--framer-color-text, #f1f5f9);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.crestbar-checkout-page .crestbar-stripe-branding svg {
+  color: var(--framer-color-text-secondary, #94a3b8);
+  flex-shrink: 0;
+}
+
+.crestbar-checkout-page .framefic-payment-button {
+  display: flex;
+  gap: 8px;
+  margin: 14px 0 16px;
+}
+
+.crestbar-checkout-page .buy-now-button {
+  flex: 1;
+  min-height: 34px;
+  background: #5271ff;
+  border: 0;
+  border-radius: 7px;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  margin: 0px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.crestbar-checkout-page .buy-now-button:hover:not(:disabled) {
+  background: #405edb;
+}
+
+.crestbar-checkout-page button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.crestbar-card-loading {
+  min-height: 120px;
+}
+
+.stripe-checkout-skeleton {
+  display: grid;
+  gap: 16px;
+  padding: 24px 0;
+}
+
+.stripe-checkout-skeleton span,
+.stripe-price-skeleton {
+  display: block;
+  height: 44px;
+  border-radius: 6px;
+  background: var(--framer-color-bg-tertiary, #8882);
+  animation: stripe-pulse 1.4s ease-in-out infinite alternate;
+}
+
+.stripe-checkout-skeleton span:first-child {
+  width: 55%;
+  height: 26px;
+}
+
+.stripe-checkout-skeleton span:last-child {
+  height: 120px;
+}
+
+.stripe-price-skeleton {
+  width: 100px;
+  height: 30px;
+}
+
+@keyframes stripe-pulse {
+  to {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stripe-checkout-skeleton span,
+  .stripe-price-skeleton {
+    animation: none;
+  }
+}
+
+.pricing-plan-description {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--framer-color-text-secondary, #999);
+  margin: 0 0 14px;
+}
+
+.plan-original-price {
+  display: block;
+  font-size: 18px;
+  line-height: 1.4;
+  font-weight: 500;
+  opacity: 0.65;
+  text-decoration: line-through;
+}
+
+.checkout-original-price {
+  font-size: 16px;
+  line-height: 1.4;
+  font-weight: 500;
+  opacity: 0.7;
+  margin-right: 8px;
+  text-decoration: line-through;
+}
+
+.checkout-error-mb {
+  margin-bottom: 12px;
+}
+
+.checkout-btn-full {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.checkout-btn-close {
+  width: 100%;
+}
+
+.checkout-btn-cancel-skeleton {
+  width: 100%;
+  margin-top: 12px;
+}
