@@ -175,12 +175,6 @@ export const PaymentPlans: FC<PaymentPlansProps> = ({
             )}
           </div>
 
-          {ltCard.defaultCouponCode && (
-            <p className="pricing-plan-description">
-              Coupon <strong>{ltCard.defaultCouponCode}</strong> applied automatically for eligible purchases.
-            </p>
-          )}
-
           <button
             type="button"
             onClick={(e) =>
@@ -251,12 +245,6 @@ export const PaymentPlans: FC<PaymentPlansProps> = ({
               </div>
             ))}
           </div>
-
-          {subCard.defaultCouponCode && (
-            <p className="pricing-plan-description">
-              Coupon <strong>{subCard.defaultCouponCode}</strong> applied automatically for eligible purchases.
-            </p>
-          )}
 
           <button
             type="button"
