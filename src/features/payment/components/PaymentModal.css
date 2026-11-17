@@ -7,11 +7,13 @@
   background: var(--framefic-overlay, rgba(0, 0, 0, 0.6));
   backdrop-filter: blur(4px);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 16px;
+  padding: 16px 12px;
   box-sizing: border-box;
   animation: frameficPaymentFadeIn 0.2s ease-out;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 @keyframes frameficPaymentFadeIn {
@@ -27,6 +29,10 @@
 .payment-box {
   width: 100%;
   max-width: 348px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: auto 0;
   border-radius: 12px;
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
@@ -37,6 +43,59 @@
   flex-direction: column;
   gap: 8px;
   animation: frameficPaymentSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Custom Slim Scrollbar: 4px */
+.payment-box::-webkit-scrollbar,
+.payment-modal::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.payment-box::-webkit-scrollbar-track,
+.payment-modal::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.payment-box::-webkit-scrollbar-thumb,
+.payment-modal::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+}
+
+.payment-box::-webkit-scrollbar-thumb:hover,
+.payment-modal::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.payment-box::-webkit-scrollbar-button,
+.payment-modal::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+body[data-framer-theme="light"] .payment-box::-webkit-scrollbar-thumb,
+body[data-framer-theme="light"] .payment-modal::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+body[data-framer-theme="light"] .payment-box::-webkit-scrollbar-thumb:hover,
+body[data-framer-theme="light"] .payment-modal::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  .payment-box,
+  .payment-modal {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  }
+
+  body[data-framer-theme="light"] .payment-box,
+  body[data-framer-theme="light"] .payment-modal {
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  }
 }
 
 @keyframes frameficPaymentSlideIn {
@@ -203,6 +262,13 @@
 .framefic-coupon-error {
   color: #ff6b6b;
   font-size: 11px;
+  margin-top: 4px;
+}
+
+.framefic-coupon-success {
+  color: #12b76a;
+  font-size: 11px;
+  font-weight: 500;
   margin-top: 4px;
 }
 

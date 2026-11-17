@@ -2694,6 +2694,7 @@ export function App() {
                 onClose={paymentFlow.closePaymentModal}
                 defaultEmail={auth.user?.email ?? null}
                 subscriptionId={paymentFlow.activeSubscriptionId}
+                initialCouponCode={paymentFlow.appliedCouponCode}
                 setClientSecret={paymentFlow.setClientSecret}
                 setShowAmount={paymentFlow.setShowAmount}
                 onSuccess={() => {

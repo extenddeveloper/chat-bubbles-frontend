@@ -48,6 +48,7 @@ export function usePaymentFlow({ notify, userEmail: authUserEmail, userName: aut
     const [planDetails, setPlanDetails] = useState<PlanDetails>(null)
     const [lifetimeAvailability, setLifetimeAvailability] = useState<any>(null)
     const [activeSubscriptionId, setActiveSubscriptionId] = useState<string | null>(null)
+    const [appliedCouponCode, setAppliedCouponCode] = useState<string | null>(null)
     const [publishableKey, setPublishableKey] = useState<string | null>(null)
 
     // Fetch publishable key on mount
@@ -180,6 +181,8 @@ export function usePaymentFlow({ notify, userEmail: authUserEmail, userName: aut
 
     const closePaymentModal = useCallback(() => {
         setShowPaymentModal(false)
+        setClientSecret(null)
+        setAppliedCouponCode(null)
     }, [])
 
     const handlePaymentSuccess = useCallback(
@@ -253,6 +256,14 @@ export function usePaymentFlow({ notify, userEmail: authUserEmail, userName: aut
 
                 if (result.finalAmount != null) {
                     setShowAmount(result.finalAmount / 100)
+                }
+
+                if (result.couponCode) {
+                    setAppliedCouponCode(result.couponCode)
+                } else if (couponCode) {
+                    setAppliedCouponCode(couponCode)
+                } else {
+                    setAppliedCouponCode(null)
                 }
 
                 if (result.clientSecret) {
@@ -365,6 +376,7 @@ export function usePaymentFlow({ notify, userEmail: authUserEmail, userName: aut
         currentPlan,
         planDetails,
         lifetimeAvailability,
+        appliedCouponCode,
         closePaymentModal,
         handlePaymentSuccess,
         makePayment,

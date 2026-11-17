@@ -74,11 +74,15 @@ export const createPaymentIntent = async (
     })
 }
 
-export const applyCouponToSubscription = async (subscriptionId: string, couponCode: string): Promise<any> => {
+export const applyCouponToSubscription = async (
+    subscriptionId: string,
+    couponCode: string,
+    paymentIntentId?: string | null
+): Promise<any> => {
     return requestApi("/api/apply-coupon", "Failed to apply coupon", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subscriptionId, couponCode }),
+        body: JSON.stringify({ subscriptionId, couponCode, paymentIntentId }),
     })
 }
 

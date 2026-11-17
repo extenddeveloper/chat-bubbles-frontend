@@ -2378,7 +2378,6 @@ p.preview-modal-subtitle {
     padding: 0 16px;
     background: var(--cf-primary-cta-bg) !important;
     color: var(--cf-primary-cta-color) !important;
-    border: 2px solid transparent !important;
     border-radius: var(--cf-primary-cta-radius);
     display: inline-flex;
     align-items: center;

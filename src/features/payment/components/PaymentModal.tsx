@@ -16,6 +16,7 @@ export type PaymentModalProps = {
   notify: (payload: { type: "Success" | "Error"; message: string }) => void | Promise<void>
   defaultEmail?: string | null
   subscriptionId?: string | null
+  initialCouponCode?: string | null
   setClientSecret: (secret: string | null) => void
   setShowAmount: (amount: number | null) => void
 }
@@ -33,6 +34,7 @@ export function PaymentModal({
   notify,
   defaultEmail,
   subscriptionId,
+  initialCouponCode,
   setClientSecret,
   setShowAmount,
 }: PaymentModalProps) {
@@ -170,6 +172,8 @@ export function PaymentModal({
             plan={plan}
             defaultEmail={defaultEmail}
             subscriptionId={subscriptionId}
+            clientSecret={clientSecret}
+            initialCouponCode={initialCouponCode}
             setClientSecret={setClientSecret}
             setShowAmount={setShowAmount}
           />
