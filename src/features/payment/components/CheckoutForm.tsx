@@ -116,21 +116,22 @@ export function CheckoutForm({
       const result = await applyCouponToSubscription(targetSubId, trimmed, piId)
       const originalAmount =
         typeof result?.originalAmount === "number" ? result.originalAmount / divisor : initialAmount
-      if (
-        result?.success === false ||
-        typeof result?.discountedAmount !== "number" ||
-        !Number.isFinite(result.discountedAmount) ||
-        result.discountedAmount < 0 ||
-        result.discountedAmount / divisor >= originalAmount
-      ) {
-        throw new Error("This coupon is not valid for the selected plan. Please try another code.")
-      }
       const activatesAccess =
         result.isPaid === true ||
         result.status === "paid" ||
         result.status === "active" ||
         result.status === "trialing" ||
         result.discountedAmount === 0
+
+      if (
+        result?.success === false ||
+        typeof result?.discountedAmount !== "number" ||
+        !Number.isFinite(result.discountedAmount) ||
+        result.discountedAmount < 0 ||
+        (!activatesAccess && result.discountedAmount / divisor >= originalAmount)
+      ) {
+        throw new Error("This coupon is not valid for the selected plan. Please try another code.")
+      }
 
       if (!activatesAccess && !result.clientSecret) {
         throw new Error("Unable to apply this coupon. Please try again.")
@@ -173,6 +174,50 @@ export function CheckoutForm({
           ? "This coupon is not valid for this account. It is limited to first-time customers; previous trials or payment attempts can affect eligibility."
           : err.message || "Invalid or expired coupon code. Please try another code."
       )
+    } finally {
+      busy.current = false
+      setIsApplyingCoupon(false)
+    }
+  }
+
+  const handleRemoveCoupon = async (): Promise<void> => {
+    if (busy.current || !appliedCode) return
+    busy.current = true
+    setIsApplyingCoupon(true)
+    setCouponError("")
+
+    try {
+      const piId = clientSecret ? clientSecret.split("_secret_")[0] : null
+      const targetSubId = plan === "lifetime" ? piId : subscriptionId || piId
+      if (!targetSubId) {
+        throw new Error("Cannot update this payment session.")
+      }
+
+      const result = await applyCouponToSubscription(targetSubId, "", piId)
+      if (result?.success === false) {
+        throw new Error(result?.message || "Failed to remove coupon.")
+      }
+
+      const restoredAmount =
+        typeof result?.originalAmount === "number" ? result.originalAmount / divisor : initialAmount
+      setShowAmount(restoredAmount)
+      setDraft((previous) => ({
+        ...previous,
+        couponCode: "",
+        appliedCode: "",
+        originalAmount: restoredAmount,
+        subscriptionId: result.subscriptionId || targetSubId,
+      }))
+
+      if (result.clientSecret && result.clientSecret !== clientSecret) {
+        setClientSecret(result.clientSecret)
+      } else if (elements) {
+        await elements.fetchUpdates().catch(() => {})
+      }
+
+      void notify({ type: "Success", message: "Coupon removed. Original price restored." })
+    } catch (err: any) {
+      setCouponError(err.message || "Failed to remove coupon.")
     } finally {
       busy.current = false
       setIsApplyingCoupon(false)
@@ -329,7 +374,17 @@ export function CheckoutForm({
           </button>
         </div>
         {couponApplied && (
-          <div className="framefic-coupon-success">✓ Coupon applied successfully!</div>
+          <div className="framefic-coupon-status-row">
+            <span className="framefic-coupon-success">✓ Coupon applied successfully!</span>
+            <button
+              type="button"
+              className="framefic-coupon-remove-btn"
+              onClick={handleRemoveCoupon}
+              disabled={isApplyingCoupon || isSubmittingPayment}
+            >
+              Remove
+            </button>
+          </div>
         )}
         {couponError && (
           <div className="framefic-coupon-error" role="alert">

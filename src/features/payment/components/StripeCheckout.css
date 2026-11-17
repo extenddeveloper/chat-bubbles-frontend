@@ -50,6 +50,7 @@ body[data-framer-theme="light"] .crestbar-checkout-page::-webkit-scrollbar-thumb
 }
 
 @supports not selector(::-webkit-scrollbar) {
+
   .crestbar-shell.crestbar-checkout-shell,
   .crestbar-checkout-shell {
     scrollbar-width: thin;
@@ -79,7 +80,7 @@ body[data-framer-theme="light"] .crestbar-checkout-page::-webkit-scrollbar-thumb
   margin-bottom: 18px;
 }
 
-.crestbar-checkout-header > span {
+.crestbar-checkout-header>span {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -92,7 +93,7 @@ body[data-framer-theme="light"] .crestbar-checkout-page::-webkit-scrollbar-thumb
   align-items: center;
   gap: 5px;
   border: 0;
-  background: transparent;
+  background: transparent !important;
   padding: 6px 0;
   color: inherit;
   cursor: pointer;
@@ -158,7 +159,7 @@ body[data-framer-theme="light"] .crestbar-checkout-page::-webkit-scrollbar-thumb
   letter-spacing: -1px;
 }
 
-.crestbar-checkout-total > span {
+.crestbar-checkout-total>span {
   font-size: 11px;
   color: #e3e9ff;
 }
@@ -177,7 +178,7 @@ body[data-framer-theme="light"] .crestbar-checkout-page::-webkit-scrollbar-thumb
   margin-top: 4px;
 }
 
-.crestbar-checkout-discount > span:last-child {
+.crestbar-checkout-discount>span:last-child {
   white-space: nowrap;
 }
 
@@ -234,11 +235,39 @@ body[data-framer-theme="light"] .crestbar-checkout-page::-webkit-scrollbar-thumb
   cursor: not-allowed;
 }
 
+.crestbar-checkout-page .framefic-coupon-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
 .crestbar-checkout-page .framefic-coupon-success {
   color: #12b76a;
   font-size: 11px;
   font-weight: 500;
-  margin-top: 6px;
+  margin-top: 0;
+}
+
+.crestbar-checkout-page .framefic-coupon-remove-btn {
+  background: transparent;
+  border: 0;
+  color: #f04438;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0 4px;
+  text-decoration: underline;
+  transition: opacity 0.15s ease;
+}
+
+.crestbar-checkout-page .framefic-coupon-remove-btn:hover:not(:disabled) {
+  opacity: 0.8;
+}
+
+.crestbar-checkout-page .framefic-coupon-remove-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .crestbar-checkout-page .framefic-coupon-error {
@@ -342,6 +371,7 @@ body[data-framer-theme="light"] .crestbar-checkout-page::-webkit-scrollbar-thumb
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .stripe-checkout-skeleton span,
   .stripe-price-skeleton {
     animation: none;
