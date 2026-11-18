@@ -273,7 +273,7 @@ export function AnalyticsView({
                     <div className="cf-analytics-kpi-header">
                         <span className="cf-analytics-kpi-label">Views</span>
                         <span className="cf-analytics-kpi-icon cf-kpi-views">
-                            <IconEye size={13} />
+                            <IconEye size={12} />
                         </span>
                     </div>
                     <div className="cf-analytics-kpi-val">{formatViews(data.views)}</div>
@@ -286,12 +286,12 @@ export function AnalyticsView({
                     <div className="cf-analytics-kpi-header">
                         <span className="cf-analytics-kpi-label">Clicks</span>
                         <span className="cf-analytics-kpi-icon cf-kpi-clicks">
-                            <IconMousePointer size={13} />
+                            <IconMousePointer size={12} />
                         </span>
                     </div>
                     <div className="cf-analytics-kpi-val">{formatNumber(data.clicks)}</div>
                     <div className="cf-analytics-kpi-trend">
-                        <span>Channel interactions</span>
+                        <span>Channel clicks</span>
                     </div>
                 </div>
 
@@ -299,12 +299,12 @@ export function AnalyticsView({
                     <div className="cf-analytics-kpi-header">
                         <span className="cf-analytics-kpi-label">Conv. Rate</span>
                         <span className="cf-analytics-kpi-icon cf-kpi-rate">
-                            <IconTrendingUp size={13} />
+                            <IconTrendingUp size={12} />
                         </span>
                     </div>
                     <div className="cf-analytics-kpi-val">{data.convRate}</div>
                     <div className="cf-analytics-kpi-trend">
-                        <span>Click-through rate</span>
+                        <span>Conversion rate</span>
                     </div>
                 </div>
             </div>

@@ -4179,9 +4179,9 @@ button.cf-segment-item,
 /* Header & Period Filter */
 .cf-analytics-header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    gap: 12px;
+    gap: 10px;
     margin-bottom: 2px;
 }
 
@@ -4189,6 +4189,7 @@ button.cf-segment-item,
     display: flex;
     flex-direction: column;
     gap: 2px;
+    min-width: 0;
 }
 
 .cf-analytics-title {
@@ -4202,11 +4203,13 @@ button.cf-segment-item,
 .cf-analytics-subtitle {
     font-size: 11px;
     color: var(--cf-text-secondary);
-    line-height: 1.3;
+    line-height: 1.35;
+    text-wrap: balance;
 }
 
 .cf-analytics-filter {
     position: relative;
+    flex-shrink: 0;
 }
 
 button.cf-analytics-dropdown-btn {
@@ -4214,13 +4217,13 @@ button.cf-analytics-dropdown-btn {
     box-sizing: border-box;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
+    gap: 5px;
+    padding: 5px 10px;
     border-radius: 8px;
     background: var(--cf-bg-secondary);
     border: 1px solid var(--cf-border);
     color: var(--cf-text);
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease;
@@ -4284,18 +4287,20 @@ button.cf-analytics-dropdown-btn:hover {
 /* 3 KPI Summary Cards */
 .cf-analytics-kpi-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
 }
 
 .cf-analytics-kpi-card {
     border-radius: var(--cf-card-radius);
     background: var(--cf-bg-secondary);
     border: 1px solid var(--cf-border);
-    padding: 12px 14px;
+    padding: 10px 8px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
+    min-width: 0;
     gap: 4px;
     transition: border-color 0.15s ease;
 }
@@ -4308,23 +4313,30 @@ button.cf-analytics-dropdown-btn:hover {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 4px;
+    min-width: 0;
 }
 
 .cf-analytics-kpi-label {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     color: var(--cf-text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.4px;
+    letter-spacing: 0.25px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
 }
 
 .cf-analytics-kpi-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 20px;
-    border-radius: 6px;
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    flex-shrink: 0;
 }
 
 .cf-kpi-views {
@@ -4343,17 +4355,24 @@ button.cf-analytics-dropdown-btn:hover {
 }
 
 .cf-analytics-kpi-val {
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 700;
     color: var(--cf-text);
-    line-height: 1.2;
+    line-height: 1.15;
     letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 2px 0 1px;
 }
 
 .cf-analytics-kpi-trend {
-    font-size: 10px;
+    font-size: 9.5px;
     color: var(--cf-text-tertiary);
-    line-height: 1.2;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Chart Card */
@@ -4361,17 +4380,18 @@ button.cf-analytics-dropdown-btn:hover {
     border-radius: var(--cf-card-radius);
     background: var(--cf-bg-secondary);
     border: 1px solid var(--cf-border);
-    padding: 14px 16px;
+    padding: 12px 14px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
 }
 
 .cf-analytics-chart-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 8px;
 }
 
 .cf-analytics-chart-title {
@@ -4379,6 +4399,10 @@ button.cf-analytics-dropdown-btn:hover {
     font-weight: 600;
     color: var(--cf-text);
     text-transform: capitalize;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .cf-analytics-chart-badge {
@@ -4389,6 +4413,7 @@ button.cf-analytics-dropdown-btn:hover {
     background: var(--cf-tint-subtle);
     color: var(--cf-tint);
     border: 1px solid rgba(82, 113, 255, 0.2);
+    flex-shrink: 0;
 }
 
 .cf-analytics-chart-wrapper {
@@ -4531,7 +4556,7 @@ button.cf-analytics-dropdown-btn:hover {
     border-radius: var(--cf-card-radius);
     background: var(--cf-bg-secondary);
     border: 1px solid var(--cf-border);
-    padding: 14px 16px;
+    padding: 12px 14px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -4571,12 +4596,14 @@ button.cf-analytics-dropdown-btn:hover {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 8px;
 }
 
 .cf-channel-stat-brand {
     display: flex;
     align-items: center;
     gap: 8px;
+    min-width: 0;
 }
 
 .cf-channel-stat-badge {
@@ -4600,6 +4627,9 @@ button.cf-analytics-dropdown-btn:hover {
     font-size: 12px;
     font-weight: 600;
     color: var(--cf-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .cf-channel-stat-count {
