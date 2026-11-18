@@ -239,8 +239,7 @@ export function App() {
 
     const paymentFlow = usePaymentFlow({
         notify,
-        userEmail: auth.user?.email,
-        userName: auth.user?.username,
+        authEmail: auth.user?.email,
     })
 
     const [profileView, setProfileView] = useState<"profile" | "subscription">("profile")
@@ -398,8 +397,8 @@ export function App() {
 
                 if (!isPaidAfterRefresh) {
                     try {
-                        const siteInfo = await getSiteInfo().catch(() => ({ siteId: "", userId: null, userName: null, userEmail: null }))
-                        const resolvedEmail = loggedInEmail || auth.user?.email || siteInfo.userEmail
+                        const siteInfo = await getSiteInfo().catch(() => ({ siteId: "", userId: null, siteUrl: null }))
+                        const resolvedEmail = loggedInEmail || auth.user?.email || null
                         const eligibility = await checkTrialEligibility(siteInfo.siteId, resolvedEmail)
 
                         if (eligibility.eligible) {

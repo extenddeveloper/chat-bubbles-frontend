@@ -48,8 +48,6 @@ export const checkLifetimeAvailability = async (): Promise<{ available: boolean;
 export const createPaymentIntent = async (
     plan: string,
     siteId: string,
-    userName?: string | null,
-    userEmail?: string | null,
     couponCode?: string | null
 ): Promise<{
     clientSecret?: string | null
@@ -70,8 +68,6 @@ export const createPaymentIntent = async (
         body: JSON.stringify({
             plan,
             siteId,
-            userName,
-            userEmail,
             couponCode: couponCode || undefined,
         }),
     })
@@ -166,20 +162,10 @@ export const createBillingPortalSession = async (siteId: string): Promise<{ url:
 }
 
 export const trackPaymentCompletion = async (
-    plan: string,
-    sessionId: string,
-    amount: number
-): Promise<any> => {
-    try {
-        return await requestApi("/api/track-payment-completion", "Tracking deferred", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ plan, sessionId, amount }),
-        })
-    } catch {
-        return null
-    }
-}
+    _plan: string,
+    _sessionId: string,
+    _amount: number
+): Promise<any> => null
 
 // ────────────────────────────────────────────────────────────
 //  Dynamic Announcement Configuration

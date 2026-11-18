@@ -30,11 +30,10 @@ export type PlanDetails = {
 
 export type UsePaymentFlowProps = {
     notify: (payload: NotifyPayload) => void | Promise<void>
-    userEmail?: string | null
-    userName?: string | null
+    authEmail?: string | null
 }
 
-export function usePaymentFlow({ notify, userEmail: authUserEmail, userName: authUserName }: UsePaymentFlowProps) {
+export function usePaymentFlow({ notify, authEmail: authUserEmail }: UsePaymentFlowProps) {
     const [clientSecret, setClientSecret] = useState<string | null>(null)
     const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false)
     const [showAmount, setShowAmount] = useState<number | null>(null)
@@ -252,14 +251,10 @@ export function usePaymentFlow({ notify, userEmail: authUserEmail, userName: aut
 
             try {
                 const siteInfo = await getSiteInfo()
-                const resolvedEmail = authUserEmail || siteInfo.userEmail
-                const resolvedUserName = authUserName || siteInfo.userName
 
                 const result = await createPaymentIntent(
                     plan,
                     siteInfo.siteId,
-                    resolvedUserName,
-                    resolvedEmail,
                     couponCode
                 )
 
@@ -313,7 +308,7 @@ export function usePaymentFlow({ notify, userEmail: authUserEmail, userName: aut
                 setIsCreatingPayment(false)
             }
         },
-        [notify, authUserEmail, authUserName, handlePaymentSuccess]
+        [notify, authUserEmail, handlePaymentSuccess]
     )
 
     const handleStartTrial = useCallback(async (): Promise<any> => {

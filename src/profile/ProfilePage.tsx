@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Lock, Crown, Clock } from "lucide-react"
 import { getSiteInfo } from "../lib/framer/project"
+import { checkTrialEligibility } from "../features/payment/services/paymentService"
 import "./ProfilePage.css"
 
 export type ProfilePageProps = {
@@ -32,43 +33,40 @@ export function ProfilePage({
   onRefreshSubscription,
   onStartTrial,
 }: ProfilePageProps) {
-  const [userName, setUserName] = useState<string>("")
-  const [userEmail, setUserEmail] = useState<string>("")
   const [isStartingTrial, setIsStartingTrial] = useState<boolean>(false)
   const [avatarError, setAvatarError] = useState<boolean>(false)
+  const [claimedTrialLocal, setClaimedTrialLocal] = useState<boolean>(false)
 
-  const hasAlreadyTakenTrial = !!planDetails?.isTrial
+  const hasAlreadyTakenTrial = Boolean(planDetails?.isTrial || claimedTrialLocal)
 
   const isProUser = hasSubscription && !planDetails?.isTrial
   const isTrialUser = hasSubscription && !!planDetails?.isTrial
 
   useEffect(() => {
-    let isMounted = true
-
-    const loadUserInfo = async () => {
-      try {
-        const siteInfo = await getSiteInfo()
-        if (!isMounted) return
-        setUserName(siteInfo.userName || "")
-        setUserEmail(siteInfo.userEmail || "")
-      } catch (error) {
-        console.error("Error loading current user info:", error)
-      }
-    }
-
-    void loadUserInfo()
-
-    return () => {
-      isMounted = false
-    }
-  }, [])
-
-  useEffect(() => {
     void onRefreshSubscription?.()
   }, [onRefreshSubscription])
 
-  const displayName = authUser?.username || userName || "User"
-  const displayEmail = authUser?.email || paymentEmail || userEmail || "-"
+  useEffect(() => {
+    let isMounted = true
+    if (authUser?.email && !hasSubscription && !claimedTrialLocal) {
+      void (async () => {
+        try {
+          const siteInfo = await getSiteInfo()
+          const eligibility = await checkTrialEligibility(siteInfo.siteId, authUser.email)
+          if (!isMounted) return
+          if (!eligibility.eligible) {
+            setClaimedTrialLocal(true)
+          }
+        } catch {}
+      })()
+    }
+    return () => {
+      isMounted = false
+    }
+  }, [authUser?.email, hasSubscription, claimedTrialLocal])
+
+  const displayName = authUser?.username || "User"
+  const displayEmail = authUser?.email || paymentEmail || "-"
   
   const avatarInitials = useMemo(() => {
     const parts = displayName.trim().split(/\s+/).filter(Boolean)
@@ -127,6 +125,7 @@ export function ProfilePage({
   }
 
   const getStatusLabel = (status: string | null | undefined): string => {
+    if (hasAlreadyTakenTrial && !hasSubscription) return "Trial Claimed"
     if (!status) return hasSubscription ? "Active" : "Inactive"
     return status.charAt(0).toUpperCase() + status.slice(1).replaceAll("_", " ")
   }
@@ -254,7 +253,12 @@ export function ProfilePage({
                 setIsStartingTrial(true)
                 try {
                   await onStartTrial()
-                } catch (err) {
+                } catch (err: any) {
+                  const errorMsg = err?.message || String(err || "")
+                  if (/already claimed/i.test(errorMsg)) {
+                    setClaimedTrialLocal(true)
+                    void onRefreshSubscription?.()
+                  }
                   console.error("Failed to start trial:", err)
                 } finally {
                   setIsStartingTrial(false)

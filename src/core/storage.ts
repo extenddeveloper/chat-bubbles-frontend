@@ -5,6 +5,30 @@ import { AVATAR_PRESETS, DEFAULT_CHANNELS, normalizeConfig } from "./config"
 const CONFIG_KEY = "scb_config_v1"
 const INSTANCE_KEY = "scb_instance_installed_v1"
 
+// Framer Security Compliance: Purge any legacy auth/session tokens from shared plugin data
+const LEGACY_TOKEN_KEYS = [
+    "token",
+    "auth_token",
+    "authToken",
+    "bearer_token",
+    "chat_bubbles_auth_token",
+    "jwt",
+    "session",
+    "auth_session",
+    "scb_token",
+]
+
+export async function purgeLegacyPluginTokens(): Promise<void> {
+    try {
+        await ensurePermission("setPluginData")
+        for (const key of LEGACY_TOKEN_KEYS) {
+            try {
+                await framer.setPluginData(key, null)
+            } catch {}
+        }
+    } catch {}
+}
+
 // Compact serializer: stores ONLY customized fields and short references
 // Keeps total JSON well under 800 bytes, and chunks if size ever exceeds 1400 bytes
 function compactConfig(config: ChatConfig): any {
@@ -138,6 +162,7 @@ async function ensurePermission(method: string): Promise<void> {
 
 export async function loadConfig(): Promise<ChatConfig> {
     try {
+        void purgeLegacyPluginTokens()
         await ensurePermission("getPluginData")
         const raw = await framer.getPluginData(CONFIG_KEY)
         if (!raw) return normalizeConfig(null)

@@ -4,8 +4,6 @@ export type SiteInfo = {
     siteId: string
     siteUrl: string | null
     userId: string | null
-    userName: string | null
-    userEmail: string | null
 }
 
 /**
@@ -14,7 +12,7 @@ export type SiteInfo = {
  * @framer-review-justification
  * - projectInfo.id (siteId): Required strictly to scope widget configuration storage in Framer
  *   project metadata and bind Pro subscription/trial licenses to this specific Framer project.
- * - Designer personal details (name, email, user ID) and editor URLs are intentionally not extracted.
+ * - Designer personal details (name, email, user ID) and editor URLs are never extracted from Framer.
  * - Zero scraping of document.referrer, window.location, or editor ancestor origins.
  */
 export const getSiteInfo = async (): Promise<SiteInfo> => {
@@ -26,16 +24,12 @@ export const getSiteInfo = async (): Promise<SiteInfo> => {
             siteId,
             siteUrl: null,
             userId: null,
-            userName: null,
-            userEmail: null,
         }
     } catch {
         return {
             siteId: "chat_bubbles_local_site",
             siteUrl: null,
             userId: null,
-            userName: null,
-            userEmail: null,
         }
     }
 }

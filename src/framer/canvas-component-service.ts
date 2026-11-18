@@ -561,7 +561,6 @@ export default function ChatBubbles(props: ChatBubblesProps) {
     // @chat-bubbles-lock-state: ${isLocked ? "locked" : "unlocked"}
     const IS_LOCKED = ${Boolean(isLocked)}
     const showBranding = ${Boolean(showBranding)}
-    const BACKEND_URL = "https://app.framefic.com/chat-bubbles"
     const ANALYTICS_ENABLED = ${Boolean(config.enableAnalytics !== false)}
     const WIDGET_ID = ${JSON.stringify(config.widgetId || "chat-bubbles-default")}
     const containerRef = React.useRef<HTMLDivElement>(null)
@@ -806,19 +805,13 @@ export default function ChatBubbles(props: ChatBubblesProps) {
     // Strict visibility guard: if hidden by targeting or operating schedule, widget returns null & suppresses sound
     const isWidgetHidden = !isTargetingAllowed || (!isCanvas && scheduleEnabled && isOffline && scheduleOfflineAction === "hide")
 
-    // Anonymous deduplicated aggregate view tracking for live site visitors (CRO)
+    // Local anonymous deduplicated aggregate view tracking for live site visitors (CRO)
     React.useEffect(() => {
         if (isCanvas || !enableAnalytics || !ANALYTICS_ENABLED || isWidgetHidden) return
         try {
             const sessionKey = "cb_viewed_" + WIDGET_ID
             if (typeof sessionStorage !== "undefined" && !sessionStorage.getItem(sessionKey)) {
                 sessionStorage.setItem(sessionKey, "true")
-                fetch(BACKEND_URL + "/api/analytics/track", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ widgetId: WIDGET_ID, eventType: "view" }),
-                    keepalive: true,
-                }).catch(() => {})
             }
             if (Array.isArray((window as any).dataLayer)) {
                 (window as any).dataLayer.push({ event: "chat_bubbles_view", event_category: "Chat Bubbles" })
@@ -832,12 +825,12 @@ export default function ChatBubbles(props: ChatBubblesProps) {
     const trackChannelClick = React.useCallback((channelId: string) => {
         if (isCanvas || !enableAnalytics || !ANALYTICS_ENABLED) return
         try {
-            fetch(BACKEND_URL + "/api/analytics/track", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ widgetId: WIDGET_ID, eventType: "click", channelId }),
-                keepalive: true,
-            }).catch(() => {})
+            if (Array.isArray((window as any).dataLayer)) {
+                (window as any).dataLayer.push({ event: "chat_bubbles_click", event_category: "Chat Bubbles", channel_id: channelId })
+            }
+            if (typeof (window as any).gtag === "function") {
+                (window as any).gtag("event", "chat_bubbles_click", { event_category: "Chat Bubbles", event_label: channelId })
+            }
         } catch {}
     }, [isCanvas, enableAnalytics])
 
