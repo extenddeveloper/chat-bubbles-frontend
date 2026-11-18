@@ -246,7 +246,23 @@ export function App() {
     const [forceShowPlans, setForceShowPlans] = useState<number>(0)
     const [trialModalStatus, setTrialModalStatus] = useState<"started" | "expired" | null>(null)
     const [pendingPaymentPlan, setPendingPaymentPlan] = useState<string | null>(null)
+    const [now, setNow] = useState<number>(Date.now())
     const authSuccessInProgressRef = useRef<boolean>(false)
+
+    // Parse exact trial end timestamp (UTC normalized, matching Analyfic architecture)
+    const trialEndTimestamp = useMemo(() => {
+        if (paymentFlow.planDetails?.trialEndsAt) {
+            const raw = String(paymentFlow.planDetails.trialEndsAt).trim()
+            const normalized = !raw.endsWith("Z") && !raw.includes("+") ? raw.replace(" ", "T") + "Z" : raw
+            const t = new Date(normalized).getTime()
+            if (!isNaN(t) && t > 0) return t
+        }
+        if (typeof paymentFlow.planDetails?.trialSecondsRemaining === "number" && paymentFlow.planDetails.trialSecondsRemaining > 0) {
+            const fetchTime = (paymentFlow.planDetails as any)?.fetchTimestamp || Date.now()
+            return fetchTime + paymentFlow.planDetails.trialSecondsRemaining * 1000
+        }
+        return null
+    }, [paymentFlow.planDetails?.trialEndsAt, paymentFlow.planDetails?.trialSecondsRemaining, (paymentFlow.planDetails as any)?.fetchTimestamp])
 
     const isSubscriptionFullyActive = useMemo(() => {
         return (
@@ -265,9 +281,33 @@ export function App() {
     const isTrialActive = useMemo(() => {
         return Boolean(
             hasActiveAccess &&
-            (paymentFlow.planDetails?.isTrial || paymentFlow.planDetails?.plan === "trial")
+            (paymentFlow.planDetails?.isTrial || paymentFlow.planDetails?.plan === "trial" || paymentFlow.planDetails?.status === "trialing") &&
+            (!trialEndTimestamp || trialEndTimestamp > now)
         )
-    }, [hasActiveAccess, paymentFlow.planDetails])
+    }, [hasActiveAccess, paymentFlow.planDetails, trialEndTimestamp, now])
+
+    // 1-second live ticker for trial countdown and real-time expiration (matching Analyfic)
+    useEffect(() => {
+        const isTrialUser = Boolean(
+            auth.isLoggedIn &&
+            (paymentFlow.planDetails?.isTrial || paymentFlow.planDetails?.plan === "trial" || paymentFlow.planDetails?.status === "trialing")
+        )
+        if (!isTrialUser) return
+
+        setNow(Date.now())
+
+        const timer = window.setInterval(() => {
+            const currentNow = Date.now()
+            setNow(currentNow)
+
+            if (trialEndTimestamp && trialEndTimestamp <= currentNow) {
+                setTrialModalStatus("expired")
+                void paymentFlow.refreshSubscriptionStatus()
+            }
+        }, 1000)
+
+        return () => window.clearInterval(timer)
+    }, [auth.isLoggedIn, paymentFlow.planDetails?.isTrial, paymentFlow.planDetails?.plan, paymentFlow.planDetails?.status, trialEndTimestamp, paymentFlow.refreshSubscriptionStatus])
 
     const prevLicensingRef = useRef<{ hasActiveAccess: boolean; isTrialActive: boolean } | null>(null)
     useEffect(() => {
@@ -428,21 +468,32 @@ export function App() {
     )
 
     const trialBanner = useMemo(() => {
-        if (!auth.isLoggedIn || !paymentFlow.isPaid || paymentFlow.currentPlan !== "trial") return null
+        if (!auth.isLoggedIn || !paymentFlow.isPaid || !isTrialActive) return null
 
-        const secondsRemaining = paymentFlow.planDetails?.trialSecondsRemaining ?? 0
+        let secondsRemaining = 0
+        if (trialEndTimestamp) {
+            secondsRemaining = Math.max(0, Math.floor((trialEndTimestamp - now) / 1000))
+        } else if (typeof paymentFlow.planDetails?.trialSecondsRemaining === "number") {
+            secondsRemaining = Math.max(0, paymentFlow.planDetails.trialSecondsRemaining)
+        }
+
+        if (secondsRemaining <= 0) return null
+
         let countdownDisplay: string
 
-        if (secondsRemaining <= 0) {
-            countdownDisplay = "0:00:00"
-        } else if (secondsRemaining < 86400) {
+        if (secondsRemaining < 86400) {
             const hours = Math.floor(secondsRemaining / 3600).toString().padStart(2, "0")
             const minutes = Math.floor((secondsRemaining % 3600) / 60).toString().padStart(2, "0")
             const secs = (secondsRemaining % 60).toString().padStart(2, "0")
             countdownDisplay = `${hours}:${minutes}:${secs}`
         } else {
-            const days = Math.ceil(secondsRemaining / 86400)
-            countdownDisplay = `${days} ${days === 1 ? "day" : "days"}`
+            const days = Math.floor(secondsRemaining / 86400)
+            const hours = Math.floor((secondsRemaining % 86400) / 3600)
+            const minutes = Math.floor((secondsRemaining % 3600) / 60)
+            const parts: string[] = [`${days} ${days === 1 ? "day" : "days"}`]
+            if (hours > 0) parts.push(`${hours}h`)
+            if (minutes > 0 || hours > 0) parts.push(`${minutes}m`)
+            countdownDisplay = parts.join(" ")
         }
 
         return (
@@ -462,7 +513,7 @@ export function App() {
                 </button>
             </div>
         )
-    }, [auth.isLoggedIn, paymentFlow.isPaid, paymentFlow.currentPlan, paymentFlow.planDetails?.trialSecondsRemaining])
+    }, [auth.isLoggedIn, paymentFlow.isPaid, isTrialActive, trialEndTimestamp, now, paymentFlow.planDetails?.trialSecondsRemaining])
 
     // Agent creation & configuration state
     const [showAddAgent, setShowAddAgent] = useState(false)
@@ -978,8 +1029,8 @@ export function App() {
                                     hasActiveTrial={isTrialActive}
                                     user={auth.user}
                                     trialEndTimestamp={
-                                        auth.isLoggedIn && paymentFlow.planDetails?.expiresAt
-                                            ? new Date(paymentFlow.planDetails.expiresAt).getTime()
+                                        auth.isLoggedIn && trialEndTimestamp
+                                            ? trialEndTimestamp
                                             : null
                                     }
                                     onUpgrade={() => {
