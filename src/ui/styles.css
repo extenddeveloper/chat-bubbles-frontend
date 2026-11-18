@@ -4733,8 +4733,15 @@ button.cf-analytics-dropdown-btn:hover {
 }
 
 /* Settings Page Analytics Link Button */
-.cf-analytics-settings-action {
+.cf-analytics-settings-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
     margin-top: 8px;
+}
+
+.cf-analytics-settings-action {
+    display: flex;
 }
 
 button.cf-btn-view-analytics {

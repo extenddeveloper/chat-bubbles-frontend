@@ -105,6 +105,7 @@ export const DEFAULT_CONFIG: ChatConfig = {
     autoOpenDelay: 1200,
     enableSound: false,
     enableAnalytics: true,
+    forwardEventsToSiteAnalytics: false,
     openInNewTab: true,
     closeAfterClick: true,
     closeOnOutsideClick: true,

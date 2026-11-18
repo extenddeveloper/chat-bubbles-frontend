@@ -92,6 +92,7 @@ export interface ChatConfig {
     autoOpenDelay: number
     enableSound?: boolean
     enableAnalytics?: boolean
+    forwardEventsToSiteAnalytics?: boolean
     openInNewTab?: boolean
     closeAfterClick: boolean
     closeOnOutsideClick: boolean

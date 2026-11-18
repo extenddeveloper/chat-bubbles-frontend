@@ -699,8 +699,14 @@ export function App() {
                 const normalized = normalizeConfig(config)
                 await saveConfig(normalized)
                 await syncCanvasInstance(normalized)
-            } catch (err) {
+            } catch (err: any) {
                 console.warn("Auto-save and sync config failed:", err)
+                if (err && err.message && err.message.includes("Framer project data limit")) {
+                    notify({
+                        type: "Error",
+                        message: err.message,
+                    })
+                }
             }
         }, 300)
 
@@ -2213,19 +2219,30 @@ export function App() {
                                     }
                                 >
                                     {config.enableAnalytics !== false && (
-                                        <div className="cf-analytics-settings-action">
-                                            <button
-                                                type="button"
-                                                className="cf-btn-view-analytics"
-                                                onClick={() => {
-                                                    setIsProfileOpen(false)
-                                                    setTab("analytics")
-                                                }}
+                                        <div className="cf-analytics-settings-wrapper">
+                                            <div className="cf-analytics-settings-action">
+                                                <button
+                                                    type="button"
+                                                    className="cf-btn-view-analytics"
+                                                    onClick={() => {
+                                                        setIsProfileOpen(false)
+                                                        setTab("analytics")
+                                                    }}
+                                                >
+                                                    <IconChart size={14} />
+                                                    <span>View Analytics Dashboard</span>
+                                                    <IconArrowRight size={13} />
+                                                </button>
+                                            </div>
+                                            <Field
+                                                label="Forward to Google Analytics (gtag / dataLayer)"
+                                                hint="Optionally push widget views and channel clicks to your site's window.dataLayer or window.gtag if installed."
                                             >
-                                                <IconChart size={14} />
-                                                <span>View Analytics Dashboard</span>
-                                                <IconArrowRight size={13} />
-                                            </button>
+                                                <Switch
+                                                    checked={Boolean(config.forwardEventsToSiteAnalytics)}
+                                                    onChange={(forwardEventsToSiteAnalytics) => updateConfig({ forwardEventsToSiteAnalytics })}
+                                                />
+                                            </Field>
                                         </div>
                                     )}
                                 </Section>

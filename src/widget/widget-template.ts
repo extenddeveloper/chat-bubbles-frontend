@@ -243,17 +243,19 @@ export function buildWidgetCode(config: ChatConfig): string {
           store.totalViews = (store.totalViews || 0) + 1;
           localStorage.setItem(storageKey, JSON.stringify(store));
         } catch(e){}
-        if (typeof window.gtag === "function") {
-          window.gtag("event", "chat_bubbles_view", {
-            event_category: "Chat Bubbles",
-            event_label: "widget_view"
-          });
-        }
-        if (Array.isArray(window.dataLayer)) {
-          window.dataLayer.push({
-            event: "chat_bubbles_view",
-            event_category: "Chat Bubbles"
-          });
+        if (SETTINGS.forwardEventsToSiteAnalytics) {
+          if (typeof window.gtag === "function") {
+            window.gtag("event", "chat_bubbles_view", {
+              event_category: "Chat Bubbles",
+              event_label: "widget_view"
+            });
+          }
+          if (Array.isArray(window.dataLayer)) {
+            window.dataLayer.push({
+              event: "chat_bubbles_view",
+              event_category: "Chat Bubbles"
+            });
+          }
         }
       }
     } catch(e) {}
@@ -491,27 +493,29 @@ export function buildWidgetCode(config: ChatConfig): string {
       store.totalClicks = (store.totalClicks || 0) + 1;
       localStorage.setItem(storageKey, JSON.stringify(store));
     } catch(e){}
-    try {
-      if(typeof window.gtag === "function"){
-        window.gtag("event", "chat_bubbles_click", {
-          event_category: "Chat Bubbles",
-          event_label: channelLabel || channelId,
-          channel_id: channelId,
-          channel_name: channelLabel || channelId,
-          agent_name: agentName || "",
-          target_url: targetUrl || ""
-        });
-      }
-      if(Array.isArray(window.dataLayer)){
-        window.dataLayer.push({
-          event: "chat_bubbles_click",
-          channel: channelId,
-          channel_name: channelLabel || channelId,
-          agent: agentName || "",
-          target_url: targetUrl || ""
-        });
-      }
-    } catch(e){}
+    if (SETTINGS.forwardEventsToSiteAnalytics) {
+      try {
+        if(typeof window.gtag === "function"){
+          window.gtag("event", "chat_bubbles_click", {
+            event_category: "Chat Bubbles",
+            event_label: channelLabel || channelId,
+            channel_id: channelId,
+            channel_name: channelLabel || channelId,
+            agent_name: agentName || "",
+            target_url: targetUrl || ""
+          });
+        }
+        if(Array.isArray(window.dataLayer)){
+          window.dataLayer.push({
+            event: "chat_bubbles_click",
+            channel: channelId,
+            channel_name: channelLabel || channelId,
+            agent: agentName || "",
+            target_url: targetUrl || ""
+          });
+        }
+      } catch(e){}
+    }
   }
 
   var activeAgent = null;

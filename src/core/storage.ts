@@ -108,6 +108,7 @@ function compactConfig(config: ChatConfig): any {
         openInNewTab: config.openInNewTab,
         enableSound: config.enableSound,
         enableAnalytics: config.enableAnalytics,
+        ...(config.forwardEventsToSiteAnalytics !== undefined ? { forwardEventsToSiteAnalytics: config.forwardEventsToSiteAnalytics } : {}),
         scrollTriggerEnabled: config.scrollTriggerEnabled,
         scrollTriggerPercent: config.scrollTriggerPercent,
         scrollTriggerTarget: config.scrollTriggerTarget,
@@ -165,7 +166,18 @@ export async function loadConfig(): Promise<ChatConfig> {
         void purgeLegacyPluginTokens()
         await ensurePermission("getPluginData")
         const raw = await framer.getPluginData(CONFIG_KEY)
-        if (!raw) return normalizeConfig(null)
+        if (!raw) {
+            // Fallback to browser-based store if Framer project data is empty
+            try {
+                if (typeof localStorage !== "undefined") {
+                    const localBackup = localStorage.getItem("chat_bubbles_project_config_backup")
+                    if (localBackup) {
+                        return normalizeConfig(decompactConfig(JSON.parse(localBackup)))
+                    }
+                }
+            } catch {}
+            return normalizeConfig(null)
+        }
 
         const parsed = JSON.parse(raw)
         // If legacy or current chunked metadata existed, reconstruct it
@@ -183,6 +195,14 @@ export async function loadConfig(): Promise<ChatConfig> {
         return normalizeConfig(decompactConfig(parsed))
     } catch (e) {
         console.warn("Could not load config from plugin data:", e)
+        try {
+            if (typeof localStorage !== "undefined") {
+                const localBackup = localStorage.getItem("chat_bubbles_project_config_backup")
+                if (localBackup) {
+                    return normalizeConfig(decompactConfig(JSON.parse(localBackup)))
+                }
+            }
+        } catch {}
         return normalizeConfig(null)
     }
 }
@@ -193,42 +213,62 @@ export async function saveConfig(config: ChatConfig): Promise<void> {
     const compact = compactConfig(sanitized)
     const json = JSON.stringify(compact)
 
+    // Framer Security & Stability Compliance: Guard against exceeding project plugin data storage limits
+    const MAX_TOTAL_PLUGIN_DATA_SIZE = 8192 // 8 KB safety ceiling
+    if (json.length > MAX_TOTAL_PLUGIN_DATA_SIZE) {
+        throw new Error(
+            `Configuration size exceeds Framer project data limit (${json.length} bytes / max ${MAX_TOTAL_PLUGIN_DATA_SIZE} bytes). Please shorten custom greeting text, reduce custom targeting URLs, or remove unused channels.`
+        )
+    }
+
+    // Mirror to browser-based store (localStorage) as backup
+    try {
+        if (typeof localStorage !== "undefined") {
+            localStorage.setItem("chat_bubbles_project_config_backup", json)
+        }
+    } catch {}
+
     const MAX_CHUNK_SIZE = 1400
 
-    if (json.length <= MAX_CHUNK_SIZE) {
-        // Direct save into CONFIG_KEY (under 1.4 kB, safely below 2 kB limit)
-        await framer.setPluginData(CONFIG_KEY, json)
+    try {
+        if (json.length <= MAX_CHUNK_SIZE) {
+            // Direct save into CONFIG_KEY (under 1.4 kB, safely below 2 kB limit)
+            await framer.setPluginData(CONFIG_KEY, json)
 
-        // Purge any legacy chunks to immediately free storage
-        for (let i = 0; i < 10; i++) {
-            try {
-                await framer.setPluginData(`${CONFIG_KEY}_c${i}`, null)
-            } catch {
-                // Ignore purge error
+            // Purge any legacy chunks to immediately free storage
+            for (let i = 0; i < 10; i++) {
+                try {
+                    await framer.setPluginData(`${CONFIG_KEY}_c${i}`, null)
+                } catch {
+                    // Ignore purge error
+                }
+            }
+        } else {
+            // Automatically slice into <= 1400 byte chunks so no single key exceeds Framer's 2 kB limit
+            const chunks: string[] = []
+            for (let i = 0; i < json.length; i += MAX_CHUNK_SIZE) {
+                chunks.push(json.slice(i, i + MAX_CHUNK_SIZE))
+            }
+
+            for (let i = 0; i < chunks.length; i++) {
+                await framer.setPluginData(`${CONFIG_KEY}_c${i}`, chunks[i])
+            }
+
+            // Store chunk count header in primary key
+            await framer.setPluginData(CONFIG_KEY, JSON.stringify({ chunks: chunks.length }))
+
+            // Purge any remaining stale chunks from previous larger saves
+            for (let i = chunks.length; i < 10; i++) {
+                try {
+                    await framer.setPluginData(`${CONFIG_KEY}_c${i}`, null)
+                } catch {
+                    // Ignore purge error
+                }
             }
         }
-    } else {
-        // Automatically slice into <= 1400 byte chunks so no single key exceeds Framer's 2 kB limit
-        const chunks: string[] = []
-        for (let i = 0; i < json.length; i += MAX_CHUNK_SIZE) {
-            chunks.push(json.slice(i, i + MAX_CHUNK_SIZE))
-        }
-
-        for (let i = 0; i < chunks.length; i++) {
-            await framer.setPluginData(`${CONFIG_KEY}_c${i}`, chunks[i])
-        }
-
-        // Store chunk count header in primary key
-        await framer.setPluginData(CONFIG_KEY, JSON.stringify({ chunks: chunks.length }))
-
-        // Purge any remaining stale chunks from previous larger saves
-        for (let i = chunks.length; i < 10; i++) {
-            try {
-                await framer.setPluginData(`${CONFIG_KEY}_c${i}`, null)
-            } catch {
-                // Ignore purge error
-            }
-        }
+    } catch (saveErr: any) {
+        console.error("Framer setPluginData failed:", saveErr)
+        throw new Error("Failed to save to Framer plugin storage: " + (saveErr?.message || "Storage quota exceeded."))
     }
 }
 

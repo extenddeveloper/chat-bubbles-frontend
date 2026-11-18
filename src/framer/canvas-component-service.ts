@@ -562,6 +562,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
     const IS_LOCKED = ${Boolean(isLocked)}
     const showBranding = ${Boolean(showBranding)}
     const ANALYTICS_ENABLED = ${Boolean(config.enableAnalytics !== false)}
+    const FORWARD_THIRD_PARTY_ANALYTICS = ${Boolean(config.forwardEventsToSiteAnalytics)}
     const WIDGET_ID = ${JSON.stringify(config.widgetId || "chat-bubbles-default")}
     const containerRef = React.useRef<HTMLDivElement>(null)
     const [isOpen, setIsOpen] = React.useState(isCanvas ? canvasPreview !== "closed" : false)
@@ -653,24 +654,62 @@ export default function ChatBubbles(props: ChatBubblesProps) {
         }
     }, [isCanvas, scheduleEnabled, activeScheduleDays, scheduleStart, scheduleEnd])
 
-    // 2. Dynamic Location Tracker for Page Targeting & SPA Navigation in Framer
+    // 2. Event-Driven Location Tracker for Page Targeting & SPA Navigation in Framer
     const [currentLocationPath, setCurrentLocationPath] = React.useState(() => {
         return typeof window !== "undefined" && window.location && window.location.pathname ? window.location.pathname : "/"
     })
 
     React.useEffect(() => {
-        if (typeof window === "undefined") return
+        if (typeof window === "undefined" || isCanvas) return
         function syncLocationPath() {
-            const next = window.location && window.location.pathname ? window.location.pathname : "/"
-            setCurrentLocationPath((prev: string) => (prev !== next ? next : prev))
+            try {
+                const next = window.location && window.location.pathname ? window.location.pathname : "/"
+                setCurrentLocationPath((prev: string) => (prev !== next ? next : prev))
+            } catch {}
         }
+
         window.addEventListener("popstate", syncLocationPath)
-        const pathPollTimer = setInterval(syncLocationPath, 400)
+        window.addEventListener("hashchange", syncLocationPath)
+
+        // Event-driven navigation tracking: intercept pushState and replaceState without polling timers
+        const originalPush = window.history ? window.history.pushState : null
+        const originalReplace = window.history ? window.history.replaceState : null
+
+        if (originalPush && typeof originalPush === "function") {
+            try {
+                window.history.pushState = function(...args: any[]) {
+                    const ret = originalPush.apply(this, args)
+                    syncLocationPath()
+                    return ret
+                }
+            } catch {}
+        }
+
+        if (originalReplace && typeof originalReplace === "function") {
+            try {
+                window.history.replaceState = function(...args: any[]) {
+                    const ret = originalReplace.apply(this, args)
+                    syncLocationPath()
+                    return ret
+                }
+            } catch {}
+        }
+
         return () => {
             window.removeEventListener("popstate", syncLocationPath)
-            clearInterval(pathPollTimer)
+            window.removeEventListener("hashchange", syncLocationPath)
+            if (originalPush) {
+                try {
+                    window.history.pushState = originalPush
+                } catch {}
+            }
+            if (originalReplace) {
+                try {
+                    window.history.replaceState = originalReplace
+                } catch {}
+            }
         }
-    }, [])
+    }, [isCanvas])
 
     // Page / URL Targeting Filter (supports dropdown page selection, custom paths, subpaths, trailing slashes, and wildcards)
     const isTargetingAllowed = React.useMemo(() => {
@@ -813,11 +852,13 @@ export default function ChatBubbles(props: ChatBubblesProps) {
             if (typeof sessionStorage !== "undefined" && !sessionStorage.getItem(sessionKey)) {
                 sessionStorage.setItem(sessionKey, "true")
             }
-            if (Array.isArray((window as any).dataLayer)) {
-                (window as any).dataLayer.push({ event: "chat_bubbles_view", event_category: "Chat Bubbles" })
-            }
-            if (typeof (window as any).gtag === "function") {
-                (window as any).gtag("event", "chat_bubbles_view", { event_category: "Chat Bubbles", event_label: "widget_view" })
+            if (FORWARD_THIRD_PARTY_ANALYTICS) {
+                if (Array.isArray((window as any).dataLayer)) {
+                    (window as any).dataLayer.push({ event: "chat_bubbles_view", event_category: "Chat Bubbles" })
+                }
+                if (typeof (window as any).gtag === "function") {
+                    (window as any).gtag("event", "chat_bubbles_view", { event_category: "Chat Bubbles", event_label: "widget_view" })
+                }
             }
         } catch {}
     }, [isCanvas, enableAnalytics, isWidgetHidden])
@@ -825,11 +866,13 @@ export default function ChatBubbles(props: ChatBubblesProps) {
     const trackChannelClick = React.useCallback((channelId: string) => {
         if (isCanvas || !enableAnalytics || !ANALYTICS_ENABLED) return
         try {
-            if (Array.isArray((window as any).dataLayer)) {
-                (window as any).dataLayer.push({ event: "chat_bubbles_click", event_category: "Chat Bubbles", channel_id: channelId })
-            }
-            if (typeof (window as any).gtag === "function") {
-                (window as any).gtag("event", "chat_bubbles_click", { event_category: "Chat Bubbles", event_label: channelId })
+            if (FORWARD_THIRD_PARTY_ANALYTICS) {
+                if (Array.isArray((window as any).dataLayer)) {
+                    (window as any).dataLayer.push({ event: "chat_bubbles_click", event_category: "Chat Bubbles", channel_id: channelId })
+                }
+                if (typeof (window as any).gtag === "function") {
+                    (window as any).gtag("event", "chat_bubbles_click", { event_category: "Chat Bubbles", event_label: channelId })
+                }
             }
         } catch {}
     }, [isCanvas, enableAnalytics])
@@ -2440,7 +2483,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                                     onClick={(e) => {
                                         e.stopPropagation()
                                         trackChannelClick(selectedAgent ? selectedAgent.channelId : "whatsapp")
-                                        if (enableAnalytics && typeof window !== "undefined") {
+                                        if (FORWARD_THIRD_PARTY_ANALYTICS && enableAnalytics && typeof window !== "undefined") {
                                             try {
                                                 if (Array.isArray((window as any).dataLayer)) {
                                                     (window as any).dataLayer.push({
@@ -2521,7 +2564,7 @@ export default function ChatBubbles(props: ChatBubblesProps) {
                                         rel="noopener noreferrer"
                                         onClick={() => {
                                             trackChannelClick(channel.id)
-                                            if (enableAnalytics && typeof window !== "undefined") {
+                                            if (FORWARD_THIRD_PARTY_ANALYTICS && enableAnalytics && typeof window !== "undefined") {
                                                 try {
                                                     if (Array.isArray((window as any).dataLayer)) {
                                                         (window as any).dataLayer.push({ event: "chat_bubbles_click", channel: channel.id, channel_label: channel.label })
